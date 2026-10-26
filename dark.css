@@ -29,7 +29,7 @@ html[data-mode="dark"] body::before {
 /* ---------- shared: menu ---------- */
 html[data-mode="dark"] .topnav { background: rgba(7, 5, 6, 0.92); border-bottom: 1px solid var(--d-line); backdrop-filter: blur(8px); }
 html[data-mode="dark"] .topnav .logo { color: var(--d-text); font-family: var(--d-display); font-size: 24px; letter-spacing: 0.06em; -webkit-text-stroke: 0; text-shadow: 0 0 18px rgba(255, 43, 43, 0.5); }
-html[data-mode="dark"] .topnav .logo img { border-color: var(--d-line); border-radius: 4px; filter: grayscale(0.6) contrast(1.2); }
+html[data-mode="dark"] .topnav .logo img { border-color: var(--d-line); border-radius: 4px; }
 html[data-mode="dark"] .topnav .links a { font-family: var(--d-display); font-size: 16px; letter-spacing: 0.1em; color: var(--d-dim); text-transform: uppercase; }
 html[data-mode="dark"] .topnav .links a:hover { color: var(--d-text); background: transparent; }
 html[data-mode="dark"] .topnav .links a[aria-current="page"] { background: transparent; color: var(--d-blood); border: 0; padding: 6px 10px; box-shadow: inset 0 -2px 0 var(--d-blood); border-radius: 0; }
@@ -94,8 +94,6 @@ html[data-mode="dark"] .stat.hot .v, html[data-mode="dark"] .teaser .burned { co
 html[data-mode="dark"] .stat a, html[data-mode="dark"] .step a, html[data-mode="dark"] .holders td a, html[data-mode="dark"] .facts a { color: var(--d-text); text-decoration-color: var(--d-blood); }
 html[data-mode="dark"] .about p { color: #cfc3ba; }
 html[data-mode="dark"] .meme { background: #0c0809; border: 1px solid var(--d-line); border-radius: 4px; box-shadow: none; transform: none !important; }
-html[data-mode="dark"] .meme video { filter: grayscale(0.85) contrast(1.15) brightness(0.9); transition: filter 0.3s; }
-html[data-mode="dark"] .meme:hover video { filter: none; }
 html[data-mode="dark"] .bar { border: 1px solid var(--d-line); border-radius: 3px; background: #050304; }
 html[data-mode="dark"] .legend i { border: 0; border-radius: 2px; }
 html[data-mode="dark"] .legend b { font-family: var(--d-display); }
@@ -114,7 +112,7 @@ html[data-mode="dark"] #toast { background: var(--d-panel-2); color: var(--d-tex
 
 /* ======================= bonfire page ======================= */
 html[data-mode="dark"] .stage { background: #050304; }
-html[data-mode="dark"] #fire { filter: grayscale(0.5) sepia(0.35) hue-rotate(-18deg) saturate(1.6) contrast(1.4) brightness(0.55); }
+html[data-mode="dark"] #fire { filter: contrast(1.25) brightness(0.62); }
 html[data-mode="dark"] .stage::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(55% 65% at 50% 68%, transparent 25%, rgba(0, 0, 0, 0.88)), linear-gradient(rgba(20, 0, 0, 0.35), transparent 40%); }
 html[data-mode="dark"] .brand h1 { font-family: var(--d-display); color: var(--d-text); -webkit-text-stroke: 0; transform: none; letter-spacing: 0.01em; text-shadow: 0 0 30px rgba(255, 43, 43, 0.45), 2px 0 0 rgba(255, 43, 43, 0.5); }
 html[data-mode="dark"] .brand h1 span { color: var(--d-blood); }
