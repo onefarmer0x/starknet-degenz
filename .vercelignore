@@ -1,3 +1,4 @@
 server.js
 wolves/README.txt
 tools
+.env*
