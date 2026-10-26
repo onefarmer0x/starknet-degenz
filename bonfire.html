@@ -169,6 +169,20 @@ body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45
 }
 @media (prefers-reduced-motion: reduce) { .status.live .dot, .feed li.new { animation: none; } .toast { transition: opacity 0.2s; } }
 
+/* ---------- click-to-burn ---------- */
+.clickburn { display: grid; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 2.5px dashed #e0cfae; }
+.cb-toggle { display: flex; align-items: center; gap: 10px; font: 600 15px var(--body); cursor: pointer; }
+.cb-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cb-sw { position: relative; width: 46px; height: 26px; flex: none; border-radius: 999px; background: #d9cdb4; border: 2.5px solid var(--ink); transition: background 0.2s; }
+.cb-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); transition: transform 0.25s cubic-bezier(.3,1.5,.5,1); }
+.cb-toggle input:checked + .cb-sw { background: var(--fire); }
+.cb-toggle input:checked + .cb-sw::after { transform: translateX(20px); }
+.cb-toggle input:focus-visible + .cb-sw { outline: 3px solid var(--flame); outline-offset: 2px; }
+.cb-amts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; transition: opacity 0.2s; }
+.cb-amts.off { opacity: 0.45; }
+.cb-amts button { border: 2.5px solid var(--ink); background: #fff; border-radius: 10px; padding: 6px 0; font: 400 20px var(--display); letter-spacing: 0.04em; cursor: pointer; color: var(--ink); }
+.cb-amts button[aria-pressed="true"] { background: var(--flame); box-shadow: 2px 2px 0 var(--ink); }
+
 /* ---------- wallet ---------- */
 .btn.wallet { background: var(--flame); }
 .btn.wallet.connected { background: #fff; font: 600 13px var(--mono); letter-spacing: 0; padding: 9px 12px; }
@@ -236,9 +250,9 @@ body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45
     <div class="big-total">
       <div class="label">Total burned forever</div>
       <div class="num"><span id="bigNum">0</span><small id="bigSym">DEGENZ</small></div>
-      <div class="sub"><span id="bigUsd">$0.00</span> · <span id="bigPct">0%</span> of supply <span id="bigSim" class="sim-tag"></span></div>
+      <div class="sub"><span id="bigUsd">$0.00</span> · <span id="bigPct">0%</span> of supply</div>
     </div>
-    <div class="hint">Click the fire to toss tokens · click a wolf to make it howl</div>
+    <div class="hint">Click the fire to burn · click a wolf to make it howl</div>
   </section>
 
   <aside class="panel">
@@ -258,7 +272,7 @@ body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45
     <div class="card" id="meCard">
       <h2>Your fire <span class="aside">real tokens, real flames</span></h2>
       <div class="connect-cta" id="meConnect">
-        <p>Simulator too soft for you? Plug in Bramble, Ready or Braavos and torch real bags. Phone wallets welcome.</p>
+        <p>Plug in Bramble, Ready or Braavos and torch real bags. Then just click the fire. Phone wallets welcome.</p>
         <button class="btn primary" type="button" id="meConnectBtn">CONNECT WALLET TO BURN</button>
       </div>
       <div id="meBody" hidden>
@@ -276,25 +290,12 @@ body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45
           </div>
           <div class="sim-note" id="meStatus" hidden></div>
         </form>
+        <div class="clickburn">
+          <label class="cb-toggle" for="cbOn"><input type="checkbox" id="cbOn"><span class="cb-sw" aria-hidden="true"></span><span>Click the fire to burn</span></label>
+          <div class="cb-amts" id="cbAmts" role="group" aria-label="Tokens per click"><button type="button" data-a="1">1</button><button type="button" data-a="10">10</button><button type="button" data-a="100">100</button><button type="button" data-a="1000">1K</button></div>
+          <p class="sim-note">Each click burns that many $DEGENZ for real. Quick clicks stack into one transaction, and your wallet asks you to approve it.</p>
+        </div>
       </div>
-    </div>
-    <div class="card">
-      <h2>Burn simulator <span class="aside">nothing leaves your wallet</span></h2>
-      <form class="sim" id="simForm" autocomplete="off">
-        <label for="simAmt">Tokens to throw on the fire</label>
-        <div class="sim-row">
-          <input id="simAmt" inputmode="decimal" value="1000000" aria-describedby="simNote">
-          <button class="btn primary" type="submit">BURN IT</button>
-        </div>
-        <div class="sim-row" id="presets">
-          <button class="btn" type="button" data-amt="10000">10K</button>
-          <button class="btn" type="button" data-amt="1000000">1M</button>
-          <button class="btn" type="button" data-amt="10000000">10M</button>
-          <button class="btn" type="button" data-amt="100000000">100M</button>
-          <button class="btn ghost" type="button" id="simReset">Reset</button>
-        </div>
-        <div class="sim-note" id="simNote">Simulated burns stack on top of the real total so you can see the effect on supply and value.</div>
-      </form>
     </div>
 
     <div class="card">
@@ -345,7 +346,7 @@ const short = a => { const h = BigInt(a).toString(16); return '0x' + h.slice(0, 
 // ---------------- state ----------------
 const S = {
   name: 'Token', symbol: 'TOKEN', decimals: 18, supply: 0n, price: 0,
-  burns: [], seen: new Set(), burners: new Map(), totalRaw: 0n, lastBlock: 0, simTotal: 0, simCount: 0,
+  burns: [], seen: new Set(), burners: new Map(), totalRaw: 0n, lastBlock: 0,
   blockTimes: new Map(),
 };
 
@@ -461,11 +462,10 @@ const pctStr = p => p === 0 ? '0%' : p < 0.0001 ? '<0.0001%' : p < 1 ? p.toFixed
 // ---------------- rendering ----------------
 let shownTotal = 0;
 function render() {
-  const real = units(S.totalRaw), supply = units(S.supply), total = real + S.simTotal;
+  const real = units(S.totalRaw), supply = units(S.supply), total = real;
   $('bigSym').textContent = S.symbol;
   $('bigUsd').textContent = usd(total * S.price);
   $('bigPct').textContent = pctStr(pct(total, supply));
-  $('bigSim').textContent = S.simTotal ? `(incl. ${fmt(S.simTotal)} simulated)` : '';
 
   $('mBurned').textContent = fmt(real);
   $('mBurnedPct').textContent = pctStr(pct(real, supply)) + ' of supply';
@@ -490,7 +490,7 @@ const escapeHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // count-up on the big number
 function tickTotal() {
-  const target = units(S.totalRaw) + S.simTotal;
+  const target = units(S.totalRaw);
   shownTotal += (target - shownTotal) * 0.08;
   if (Math.abs(target - shownTotal) < target * 1e-6 + 1e-9) shownTotal = target;
   $('bigNum').textContent = fmt(shownTotal);
@@ -510,11 +510,10 @@ function feedItem(b, isNew) {
 }
 function renderFeed(newIds = new Set()) {
   const feed = $('feed');
-  const items = [...S.burns, ...simBurns].sort((a, b) => (b.order) - (a.order)).slice(0, 40);
+  const items = [...S.burns].sort((a, b) => (b.order) - (a.order)).slice(0, 40);
   feed.replaceChildren(...(items.length ? items.map(b => feedItem(b, newIds.has(b.id))) : [Object.assign(document.createElement('li'), { className: 'empty', textContent: 'No burns yet. Be the first, or try the simulator.' })]));
   $('feedAside').textContent = S.burns.length ? `${S.burns.length} on-chain` : '';
 }
-const simBurns = [];
 let orderSeq = 0;
 
 function setStatus(kind, text) { $('status').className = 'pill status ' + kind; $('statusText').textContent = text; }
@@ -613,27 +612,6 @@ async function poll() {
   } catch { setStatus('err', 'Connection hiccup, retrying…'); }
 }
 
-// ---------------- simulator ----------------
-function simBurn(amount, x, y) {
-  if (!(amount > 0)) return;
-  S.simTotal += amount; S.simCount++;
-  const b = { id: 'sim' + S.simCount, sim: true, amount, order: Number.MAX_SAFE_INTEGER - 1e6 + S.simCount };
-  simBurns.push(b);
-  fire.toss(amount, true, x, y);
-  toast(`${fmt(amount)} ${S.symbol} INTO THE FIRE`);
-  render(); renderFeed(new Set([b.id]));
-}
-$('simForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const v = parseFloat($('simAmt').value.replace(/[, _]/g, ''));
-  if (!(v > 0)) { $('simNote').textContent = 'Enter a positive number of tokens, for example 250000.'; return; }
-  $('simNote').textContent = 'Simulated burns stack on top of the real total so you can see the effect on supply and value.';
-  simBurn(v);
-});
-$('presets').addEventListener('click', e => {
-  const a = e.target.dataset?.amt; if (a) { $('simAmt').value = a; simBurn(+a); }
-});
-$('simReset').addEventListener('click', () => { S.simTotal = 0; simBurns.length = 0; render(); renderFeed(); });
 $('tokenForm').addEventListener('submit', e => {
   e.preventDefault();
   const v = $('tokenInput').value.trim();
@@ -1011,11 +989,10 @@ const fire = (() => {
   cv.addEventListener('click', e => {
     const r = cv.getBoundingClientRect();
     const x = e.clientX - r.left, y = Math.min(e.clientY - r.top, baseY - 140 * scale);
-    // clicking a wolf makes it howl; clicking anywhere else tosses a handful
+    // clicking a wolf makes it howl; clicking anywhere else is a real click-to-burn (wallet needed)
     const hit = pack.find(w => { const gap = 220 * scale + 250 * scale * w.size * 0.25, wx = baseX + w.dx * gap; return Math.abs(e.clientX - r.left - wx) < 90 * scale && e.clientY - r.top > baseY - 200 * scale; });
     if (hit) { say(Math.random() < 0.5 ? 'AWOOOOO' : meme(), hit); reactWith([5, 7]); if (audio) audio.pop(2); return; }
-    const amount = Math.round(10 ** (3 + Math.random() * 3));
-    simBurn(amount, x, y);
+    W8.clickBurn(x, y);
   });
 
   return { toss, say, react: reactWith };
@@ -1289,7 +1266,50 @@ const W8 = (() => {
   $('burnMax').addEventListener('click', () => { $('burnAmt').value = (Number(st.balance) / 10 ** S.decimals).toString(); });
 
 
-  return { refreshMe, renderMe, renderLeaders, get addr() { return st.addr; } };
+
+  // ---- click-to-burn: each click on the fire adds a tiny real burn; a burst of clicks goes out as one transaction ----
+  const CB = { on: false, amt: 1, pendingRaw: 0n, timer: 0, busy: false };
+  try { CB.on = localStorage.getItem('bonfire.cb') === '1'; CB.amt = +localStorage.getItem('bonfire.cbAmt') || 1; } catch {}
+  function renderCB() {
+    $('cbOn').checked = CB.on;
+    $('cbAmts').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.a === CB.amt)));
+    $('cbAmts').classList.toggle('off', !CB.on);
+  }
+  $('cbOn').addEventListener('change', e => { CB.on = e.target.checked; try { localStorage.setItem('bonfire.cb', CB.on ? '1' : '0'); } catch {} renderCB(); if (CB.on) fire.say('CLICK THE FIRE!'); });
+  $('cbAmts').addEventListener('click', e => { const a = e.target.dataset?.a; if (!a) return; CB.amt = +a; try { localStorage.setItem('bonfire.cbAmt', a); } catch {} renderCB(); });
+  renderCB();
+
+  function clickBurn(x, y) {
+    if (!st.addr) { toast('CONNECT A WALLET TO BURN'); fire.say('NO WALLET, NO FIRE'); return; }
+    if (!CB.on) { toast('TURN ON CLICK TO BURN'); $('cbOn').focus(); return; }
+    const raw = toRaw(String(CB.amt));
+    if (CB.pendingRaw + raw > st.balance) { toast(`ONLY ${fmt(units(st.balance))} LEFT`); return; }
+    CB.pendingRaw += raw;
+    fire.toss(CB.amt, false, x, y);
+    setMeStatus(`${fmt(units(CB.pendingRaw))} $${escapeHtml(S.symbol)} stacked. Sends when you stop clicking.`);
+    clearTimeout(CB.timer);
+    CB.timer = setTimeout(flushClickBurn, 1200);
+  }
+  async function flushClickBurn() {
+    if (CB.busy || !CB.pendingRaw) return;
+    const raw = CB.pendingRaw; CB.pendingRaw = 0n; CB.busy = true;
+    setMeStatus(`Approve ${fmt(units(raw))} $${escapeHtml(S.symbol)} in your wallet…`);
+    try {
+      const hash = await sendBurn(raw);
+      toast(`${fmt(units(raw))} $${S.symbol} BURNED`); fire.say('ONE OF US!'); fire.react(16);
+      setMeStatus(`Tokens flying · <a href="https://voyager.online/tx/${hash}" target="_blank" rel="noopener">view tx</a> · waiting for Starknet…`);
+      const ok = await waitTx(hash);
+      setMeStatus(ok === true ? `Confirmed. ${fmt(units(raw))} more is ash · <a href="https://voyager.online/tx/${hash}" target="_blank" rel="noopener">view tx</a>` : ok === false ? 'Starknet reverted it. Nothing was burned.' : `Still pending · <a href="https://voyager.online/tx/${hash}" target="_blank" rel="noopener">check on Voyager</a>`);
+      await poll(); await refreshMe();
+    } catch (err) {
+      setMeStatus(err?.code === 4001 || /reject|cancel|abort|denied/i.test(err?.message || '') ? 'Cancelled in the wallet. Nothing was burned.' : `The wallet sneezed: ${escapeHtml(err?.message || String(err))}`);
+    } finally {
+      CB.busy = false;
+      if (CB.pendingRaw) flushClickBurn();
+    }
+  }
+
+  return { refreshMe, renderMe, renderLeaders, clickBurn, get addr() { return st.addr; } };
 })();
 
 // rotating campfire hype under the title; dims the longer nothing burns

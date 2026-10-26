@@ -205,3 +205,10 @@ html[data-mode="dark"] .fold summary { font-family: var(--d-display); text-trans
 html[data-mode="dark"] .fold summary::after { border: 1px solid var(--d-line); }
 html[data-mode="dark"] .fold a { color: var(--d-text); text-decoration-color: var(--d-blood); }
 html[data-mode="dark"] .tv-empty { color: var(--d-dim); }
+html[data-mode="dark"] .clickburn { border-top: 1px solid var(--d-line); }
+html[data-mode="dark"] .cb-sw { background: #1a1213; border: 1px solid var(--d-line); }
+html[data-mode="dark"] .cb-sw::after { background: var(--d-dim); border: 0; }
+html[data-mode="dark"] .cb-toggle input:checked + .cb-sw { background: #3a0d0e; border-color: var(--d-blood); }
+html[data-mode="dark"] .cb-toggle input:checked + .cb-sw::after { background: var(--d-blood); box-shadow: 0 0 8px var(--d-blood); }
+html[data-mode="dark"] .cb-amts button { background: transparent; color: var(--d-dim); border: 1px solid var(--d-line); border-radius: 3px; font-family: var(--d-display); }
+html[data-mode="dark"] .cb-amts button[aria-pressed="true"] { color: var(--d-text); border-color: var(--d-blood); box-shadow: inset 0 -2px 0 var(--d-blood); background: #1d0c0d; }
