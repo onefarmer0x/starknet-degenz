@@ -179,6 +179,69 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
 
 #toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 140%); z-index: 60; background: var(--flame); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); padding: 10px 16px; font: 600 15px var(--body); transition: transform 0.3s cubic-bezier(.2,1.6,.4,1); max-width: calc(100% - 32px); }
 #toast.show { transform: translate(-50%, 0); }
+
+/* ---------- trading panel ---------- */
+.trade-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.tv { padding: 20px; min-width: 0; }
+.tv-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+.live { display: inline-block; margin-left: 6px; background: var(--ink); color: var(--mint); border-radius: 4px; padding: 1px 6px; font-size: 11px; letter-spacing: 0.08em; }
+.tv-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tv-big { font: 400 54px/1 var(--display); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.tv-chg { font: 600 14px var(--mono); border: 2px solid currentColor; border-radius: 6px; padding: 2px 8px; }
+.ath { min-width: 240px; flex: 0 1 340px; }
+.ath-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ath-row b { font: 500 15px var(--mono); }
+.ath-bar { height: 12px; border: 2.5px solid var(--ink); border-radius: 999px; overflow: hidden; background: #fff; margin-top: 6px; }
+.ath-bar span { display: block; height: 100%; width: 0; background: var(--flame); transition: width 0.6s; }
+.seg-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 10px; }
+.seg { display: inline-flex; border: 2.5px solid var(--ink); border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+.seg button { appearance: none; border: 0; background: transparent; color: var(--ink); padding: 7px 12px; font: 500 14px var(--body); cursor: pointer; }
+.seg button + button { border-left: 1.5px solid #e6d8bd; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--flame); }
+.seg button:focus-visible { outline: 3px solid var(--fire); outline-offset: -3px; }
+.seg.small button { padding: 5px 9px; font-size: 13px; }
+.ohlc { font: 500 13px var(--mono); color: var(--muted); min-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ohlc .g { color: #1e8a4f; } .ohlc .r { color: var(--blood); }
+.tv-chart { position: relative; height: 420px; margin-top: 6px; }
+.tv-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-weight: 500; }
+.tv-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+.tv-stats div { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; padding: 10px 14px; box-shadow: 3px 3px 0 var(--ink); min-width: 0; }
+.tv-stats b { display: block; font: 500 24px var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
+.swap { padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.swap-note, .swap-small { margin: 0; color: var(--muted); font-size: 14px; }
+.swap-small { font-size: 12px; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; border: 2.5px solid var(--ink); border-radius: 10px; overflow: hidden; box-shadow: 2px 2px 0 var(--ink); }
+.tabs button { appearance: none; border: 0; background: #fff; padding: 10px; font: 400 22px var(--display); letter-spacing: 0.06em; cursor: pointer; color: var(--ink); }
+.tabs button[aria-selected="true"][data-side="buy"] { background: #2f8a4c; color: #fff; }
+.tabs button[aria-selected="true"][data-side="sell"] { background: var(--blood); color: #fff; }
+.pay { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; padding: 12px; }
+.pay-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
+.pay-row input { flex: 1; min-width: 0; border: 0; background: transparent; font: 500 30px var(--mono); color: var(--ink); padding: 0; }
+.pay-row input:focus { outline: none; }
+.pay:focus-within { box-shadow: 0 0 0 3px var(--flame); }
+.pay-row span, .recv-row span { font: 600 16px var(--body); }
+.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.quick button { border: 2px solid var(--ink); background: var(--paper); border-radius: 8px; padding: 5px 0; font: 500 13px var(--mono); cursor: pointer; color: var(--ink); }
+.quick button:hover { background: var(--flame); }
+.recv-row { display: flex; align-items: baseline; gap: 10px; }
+.recv-row b { font: 500 30px var(--mono); overflow-wrap: anywhere; }
+.recv-usd { color: var(--muted); font: 13px var(--mono); }
+.slip { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.swap-go { justify-content: center; width: 100%; }
+.fold { padding: 14px 16px; }
+.fold summary { cursor: pointer; font: 400 26px var(--display); letter-spacing: 0.03em; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after { content: "⌄"; width: 32px; height: 32px; display: grid; place-items: center; border: 2.5px solid var(--ink); border-radius: 50%; font: 600 16px var(--body); transition: transform 0.2s; }
+.fold[open] summary::after { transform: rotate(180deg); }
+.fold p { margin: 10px 0 0; color: #3d3546; }
+.fold a { color: var(--ink); font-weight: 600; text-decoration-color: var(--fire); text-decoration-thickness: 2px; }
+.fold-links { display: grid; gap: 8px; margin-top: 12px; }
+.fold-links a { display: block; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 8px 12px; text-decoration: none; }
+.fold-links a::after { content: " ↗"; }
+@media (max-width: 980px) { .trade-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .tv-stats { grid-template-columns: 1fr 1fr; } .tv-chart { height: 340px; } .tv-big { font-size: 42px; } .seg button { padding: 6px 9px; } }
 @media (max-width: 920px) {
   .hero-grid, .about, .tok { grid-template-columns: 1fr; }
   .hero-art { min-height: 340px; }
@@ -309,11 +372,65 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
   <section id="chart">
     <div class="wrap">
       <h2>The <span class="y">chart</span></h2>
-      <div class="card chart"><iframe id="chartFrame" title="DEGENZ price chart on DexScreener" loading="lazy"></iframe></div>
-      <div class="chart-links">
-        <a class="btn" id="dexLink" href="https://dexscreener.com/starknet/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100" target="_blank" rel="noopener">DEXSCREENER</a>
-        <a class="btn" id="voyLink" href="#" target="_blank" rel="noopener">VOYAGER</a>
-        <a class="btn fire" id="buyChart" href="#" target="_blank" rel="noopener">BUY ON AVNU</a>
+      <div class="trade-grid">
+        <div class="card tv">
+          <div class="tv-top">
+            <div>
+              <div class="k">Market cap <span class="live">● LIVE</span></div>
+              <div class="tv-head"><span class="tv-big" id="tvBig">$—</span><span class="tv-chg" id="tvChg">—</span></div>
+            </div>
+            <div class="ath">
+              <div class="ath-row"><span class="k" id="athLabel">ATH</span><b id="athVal">$—</b></div>
+              <div class="ath-bar"><span id="athFill"></span></div>
+            </div>
+          </div>
+          <div class="seg-row" role="toolbar" aria-label="Chart options">
+            <div class="seg" data-key="tf"><button data-v="minute:1">1m</button><button data-v="minute:5">5m</button><button data-v="hour:1" aria-pressed="true">1h</button><button data-v="day:1">1d</button></div>
+            <div class="seg" data-key="metric"><button data-v="mcap" aria-pressed="true">MCap</button><button data-v="price">Price</button></div>
+            <div class="seg" data-key="ccy"><button data-v="usd" aria-pressed="true">USD</button><button data-v="token">STRK</button></div>
+            <div class="seg" data-key="style"><button data-v="candles" aria-pressed="true">Candles</button><button data-v="line">Line</button></div>
+          </div>
+          <div class="ohlc" id="ohlc">O — H — L — C — Vol —</div>
+          <div class="tv-chart" id="tvChart" aria-label="DEGENZ price chart"><div class="tv-empty" id="tvEmpty">Loading candles…</div></div>
+          <div class="tv-stats">
+            <div><span class="k">Holders</span><b id="tvHolders">—</b></div>
+            <div><span class="k">24h trades</span><b id="tvTrades">—</b></div>
+            <div><span class="k">Supply</span><b id="tvSupply">—</b></div>
+            <div><span class="k">Burned</span><b id="tvBurned">—</b></div>
+          </div>
+        </div>
+
+        <div class="side">
+          <div class="card swap">
+            <p class="swap-note">Trades on the Ekubo pool, paired with STRK. Quotes from AVNU.</p>
+            <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-side="buy">BUY</button><button role="tab" aria-selected="false" data-side="sell">SELL</button></div>
+            <div class="pay">
+              <label class="k" for="payAmt">Pay</label>
+              <div class="pay-row"><input id="payAmt" inputmode="decimal" placeholder="0" autocomplete="off"><span id="payTok">STRK</span></div>
+              <div class="quick" id="quick"><button data-a="10">10</button><button data-a="100">100</button><button data-a="500">500</button><button data-a="1000">1K</button></div>
+            </div>
+            <div class="recv">
+              <div class="k">You receive</div>
+              <div class="recv-row"><b id="recvAmt">0</b><span id="recvTok">DEGENZ</span></div>
+              <div class="recv-usd" id="recvUsd">&nbsp;</div>
+            </div>
+            <div class="slip"><span class="k">Slippage</span><div class="seg small" data-key="slip"><button data-v="1" aria-pressed="true">1%</button><button data-v="3">3%</button><button data-v="5">5%</button><button data-v="10">10%</button></div></div>
+            <a class="btn fire swap-go" id="swapGo" href="https://app.avnu.fi/en" target="_blank" rel="noopener">SWAP ON AVNU</a>
+            <p class="swap-small">Opens AVNU with the CA copied. Paste it in the token search and confirm in your wallet.</p>
+          </div>
+          <details class="card fold">
+            <summary>Links &amp; data</summary>
+            <div class="fold-links">
+              <a id="dexLink" href="https://dexscreener.com/starknet/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100" target="_blank" rel="noopener">DexScreener</a>
+              <a href="https://www.geckoterminal.com/starknet-alpha/pools/0x00f62c6ca1e0d016e4eec99dea7dfbadc9d688eaed35d296855b96dc67ba23a9" target="_blank" rel="noopener">GeckoTerminal</a>
+              <a id="voyLink" href="#" target="_blank" rel="noopener">Voyager</a>
+            </div>
+          </details>
+          <details class="card fold">
+            <summary>Burn instead</summary>
+            <p>Bought too much? Throw some on the <a href="/bonfire">bonfire</a> and climb the top burners board.</p>
+          </details>
+        </div>
       </div>
     </div>
   </section>
@@ -358,6 +475,7 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
   </div>
 </footer>
 
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 (() => {
 'use strict';
@@ -376,11 +494,11 @@ const VOYAGER = `https://voyager.online/token/${TOKEN}`;
 const $ = id => document.getElementById(id);
 
 // static links
-['buyNav', 'buyHero', 'buyStep', 'buyChart'].forEach(id => $(id).href = BUY_URL);
+['buyNav', 'buyHero', 'buyStep'].forEach(id => $(id).href = BUY_URL);
 ['voyLink', 'voyFoot', 'fCa'].forEach(id => $(id).href = VOYAGER);
 $('caText').textContent = TOKEN;
 $('fCa').textContent = TOKEN.slice(0, 8) + '…' + TOKEN.slice(-4);
-['buyNav', 'buyHero', 'buyStep', 'buyChart'].forEach(id => $(id).addEventListener('click', () => {
+['buyNav', 'buyHero', 'buyStep'].forEach(id => $(id).addEventListener('click', () => {
   navigator.clipboard?.writeText(TOKEN).then(() => toast('CA copied. Paste it into AVNU\x27s token search.'), () => {});
 }));
 function toast(msg) {
@@ -437,8 +555,8 @@ async function market() {
     $('sDex').textContent = `${p.dexId === 'ekubo' ? 'Ekubo' : p.dexId} · ${p.baseToken.symbol}/${p.quoteToken.symbol}`;
     $('sVol').textContent = usd(p.volume?.h24);
     $('sTx').textContent = `${p.txns?.h24?.buys ?? 0} buys · ${p.txns?.h24?.sells ?? 0} sells`;
+    $('tvTrades').textContent = ((p.txns?.h24?.buys ?? 0) + (p.txns?.h24?.sells ?? 0)).toLocaleString();
     $('dexLink').href = $('dexFoot').href = p.url;
-    if (!$('chartFrame').src) $('chartFrame').src = p.url + '?embed=1&theme=dark&trades=0&info=0';
   } catch {}
 }
 
@@ -449,6 +567,7 @@ function renderSupply() {
   $('sBurned').textContent = fmt(burned); $('teaserBurned').textContent = fmt(burned) + ' 🔥';
   $('sBurnedPct').innerHTML = `${pct(burned / supply * 100)} of supply · <a href="/bonfire">see the bonfire</a>`;
   $('sCirc').textContent = fmt(supply - burned);
+  $('tvSupply').textContent = fmt(supply); $('tvBurned').textContent = fmt(burned);
   const parts = [['Holders', holders, '#ffd23f'], ['Ekubo pool', pool, '#5fe39a'], ['Burned', burned, '#ff6a13']];
   $('supplyBar').innerHTML = parts.map(([, v, c]) => `<span style="flex:${v};background:${c}" title=""></span>`).join('');
   $('supplyLegend').innerHTML = parts.map(([n, v, c]) => `<div><i style="background:${c}"></i><span>${n}</span><b>${fmt(v)} · ${pct(v / supply * 100)}</b></div>`).join('');
@@ -472,7 +591,7 @@ async function chain() {
     } while (token && ++safety < 200);
     burned = units(bal.get(DEAD) || 0n); pool = units(bal.get(EKUBO_CORE) || 0n);
     const holders = [...bal].filter(([a, b]) => b > 0n && a !== 0n && a !== DEAD).sort((a, b) => (b[1] > a[1] ? 1 : -1));
-    $('sHolders').textContent = holders.length.toLocaleString();
+    $('sHolders').textContent = holders.length.toLocaleString(); $('tvHolders').textContent = holders.length.toLocaleString();
     renderSupply();
     $('holderRows').innerHTML = holders.slice(0, 10).map(([a, b], i) => {
       const hex = '0x' + a.toString(16).padStart(64, '0');
@@ -482,6 +601,148 @@ async function chain() {
     $('holderRows').innerHTML = '<tr><td colspan="4">Starknet is being slow. Reload in a moment.</td></tr>';
   }
 }
+
+
+// ---------------- trading panel ----------------
+// Candles from GeckoTerminal (the Ekubo DEGENZ/STRK pool), quotes from AVNU. Market cap = price x total supply,
+// matching DexScreener's figure in the stats above.
+const POOL = '0x00f62c6ca1e0d016e4eec99dea7dfbadc9d688eaed35d296855b96dc67ba23a9';
+const GT = `https://api.geckoterminal.com/api/v2/networks/starknet-alpha/pools/${POOL}`;
+const TOTAL = 1e9;
+const tv = { tf: 'hour:1', metric: 'mcap', ccy: 'usd', style: 'candles', slip: 1, side: 'buy', rows: [], chart: null, main: null, vol: null };
+
+function chartColors() {
+  const dark = document.documentElement.dataset.mode === 'dark';
+  return dark
+    ? { text: '#8f8079', grid: 'rgba(255,255,255,0.05)', up: '#3fbf72', down: '#ff2b2b', line: '#ff2b2b', volUp: 'rgba(63,191,114,0.45)', volDown: 'rgba(255,43,43,0.45)', border: '#2b2022' }
+    : { text: '#6d6476', grid: 'rgba(21,17,28,0.07)', up: '#2f8a4c', down: '#e3262f', line: '#ff6a13', volUp: 'rgba(47,138,76,0.55)', volDown: 'rgba(227,38,47,0.55)', border: '#15111c' };
+}
+// blank out axis ticks below zero (the volume band sits under the price range)
+const tvFmt = v => v <= 0 ? '' : tv.ccy === 'usd' ? usdShort(v) : fmtStrk(v);
+const usdShort = v => !isFinite(v) ? '—' : v >= 1e3 ? '$' + fmt(v) : v >= 1 ? '$' + v.toFixed(2) : '$' + v.toPrecision(4);
+const fmtStrk = v => !isFinite(v) ? '—' : (v >= 1e3 ? fmt(v) : v >= 1 ? v.toFixed(2) : v.toPrecision(4)) + ' STRK';
+
+function buildChart() {
+  if (!window.LightweightCharts) { $('tvEmpty').textContent = 'Chart library failed to load. Reload the page.'; return; }
+  const c = chartColors(), el = $('tvChart');
+  tv.chart = LightweightCharts.createChart(el, {
+    autoSize: true, layout: { background: { type: 'solid', color: 'transparent' }, textColor: c.text, fontFamily: 'DM Mono, monospace' },
+    grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
+    rightPriceScale: { borderColor: c.border, scaleMargins: { top: 0.08, bottom: 0.28 } },
+    timeScale: { borderColor: c.border, timeVisible: true, secondsVisible: false },
+    crosshair: { mode: 0 }, localization: { priceFormatter: tvFmt },
+  });
+  tv.vol = tv.chart.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
+  tv.chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
+  tv.chart.subscribeCrosshairMove(p => showOhlc(p && p.time ? tv.rows.find(r => r.time === p.time) : tv.rows[tv.rows.length - 1]));
+  setStyle();
+}
+function setStyle() {
+  if (!tv.chart) return;
+  const c = chartColors();
+  if (tv.main) tv.chart.removeSeries(tv.main);
+  tv.main = tv.style === 'candles'
+    ? tv.chart.addCandlestickSeries({ upColor: c.up, downColor: c.down, borderUpColor: c.up, borderDownColor: c.down, wickUpColor: c.up, wickDownColor: c.down, priceFormat: { type: 'custom', formatter: tvFmt, minMove: 1e-12 } })
+    : tv.chart.addAreaSeries({ lineColor: c.line, topColor: c.line + '55', bottomColor: c.line + '00', lineWidth: 2, priceFormat: { type: 'custom', formatter: tvFmt, minMove: 1e-12 } });
+  paint();
+}
+function paint() {
+  if (!tv.main) return;
+  const c = chartColors();
+  tv.main.setData(tv.style === 'candles' ? tv.rows : tv.rows.map(r => ({ time: r.time, value: r.close })));
+  tv.vol.setData(tv.rows.map(r => ({ time: r.time, value: r.volume, color: r.close >= r.open ? c.volUp : c.volDown })));
+  tv.chart.timeScale().fitContent();
+  showOhlc(tv.rows[tv.rows.length - 1]);
+}
+function showOhlc(r) {
+  if (!r) return;
+  const cls = r.close >= r.open ? 'g' : 'r', pc = r.open ? ((r.close - r.open) / r.open * 100).toFixed(1) : '0.0';
+  $('ohlc').innerHTML = `O <span class="${cls}">${tvFmt(r.open)}</span>  H <span class="${cls}">${tvFmt(r.high)}</span>  L <span class="${cls}">${tvFmt(r.low)}</span>  C <span class="${cls}">${tvFmt(r.close)}</span>  <span class="${cls}">${pc}%</span>  Vol ${fmt(r.volume)}`;
+}
+
+async function loadCandles() {
+  const [unit, agg] = tv.tf.split(':');
+  try {
+    const j = await (await fetch(`${GT}/ohlcv/${unit}?aggregate=${agg}&limit=1000&currency=${tv.ccy}`)).json();
+    const k = tv.metric === 'mcap' ? TOTAL : 1;
+    const seen = new Set();
+    tv.rows = j.data.attributes.ohlcv_list
+      .filter(r => !seen.has(r[0]) && seen.add(r[0]))
+      .map(([t, o, h, l, c, v]) => ({ time: t, open: o * k, high: h * k, low: l * k, close: c * k, volume: v }))
+      .sort((a, b) => a.time - b.time);
+    $('tvEmpty').hidden = tv.rows.length > 0;
+    if (!tv.rows.length) $('tvEmpty').textContent = 'No trades in this window yet.';
+    paint();
+  } catch { $('tvEmpty').hidden = false; $('tvEmpty').textContent = 'Couldn\'t load candles. Reload in a moment.'; }
+}
+
+// headline: market cap, 24h change, ATH progress (from daily candles, always USD market cap)
+async function loadHeadline() {
+  try {
+    const [pool, days] = await Promise.all([
+      fetch(GT).then(r => r.json()),
+      fetch(`${GT}/ohlcv/day?aggregate=1&limit=1000&currency=usd`).then(r => r.json()),
+    ]);
+    const a = pool.data.attributes, price = +a.base_token_price_usd, mc = price * TOTAL, chg = +a.price_change_percentage.h24;
+    const ath = Math.max(mc, ...days.data.attributes.ohlcv_list.map(r => r[2] * TOTAL));
+    $('tvBig').textContent = usdShort(mc);
+    $('tvChg').textContent = `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}% 24h`;
+    $('tvChg').className = 'tv-chg ' + (chg >= 0 ? 'up' : 'down');
+    $('athLabel').textContent = `ATH · ${Math.round(mc / ath * 100)}% of the way`;
+    $('athVal').textContent = usdShort(ath);
+    $('athFill').style.width = Math.min(100, mc / ath * 100) + '%';
+  } catch {}
+}
+
+// segmented toggles
+document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  const key = seg.dataset.key, v = b.dataset.v;
+  if (key === 'slip') { tv.slip = +v; return quote(); }
+  tv[key] = v;
+  if (key === 'style') setStyle(); else loadCandles();
+}));
+document.addEventListener('modechange', () => {
+  if (!tv.chart) return;
+  const c = chartColors();
+  tv.chart.applyOptions({ layout: { textColor: c.text }, grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } }, rightPriceScale: { borderColor: c.border }, timeScale: { borderColor: c.border } });
+  setStyle();
+});
+
+// swap box: live AVNU quote for what you'd get
+const TOKENS = { buy: { pay: [STRK, 'STRK'], get: [TOKEN, 'DEGENZ'] }, sell: { pay: [TOKEN, 'DEGENZ'], get: [STRK, 'STRK'] } };
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  tv.side = b.dataset.side;
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  $('payTok').textContent = TOKENS[tv.side].pay[1]; $('recvTok').textContent = TOKENS[tv.side].get[1];
+  $('quick').innerHTML = tv.side === 'buy' ? '<button data-a="10">10</button><button data-a="100">100</button><button data-a="500">500</button><button data-a="1000">1K</button>'
+    : '<button data-a="100000">100K</button><button data-a="1000000">1M</button><button data-a="5000000">5M</button><button data-a="10000000">10M</button>';
+  quote();
+}));
+$('quick').addEventListener('click', e => { const a = e.target.dataset?.a; if (a) { $('payAmt').value = a; quote(); } });
+let qTimer, qSeq = 0;
+$('payAmt').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(quote, 350); });
+async function quote() {
+  const v = parseFloat(($('payAmt').value || '').replace(/[, ]/g, ''));
+  const seq = ++qSeq;
+  if (!(v > 0)) { $('recvAmt').textContent = '0'; $('recvUsd').innerHTML = '&nbsp;'; return; }
+  $('recvAmt').textContent = '…';
+  const { pay, get } = TOKENS[tv.side];
+  const raw = BigInt(Math.round(v * 1e6)) * 10n ** 12n; // 18 decimals on both tokens
+  try {
+    const q = (await (await fetch(`https://starknet.api.avnu.fi/swap/v2/quotes?sellTokenAddress=${pay[0]}&buyTokenAddress=${get[0]}&sellAmount=0x${raw.toString(16)}`)).json())[0];
+    if (seq !== qSeq) return;
+    if (!q) throw 0;
+    const out = Number(BigInt(q.buyAmount)) / 1e18, min = out * (1 - tv.slip / 100);
+    $('recvAmt').textContent = out >= 1e3 ? fmt(out) : out.toPrecision(5);
+    $('recvUsd').textContent = `≈ $${(q.buyAmountInUsd || 0).toFixed(2)} · min ${min >= 1e3 ? fmt(min) : min.toPrecision(4)} at ${tv.slip}% slippage`;
+  } catch { if (seq === qSeq) { $('recvAmt').textContent = '—'; $('recvUsd').textContent = 'No route right now. Try a smaller amount.'; } }
+}
+$('swapGo').addEventListener('click', () => navigator.clipboard?.writeText(TOKEN).then(() => toast('CA copied. Paste it into AVNU\'s token search.'), () => {}));
+
+buildChart(); loadCandles(); loadHeadline();
+setInterval(() => { loadHeadline(); if (tv.tf.startsWith('minute')) loadCandles(); }, 60000);
 
 market(); chain();
 setInterval(market, 60000);
