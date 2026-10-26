@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DEGENZ Bonfire</title>
+<meta name="description" content="Watch every $DEGENZ burn on Starknet live, see total burned, value and the top burners, and feed the fire with your own bag.">
+<meta name="theme-color" content="#2b2350">
+<link rel="canonical" href="https://bonfire-chi-olive.vercel.app/bonfire">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-64.png" type="image/png" sizes="64x64">
+<link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DEGENZ Bonfire">
+<meta property="og:title" content="DEGENZ Bonfire 🔥 Keep the fire burning">
+<meta property="og:description" content="Live $DEGENZ burn tracker on Starknet. Total burned, value, top burners. Feed the fire.">
+<meta property="og:url" content="https://bonfire-chi-olive.vercel.app/bonfire">
+<meta property="og:image" content="https://bonfire-chi-olive.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cartoon Degenz wolves around a bonfire with the words Keep the fire burning">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DEGENZ Bonfire 🔥 Keep the fire burning">
+<meta name="twitter:description" content="Live $DEGENZ burn tracker on Starknet. Total burned, value, top burners. Feed the fire.">
+<meta name="twitter:image" content="https://bonfire-chi-olive.vercel.app/og.png">
+<link rel="stylesheet" href="/site.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: cartoon campfire scene on the left, a stack of sticker cards on the right. Single dusk theme by choice. */
+:root {
+  --sky-top: #2b2350;
+  --sky-bot: #120e22;
+  --ink: #15111c;
+  --paper: #fff6e3;
+  --paper-2: #ffe9c2;
+  --fur: #8f8e98;
+  --fire: #ff6a13;
+  --flame: #ffd23f;
+  --blood: #e3262f;
+  --mint: #5fe39a;
+  --muted: #6d6476;
+  --display: "Bangers", "Impact", "Arial Black", sans-serif;
+  --body: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45 var(--body); -webkit-font-smoothing: antialiased; }
+.app { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(330px, 1fr); min-height: 100%; }
+
+/* ---------- scene ---------- */
+.stage { position: sticky; top: 60px; height: calc(100vh - 60px); height: calc(100dvh - 60px); min-height: 560px; overflow: hidden; background: linear-gradient(var(--sky-top), var(--sky-bot) 75%); }
+#fire { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+.stage-head {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  padding-block: 18px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: 20px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; pointer-events: none;
+}
+.stage-head > * { pointer-events: auto; }
+.brand h1 {
+  margin: 0; font: 400 clamp(40px, 6vw, 78px)/0.9 var(--display); letter-spacing: 0.03em; color: var(--flame);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  text-shadow: 4px 4px 0 var(--ink), 6px 6px 0 var(--blood);
+  transform: rotate(-2deg); transform-origin: left;
+}
+.brand h1 span { color: #fff; }
+.brand #hype { background: var(--flame); font: 400 20px var(--display); letter-spacing: 0.05em; transform: rotate(-1.5deg); transition: opacity 0.3s; margin-top: 14px; }
+.brand #hype.fade { opacity: 0; }
+.brand p {
+  display: inline-block; margin: 12px 0 0; padding: 4px 10px; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--ink); font: 600 13px var(--body); max-width: 44ch; transform: rotate(1deg);
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  background: var(--paper); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); font: 600 13px var(--body); color: var(--ink);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); border: 2px solid var(--ink); }
+.status.live .dot { background: var(--mint); animation: pulse 1.6s infinite; }
+.status.err .dot { background: var(--blood); }
+@keyframes pulse { 50% { transform: scale(0.7); } }
+.big-total {
+  position: absolute; left: 0; bottom: 0; z-index: 2; pointer-events: none;
+  padding-block: 18px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: 20px;
+}
+.big-total .label { display: inline-block; font: 400 20px var(--display); letter-spacing: 0.06em; color: var(--ink); background: var(--flame); padding: 2px 10px; border: 2.5px solid var(--ink); border-radius: 8px; transform: rotate(-3deg); box-shadow: 3px 3px 0 var(--ink); }
+.big-total .num {
+  font: 400 clamp(56px, 9vw, 124px)/0.95 var(--display); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: #fff;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 5px 5px 0 var(--ink), 8px 8px 0 var(--fire);
+}
+.big-total .num small { font-size: 0.4em; color: var(--flame); margin-left: 8px; }
+.big-total .sub { display: inline-block; font: 600 15px var(--body); color: var(--ink); background: var(--paper); border: 2.5px solid var(--ink); border-radius: 10px; padding: 3px 10px; box-shadow: 3px 3px 0 var(--ink); font-variant-numeric: tabular-nums; }
+.sim-tag { color: var(--fire); }
+.hint { position: absolute; right: 20px; bottom: 22px; z-index: 2; pointer-events: none; font: 400 18px var(--display); letter-spacing: 0.05em; color: #fff; -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; text-shadow: 2px 2px 0 var(--ink); transform: rotate(3deg); }
+.toast {
+  position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(0.6) rotate(-4deg); z-index: 3; pointer-events: none;
+  font: 400 clamp(30px, 4.4vw, 54px) var(--display); letter-spacing: 0.04em; color: var(--flame); white-space: nowrap;
+  -webkit-text-stroke: 2.5px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink);
+  opacity: 0; transition: opacity 0.25s, transform 0.5s cubic-bezier(.2,1.8,.4,1);
+}
+.toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+
+/* ---------- sticker panel ---------- */
+.panel {
+  background: radial-gradient(circle at 20% 10%, #3a2f63, #1b1531 60%); border-left: 3px solid var(--ink);
+  padding-block: 20px; padding-left: 20px; padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px; min-width: 0;
+}
+.card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); padding: 14px; min-width: 0; }
+.panel h2 {
+  margin: 0 0 10px; font: 400 26px/1 var(--display); letter-spacing: 0.04em; color: var(--ink);
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+.panel h2 .aside { font: 600 12px var(--body); letter-spacing: 0; color: var(--muted); }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metric { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; padding: 10px 12px; min-width: 0; box-shadow: 3px 3px 0 var(--ink); transition: transform 0.15s; }
+.metric:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 5px 5px 0 var(--ink); }
+.metric .k { font: 600 11px var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.metric .v { font: 400 30px/1.05 var(--display); letter-spacing: 0.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.metric .v.hot { color: var(--fire); -webkit-text-stroke: 1px var(--ink); }
+.metric .s { font: 500 12px var(--body); color: var(--muted); overflow-wrap: anywhere; }
+.metric.wolfy { background: var(--paper-2); }
+
+.sim { display: grid; gap: 10px; }
+.sim label { font: 600 13px var(--body); color: var(--muted); }
+.sim-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.sim input, .change input {
+  flex: 1 1 140px; min-width: 0; background: #fff; color: var(--ink); border: 2.5px solid var(--ink); border-radius: 12px;
+  padding: 10px 12px; font: 500 16px var(--mono);
+}
+.btn {
+  appearance: none; border: 2.5px solid var(--ink); background: #fff; color: var(--ink); border-radius: 12px;
+  padding: 8px 14px; font: 400 18px var(--display); letter-spacing: 0.05em; cursor: pointer; box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.btn.primary { background: var(--fire); color: #fff; -webkit-text-stroke: 0.6px var(--ink); }
+.btn.ghost { background: var(--paper-2); }
+.btn:focus-visible, input:focus-visible { outline: 3px solid var(--flame); outline-offset: 2px; }
+.sim-note { font: 500 12px var(--body); color: var(--muted); }
+
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.feed li { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; }
+.feed li.new { animation: pop 0.6s cubic-bezier(.2,1.8,.4,1); background: #fff1c4; }
+@keyframes pop { from { transform: scale(0.7) rotate(-3deg); } }
+.feed .amt { font: 400 22px var(--display); letter-spacing: 0.03em; font-variant-numeric: tabular-nums; }
+.feed .amt.sim { color: var(--fire); }
+.feed .usd { font: 600 13px var(--body); color: #1e8a4f; text-align: right; align-self: center; }
+.feed .meta { grid-column: 1 / -1; font: 12px var(--mono); color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.feed a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: var(--fire); text-underline-offset: 3px; }
+.feed .empty { grid-template-columns: 1fr; color: var(--muted); font: 500 13px var(--body); }
+.foot { margin-top: auto; font: 500 12px var(--body); color: #d9cff0; display: grid; gap: 4px; }
+.foot code { color: #fff; font-family: var(--mono); overflow-wrap: anywhere; }
+.change { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.change input { font-size: 12px; padding: 8px 10px; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .stage { position: relative; height: 80vh; min-height: 500px; }
+  .panel { border-left: 0; border-top: 3px solid var(--ink); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .status.live .dot, .feed li.new { animation: none; } .toast { transition: opacity 0.2s; } }
+
+/* ---------- wallet ---------- */
+.btn.wallet { background: var(--flame); }
+.btn.wallet.connected { background: #fff; font: 600 13px var(--mono); letter-spacing: 0; padding: 9px 12px; }
+.you-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.you-grid .metric .v { font-size: 24px; }
+.connect-cta { display: grid; gap: 10px; justify-items: start; }
+.connect-cta p { margin: 0; color: var(--muted); font-weight: 500; }
+.leader { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: rank; }
+.leader li { counter-increment: rank; display: grid; grid-template-columns: 2.2em 1fr auto; align-items: center; gap: 8px; background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; padding: 6px 10px; font: 13px var(--mono); }
+.leader li::before { content: "#" counter(rank); font: 400 20px var(--display); }
+.leader li:nth-child(1) { background: #ffe58a; }
+.leader li.me { outline: 3px solid var(--fire); outline-offset: 1px; }
+.leader .amt { font: 400 20px var(--display); letter-spacing: 0.03em; }
+.leader a { color: var(--ink); }
+
+.sheet-back { position: fixed; inset: 0; z-index: 50; background: rgba(12, 8, 24, 0.6); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { width: min(440px, 100%); max-height: 100%; overflow: auto; background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 8px 8px 0 var(--ink); padding: 18px; display: grid; gap: 12px; animation: pop 0.4s cubic-bezier(.2,1.8,.4,1); }
+.sheet h3 { margin: 0; font: 400 30px/1 var(--display); letter-spacing: 0.04em; display: flex; justify-content: space-between; align-items: center; }
+.sheet .x { font: 400 22px var(--display); padding: 2px 10px; }
+.sheet p { margin: 0; color: var(--muted); font-weight: 500; }
+.wlist { display: grid; gap: 8px; }
+.wopt { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 12px; text-align: left; width: 100%; background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; padding: 10px 12px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; font: 600 16px var(--body); color: var(--ink); text-decoration: none; transition: transform 0.08s, box-shadow 0.08s; }
+.wopt:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.wopt:active { transform: translate(3px, 3px); box-shadow: none; }
+.wopt img, .wopt .ph { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--ink); background: var(--paper-2); object-fit: cover; display: grid; place-items: center; font: 400 22px var(--display); }
+.wopt small { display: block; font: 500 12px var(--body); color: var(--muted); }
+.wopt .tag { font: 600 11px var(--body); text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 999px; border: 2px solid var(--ink); background: var(--paper-2); }
+.wopt .tag.on { background: var(--mint); }
+.confirm-amt { font: 400 44px/1 var(--display); color: var(--fire); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; }
+.warn { background: #ffe1dc; border: 2.5px solid var(--ink); border-radius: 12px; padding: 10px 12px; font: 600 13px var(--body); color: var(--ink); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.copyline { display: flex; gap: 8px; }
+.copyline input { flex: 1; min-width: 0; font: 12px var(--mono); padding: 8px 10px; border: 2.5px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); }
+@media (max-width: 560px) {
+  .sheet-back { place-items: end stretch; padding: 0; }
+  .sheet { width: 100%; border-radius: 22px 22px 0 0; border-bottom: 0; box-shadow: 0 -6px 0 var(--ink); padding-bottom: max(18px, env(safe-area-inset-bottom, 0px)); }
+  .you-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Main">
+  <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
+  <div class="links"><a href="/">Home</a><a href="/#stats">Stats</a><a href="/#buy">How to buy</a><a href="/#chart">Chart</a><a href="/bonfire" aria-current="page">Bonfire</a></div>
+  <a class="buy" href="https://app.avnu.fi/en" onclick="navigator.clipboard&amp;&amp;navigator.clipboard.writeText('0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100').catch(function(){})" target="_blank" rel="noopener">BUY $DEGENZ</a>
+</nav>
+<div class="app">
+  <section class="stage" aria-label="Bonfire">
+    <canvas id="fire"></canvas>
+    <header class="stage-head">
+      <div class="brand">
+        <h1 id="title">Degenz <span>Bonfire</span></h1>
+        <p id="hype" aria-live="polite">Keep the fire burning.</p><br>
+        <p id="subtitle">Every transfer to 0x…dead on Starknet feeds the fire.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn wallet" id="walletBtn" type="button" hidden>CONNECTED</button>
+        <button class="btn ghost" id="soundBtn" type="button" aria-pressed="false">Sound off</button>
+        <div class="pill status" id="status"><span class="dot"></span><span id="statusText">Connecting to Starknet…</span></div>
+      </div>
+    </header>
+    <div class="toast" id="toast"></div>
+    <div class="big-total">
+      <div class="label">Total burned forever</div>
+      <div class="num"><span id="bigNum">0</span><small id="bigSym">DEGENZ</small></div>
+      <div class="sub"><span id="bigUsd">$0.00</span> · <span id="bigPct">0%</span> of supply <span id="bigSim" class="sim-tag"></span></div>
+    </div>
+    <div class="hint">Click the fire to toss tokens · click a wolf to make it howl</div>
+  </section>
+
+  <aside class="panel">
+    <div class="card">
+      <h2><span style="display:flex;align-items:center;gap:8px"><img data-wolf alt="" width="44" height="46" style="margin:-10px 0 -6px">The ashes</span> <span class="aside" id="priceAside">price —</span></h2>
+      <div class="metrics">
+        <div class="metric"><div class="k">Burned (on-chain)</div><div class="v hot" id="mBurned">—</div><div class="s" id="mBurnedPct">—</div></div>
+        <div class="metric"><div class="k">Value burned</div><div class="v" id="mUsd">—</div><div class="s" id="mPrice">—</div></div>
+        <div class="metric wolfy"><div class="k">Wolves who burned</div><div class="v" id="mHolders">—</div><div class="s">unique wallets</div></div>
+        <div class="metric"><div class="k">Burn transfers</div><div class="v" id="mCount">—</div><div class="s" id="mLast">—</div></div>
+        <div class="metric"><div class="k">Largest burn</div><div class="v" id="mMax">—</div><div class="s" id="mMaxBy">—</div></div>
+        <div class="metric"><div class="k">Circulating left</div><div class="v" id="mLeft">—</div><div class="s" id="mSupply">—</div></div>
+      </div>
+    </div>
+
+
+    <div class="card" id="meCard">
+      <h2>Your fire <span class="aside">real tokens, real flames</span></h2>
+      <div class="connect-cta" id="meConnect">
+        <p>Simulator too soft for you? Plug in Bramble, Ready or Braavos and torch real bags. Phone wallets welcome.</p>
+        <button class="btn primary" type="button" id="meConnectBtn">CONNECT WALLET TO BURN</button>
+      </div>
+      <div id="meBody" hidden>
+        <div class="you-grid">
+          <div class="metric"><div class="k">You hold</div><div class="v" id="meBal">—</div><div class="s" id="meBalUsd">—</div></div>
+          <div class="metric"><div class="k">You burned</div><div class="v hot" id="meBurned">—</div><div class="s" id="meBurnedUsd">—</div></div>
+          <div class="metric wolfy"><div class="k">Pack rank</div><div class="v" id="meRank">—</div><div class="s" id="meRankOf">—</div></div>
+        </div>
+        <form class="sim" id="burnForm" autocomplete="off">
+          <label for="burnAmt">Tokens to burn for real</label>
+          <div class="sim-row">
+            <input id="burnAmt" inputmode="decimal" placeholder="1000">
+            <button class="btn ghost" type="button" id="burnMax">MAX</button>
+            <button class="btn primary" type="submit">BURN</button>
+          </div>
+          <div class="sim-note" id="meStatus" hidden></div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Burn simulator <span class="aside">nothing leaves your wallet</span></h2>
+      <form class="sim" id="simForm" autocomplete="off">
+        <label for="simAmt">Tokens to throw on the fire</label>
+        <div class="sim-row">
+          <input id="simAmt" inputmode="decimal" value="1000000" aria-describedby="simNote">
+          <button class="btn primary" type="submit">BURN IT</button>
+        </div>
+        <div class="sim-row" id="presets">
+          <button class="btn" type="button" data-amt="10000">10K</button>
+          <button class="btn" type="button" data-amt="1000000">1M</button>
+          <button class="btn" type="button" data-amt="10000000">10M</button>
+          <button class="btn" type="button" data-amt="100000000">100M</button>
+          <button class="btn ghost" type="button" id="simReset">Reset</button>
+        </div>
+        <div class="sim-note" id="simNote">Simulated burns stack on top of the real total so you can see the effect on supply and value.</div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Into the fire <span class="aside" id="feedAside"></span></h2>
+      <ul class="feed" id="feed"><li class="empty">Reading burn history from the chain…</li></ul>
+    </div>
+
+
+    <div class="card">
+      <h2>Top burners <span class="aside">alpha wolves</span></h2>
+      <ol class="leader" id="leaders"></ol>
+    </div>
+    <div class="foot">
+      <div>Token <code id="tokenAddr"></code></div>
+      <div>Watching transfers to <code>0x…dead</code> via a public Starknet RPC, refreshed every 15s. Price from DexScreener.</div>
+      <form class="change" id="tokenForm">
+        <input id="tokenInput" placeholder="Watch another Starknet token (0x…)" aria-label="Token contract address">
+        <button class="btn" type="submit">Watch</button>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ---------------- config ----------------
+const DEFAULT_TOKEN = '0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100';
+const KNOWN_DEPLOY = { [DEFAULT_TOKEN]: 16480353 };
+const RPCS = ['https://api.cartridge.gg/x/starknet/mainnet'];
+const DEAD = 0xdeadn;
+const SEL = {
+  transfer: '0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9',
+  name: '0x361458367e696363fbcc70777d07ebbd2394e89fd0adcaf147faccd1d294d60',
+  symbol: '0x216b05c387bab9ac31918a3e61672f4618601f3c598a2f3f2710f37053e1ea4',
+  decimals: '0x4c4fb1ab068f6039d5780c68dd0fa2f8742cceb3426d19667778ca7f3518a9',
+  totalSupply: '0x1557182e4359a1f0c6301278e8f5b35a776ab58d39892581e357578fb287836',
+};
+const POLL_MS = 15000;
+
+const params = new URLSearchParams(location.search);
+const TOKEN = norm(params.get('token') || DEFAULT_TOKEN);
+
+const $ = id => document.getElementById(id);
+function norm(a) { try { return '0x' + BigInt(a).toString(16).padStart(64, '0'); } catch { return DEFAULT_TOKEN; } }
+const short = a => { const h = BigInt(a).toString(16); return '0x' + h.slice(0, 4) + '…' + h.slice(-4); };
+
+// ---------------- state ----------------
+const S = {
+  name: 'Token', symbol: 'TOKEN', decimals: 18, supply: 0n, price: 0,
+  burns: [], seen: new Set(), burners: new Map(), totalRaw: 0n, lastBlock: 0, simTotal: 0, simCount: 0,
+  blockTimes: new Map(),
+};
+
+// ---------------- RPC ----------------
+let rpcIdx = 0;
+async function rpc(method, p) {
+  let lastErr;
+  for (let i = 0; i < RPCS.length; i++) {
+    const url = RPCS[(rpcIdx + i) % RPCS.length];
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: p }) });
+      const j = await r.json();
+      if (j.error) throw new Error(j.error.message || 'rpc error');
+      rpcIdx = (rpcIdx + i) % RPCS.length;
+      return j.result;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+const call = (sel, calldata = []) => rpc('starknet_call', [{ contract_address: TOKEN, entry_point_selector: sel, calldata }, 'latest']);
+
+function decodeByteArray(r) {
+  // Cairo ByteArray: [n_full_words, ...words(31 bytes), pending_word, pending_len]; legacy felt: [felt]
+  const hexToStr = (h, len) => { let s = BigInt(h).toString(16); if (len) s = s.padStart(len * 2, '0'); if (s.length % 2) s = '0' + s; let o = ''; for (let i = 0; i < s.length; i += 2) o += String.fromCharCode(parseInt(s.slice(i, i + 2), 16)); return o; };
+  if (r.length === 1) return hexToStr(r[0]).replace(/\0/g, '');
+  const n = Number(BigInt(r[0])); let out = '';
+  for (let i = 0; i < n; i++) out += hexToStr(r[1 + i], 31);
+  const pendLen = Number(BigInt(r[2 + n]));
+  if (pendLen) out += hexToStr(r[1 + n], pendLen);
+  return out;
+}
+const u256 = r => BigInt(r[0]) + (BigInt(r[1] || 0) << 128n);
+
+async function loadMeta() {
+  const [n, s, d, t] = await Promise.allSettled([call(SEL.name), call(SEL.symbol), call(SEL.decimals), call(SEL.totalSupply)]);
+  if (n.status === 'fulfilled') S.name = decodeByteArray(n.value) || S.name;
+  if (s.status === 'fulfilled') S.symbol = decodeByteArray(s.value) || S.symbol;
+  if (d.status === 'fulfilled') S.decimals = Number(BigInt(d.value[0]));
+  if (t.status === 'fulfilled') S.supply = u256(t.value);
+}
+
+async function findDeployBlock(head) {
+  if (KNOWN_DEPLOY[TOKEN]) return KNOWN_DEPLOY[TOKEN];
+  let lo = 0, hi = head;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    try { await rpc('starknet_getClassHashAt', { block_id: { block_number: mid }, contract_address: TOKEN }); hi = mid; }
+    catch { lo = mid + 1; }
+  }
+  return lo;
+}
+
+async function loadPrice() {
+  try {
+    const j = await (await fetch('https://api.dexscreener.com/latest/dex/tokens/' + TOKEN)).json();
+    const pairs = (j.pairs || []).filter(p => p.chainId === 'starknet' && BigInt(p.baseToken.address) === BigInt(TOKEN));
+    pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+    if (pairs[0]) S.price = +pairs[0].priceUsd || 0;
+  } catch {}
+}
+
+async function fetchBurns(fromBlock) {
+  const out = []; let token;
+  do {
+    const r = await rpc('starknet_getEvents', { filter: {
+      from_block: { block_number: fromBlock }, to_block: 'latest', address: TOKEN,
+      keys: [[SEL.transfer], [], ['0xdead']], chunk_size: 1000, ...(token ? { continuation_token: token } : {}),
+    } });
+    out.push(...r.events); token = r.continuation_token;
+  } while (token);
+  // Some older ERC-20s put from/to in data; this filter only covers keyed events, which is what this token uses.
+  return out.filter(e => e.keys.length >= 3 && BigInt(e.keys[2]) === DEAD).map(e => ({
+    id: e.transaction_hash + ':' + e.event_index,
+    tx: e.transaction_hash, block: e.block_number, from: e.keys[1], raw: u256(e.data),
+  }));
+}
+
+async function blockTime(n) {
+  if (S.blockTimes.has(n)) return S.blockTimes.get(n);
+  try { const b = await rpc('starknet_getBlockWithTxHashes', [{ block_number: n }]); S.blockTimes.set(n, b.timestamp); return b.timestamp; }
+  catch { return null; }
+}
+
+// ---------------- formatting ----------------
+const units = raw => Number(raw) / 10 ** S.decimals;
+function fmt(n) {
+  if (!isFinite(n)) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (a >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+  if (a >= 1) return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  if (a === 0) return '0';
+  return n.toPrecision(3);
+}
+function usd(n) {
+  if (!S.price) return '$—';
+  if (n >= 1) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (n === 0) return '$0.00';
+  return '$' + n.toPrecision(3);
+}
+function ago(ts) {
+  if (!ts) return '';
+  const s = Date.now() / 1000 - ts;
+  if (s < 60) return Math.max(1, s | 0) + 's ago';
+  if (s < 3600) return (s / 60 | 0) + 'm ago';
+  if (s < 86400) return (s / 3600 | 0) + 'h ago';
+  return (s / 86400 | 0) + 'd ago';
+}
+const pct = (part, whole) => whole > 0 ? (part / whole * 100) : 0;
+const pctStr = p => p === 0 ? '0%' : p < 0.0001 ? '<0.0001%' : p < 1 ? p.toFixed(4) + '%' : p.toFixed(2) + '%';
+
+// ---------------- rendering ----------------
+let shownTotal = 0;
+function render() {
+  const real = units(S.totalRaw), supply = units(S.supply), total = real + S.simTotal;
+  $('bigSym').textContent = S.symbol;
+  $('bigUsd').textContent = usd(total * S.price);
+  $('bigPct').textContent = pctStr(pct(total, supply));
+  $('bigSim').textContent = S.simTotal ? `(incl. ${fmt(S.simTotal)} simulated)` : '';
+
+  $('mBurned').textContent = fmt(real);
+  $('mBurnedPct').textContent = pctStr(pct(real, supply)) + ' of supply';
+  $('mUsd').textContent = usd(real * S.price);
+  $('mPrice').textContent = S.price ? `@ $${S.price.toPrecision(4)} / ${S.symbol}` : 'no price found';
+  $('priceAside').textContent = S.price ? `$${S.price.toPrecision(4)}` : 'price —';
+  $('mHolders').textContent = S.burners.size.toLocaleString();
+  $('mCount').textContent = S.burns.length.toLocaleString();
+  const last = S.burns[S.burns.length - 1];
+  $('mLast').textContent = last ? 'last ' + (ago(S.blockTimes.get(last.block)) || 'block ' + last.block) : 'none yet';
+  const max = S.burns.reduce((m, b) => (b.raw > (m?.raw ?? -1n) ? b : m), null);
+  $('mMax').textContent = max ? fmt(units(max.raw)) : '—';
+  $('mMaxBy').textContent = max ? 'by ' + short(max.from) : '—';
+  $('mLeft').textContent = fmt(Math.max(0, supply - total));
+  $('mSupply').textContent = 'of ' + fmt(supply) + ' minted';
+  document.title = `${S.symbol} Bonfire`;
+  $('title').innerHTML = `${escapeHtml(S.symbol)} <span>Bonfire</span>`;
+  W8.renderMe(); W8.renderLeaders();
+  $('subtitle').textContent = `${S.name} on Starknet. Every transfer to 0x…dead feeds the fire.`;
+}
+const escapeHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// count-up on the big number
+function tickTotal() {
+  const target = units(S.totalRaw) + S.simTotal;
+  shownTotal += (target - shownTotal) * 0.08;
+  if (Math.abs(target - shownTotal) < target * 1e-6 + 1e-9) shownTotal = target;
+  $('bigNum').textContent = fmt(shownTotal);
+  requestAnimationFrame(tickTotal);
+}
+
+function feedItem(b, isNew) {
+  const li = document.createElement('li');
+  if (isNew) li.className = 'new';
+  const amt = b.sim ? b.amount : units(b.raw);
+  li.innerHTML = `<span class="amt ${b.sim ? 'sim' : ''}">${fmt(amt)} ${escapeHtml(S.symbol)}</span><span class="usd">${usd(amt * S.price)}</span>
+    <span class="meta">${b.sim ? '<span>simulated burn</span>' :
+      `<a href="https://voyager.online/contract/${b.from}" target="_blank" rel="noopener">${short(b.from)}</a>
+       <a href="https://voyager.online/tx/${b.tx}" target="_blank" rel="noopener">tx ${short(b.tx)}</a>
+       <span data-block="${b.block}">${ago(S.blockTimes.get(b.block)) || 'block ' + b.block}</span>`}</span>`;
+  return li;
+}
+function renderFeed(newIds = new Set()) {
+  const feed = $('feed');
+  const items = [...S.burns, ...simBurns].sort((a, b) => (b.order) - (a.order)).slice(0, 40);
+  feed.replaceChildren(...(items.length ? items.map(b => feedItem(b, newIds.has(b.id))) : [Object.assign(document.createElement('li'), { className: 'empty', textContent: 'No burns yet. Be the first, or try the simulator.' })]));
+  $('feedAside').textContent = S.burns.length ? `${S.burns.length} on-chain` : '';
+}
+const simBurns = [];
+let orderSeq = 0;
+
+function setStatus(kind, text) { $('status').className = 'pill status ' + kind; $('statusText').textContent = text; }
+let toastT;
+function toast(text) {
+  const t = $('toast'); t.textContent = text; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---------------- ingest ----------------
+function ingest(list, live) {
+  const fresh = [];
+  for (const b of list) {
+    if (S.seen.has(b.id)) continue;
+    S.seen.add(b.id); b.order = b.block * 1e4 + (orderSeq++ % 1e4);
+    S.burns.push(b); S.totalRaw += b.raw;
+    S.burners.set(b.from, (S.burners.get(b.from) || 0n) + b.raw);
+    S.lastBlock = Math.max(S.lastBlock, b.block);
+    fresh.push(b);
+  }
+  S.burns.sort((a, b) => a.order - b.order);
+  return fresh;
+}
+
+// one HTTP round trip for many block timestamps instead of one request each
+async function loadBlockTimes(blocks) {
+  const need = [...new Set(blocks)].filter(n => !S.blockTimes.has(n));
+  if (!need.length) return;
+  try {
+    const r = await fetch(RPCS[0], { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(need.map((n, i) => ({ jsonrpc: '2.0', id: i, method: 'starknet_getBlockWithTxHashes', params: [{ block_number: n }] }))) });
+    for (const x of await r.json()) if (x.result) S.blockTimes.set(x.result.block_number, x.result.timestamp);
+  } catch { await Promise.all(need.map(blockTime)); }
+}
+
+// remember what we already know so a repeat visit paints instantly and only asks for new blocks
+const CACHE_KEY = 'bonfire.v1.' + TOKEN;
+function saveCache() {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({
+    name: S.name, symbol: S.symbol, decimals: S.decimals, supply: String(S.supply), price: S.price, lastBlock: S.lastBlock,
+    burns: S.burns.map(b => ({ ...b, raw: String(b.raw) })), times: [...S.blockTimes],
+  })); } catch {}
+}
+function loadCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (!c) return 0;
+    Object.assign(S, { name: c.name, symbol: c.symbol, decimals: c.decimals, supply: BigInt(c.supply), price: c.price });
+    c.times.forEach(([k, v]) => S.blockTimes.set(k, v));
+    ingest(c.burns.map(b => ({ ...b, raw: BigInt(b.raw) })), false);
+    return c.lastBlock;
+  } catch { return 0; }
+}
+
+async function boot() {
+  $('tokenAddr').textContent = TOKEN;
+  try {
+    const cachedTo = loadCache();
+    if (cachedTo) { render(); renderFeed(); setStatus('', 'Catching up…'); }
+    else setStatus('', 'Reading token…');
+    const metaP = Promise.all([loadMeta(), loadPrice()]).then(render);
+    const head = await rpc('starknet_blockNumber', []);
+    const from = cachedTo ? Math.max(0, cachedTo - 2) : await findDeployBlock(head);
+    if (!cachedTo) setStatus('', 'Scanning burn history…');
+    const [history] = await Promise.all([fetchBurns(from), metaP]);
+    const fresh = ingest(history, false);
+    S.lastBlock = Math.max(S.lastBlock, head);
+    await loadBlockTimes(S.burns.slice(-40).map(b => b.block));
+    render(); renderFeed(new Set(cachedTo ? fresh.map(b => b.id) : []));
+    saveCache();
+    setStatus('live', 'Live · block ' + head.toLocaleString());
+    S.burns.slice(-12).forEach((b, i) => setTimeout(() => fire.toss(units(b.raw), false), 400 + i * 260));
+    setInterval(poll, POLL_MS);
+  } catch (e) {
+    console.error(e);
+    setStatus('err', 'RPC unreachable, retrying…');
+    setTimeout(boot, 8000);
+  }
+}
+
+async function poll() {
+  try {
+    const from = Math.max(0, S.lastBlock - 2);
+    const [list, head] = await Promise.all([fetchBurns(from), rpc('starknet_blockNumber', [])]);
+    const fresh = ingest(list, true);
+    S.lastBlock = Math.max(S.lastBlock, head - 2);
+    if (fresh.length) {
+      await loadBlockTimes(fresh.map(b => b.block)); saveCache();
+      fresh.forEach((b, i) => setTimeout(() => { fire.toss(units(b.raw), true); toast(`${fmt(units(b.raw))} ${S.symbol} BURNED!`); }, i * 500));
+      renderFeed(new Set(fresh.map(b => b.id)));
+    }
+    if (Math.random() < 0.2) await loadPrice();
+    render();
+    // refresh relative times
+    document.querySelectorAll('[data-block]').forEach(el => { const t = S.blockTimes.get(+el.dataset.block); if (t) el.textContent = ago(t); });
+    setStatus('live', 'Live · block ' + head.toLocaleString());
+  } catch { setStatus('err', 'Connection hiccup, retrying…'); }
+}
+
+// ---------------- simulator ----------------
+function simBurn(amount, x, y) {
+  if (!(amount > 0)) return;
+  S.simTotal += amount; S.simCount++;
+  const b = { id: 'sim' + S.simCount, sim: true, amount, order: Number.MAX_SAFE_INTEGER - 1e6 + S.simCount };
+  simBurns.push(b);
+  fire.toss(amount, true, x, y);
+  toast(`${fmt(amount)} ${S.symbol} INTO THE FIRE`);
+  render(); renderFeed(new Set([b.id]));
+}
+$('simForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = parseFloat($('simAmt').value.replace(/[, _]/g, ''));
+  if (!(v > 0)) { $('simNote').textContent = 'Enter a positive number of tokens, for example 250000.'; return; }
+  $('simNote').textContent = 'Simulated burns stack on top of the real total so you can see the effect on supply and value.';
+  simBurn(v);
+});
+$('presets').addEventListener('click', e => {
+  const a = e.target.dataset?.amt; if (a) { $('simAmt').value = a; simBurn(+a); }
+});
+$('simReset').addEventListener('click', () => { S.simTotal = 0; simBurns.length = 0; render(); renderFeed(); });
+$('tokenForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('tokenInput').value.trim();
+  try { BigInt(v); location.search = '?token=' + norm(v); } catch { $('tokenInput').value = ''; $('tokenInput').placeholder = 'That is not a valid 0x address'; }
+});
+
+// ---------------- sound (crackle) ----------------
+let audio = null;
+function startSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } // brown noise = roar
+  const roar = ctx.createBufferSource(); roar.buffer = buf; roar.loop = true;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
+  const g = ctx.createGain(); g.gain.value = 0.35;
+  roar.connect(lp).connect(g).connect(ctx.destination); roar.start();
+  const master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
+  const pop = (vol = 1) => {
+    const n = ctx.createBufferSource(), b = ctx.createBuffer(1, 600, ctx.sampleRate), c = b.getChannelData(0);
+    for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / c.length, 6);
+    n.buffer = b; const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200 + Math.random() * 3000;
+    const pg = ctx.createGain(); pg.gain.value = (0.2 + Math.random() * 0.6) * vol;
+    n.connect(hp).connect(pg).connect(master); n.start();
+  };
+  const loop = () => { if (!audio) return; if (Math.random() < 0.5) pop(); audio.timer = setTimeout(loop, 40 + Math.random() * 260); };
+  audio = { ctx, pop, timer: 0 }; loop();
+}
+$('soundBtn').addEventListener('click', () => {
+  const btn = $('soundBtn');
+  if (audio) { clearTimeout(audio.timer); audio.ctx.close(); audio = null; btn.textContent = 'Sound off'; btn.setAttribute('aria-pressed', 'false'); }
+  else { try { startSound(); btn.textContent = 'Sound on'; btn.setAttribute('aria-pressed', 'true'); } catch {} }
+});
+
+// ---------------- the wolves ----------------
+// Built-in cartoon wolves in the Degenz sticker style (grey fur, giant bloodshot eyes, white sticker outline).
+// Drop the real sticker files in ./wolves/1.webp … 8.webp (or .png) and they replace these automatically.
+function wolfSVG(v) {
+  const veins = (cx, cy, r) => {
+    let d = '';
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * Math.PI * 2 + v.seed, r0 = r * 0.98, r1 = r * (0.45 + ((i * 37) % 10) / 40);
+      const x0 = cx + Math.cos(a) * r0, y0 = cy + Math.sin(a) * r0, x1 = cx + Math.cos(a + 0.25) * r1, y1 = cy + Math.sin(a + 0.25) * r1;
+      d += `M${x0.toFixed(1)} ${y0.toFixed(1)} Q${(cx + Math.cos(a - 0.2) * r * 0.75).toFixed(1)} ${(cy + Math.sin(a - 0.2) * r * 0.75).toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)} `;
+    }
+    return `<path d="${d}" fill="none" stroke="#d81f2a" stroke-width="1.6" stroke-linecap="round"/>`;
+  };
+  const eye = (cx, cy, r, p) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#111" stroke-width="3"/>${veins(cx, cy, r)}<circle cx="${cx + p[0] * r}" cy="${cy + p[1] * r}" r="${Math.max(2.5, r * 0.11)}" fill="#111"/>`;
+  const mouth = v.mouth === 'open'
+    ? `<path d="M76 108 Q100 140 126 106 Q100 116 76 108Z" fill="#6b0d14" stroke="#111" stroke-width="3" stroke-linejoin="round"/><path d="M90 122 Q100 134 110 121 Q100 126 90 122Z" fill="#e8576a"/><path d="M80 109 l5 9 l4 -7 l5 8 l4 -7 l4 8 l4 -8 l5 8 l4 -7 l5 7 l4 -9" fill="#fff" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>`
+    : `<path d="M74 108 Q100 124 128 106" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><path d="M84 112 l3 8 l4 -6 M114 112 l-3 8 l-4 -6" fill="#fff" stroke="#111" stroke-width="2" stroke-linejoin="round"/>`;
+  const body = `
+    <path d="M62 196 L52 158 L36 168 L44 138 L26 134 L48 116 Q62 98 84 96 L118 96 Q140 98 154 116 L176 132 L158 138 L166 168 L150 158 L140 196 Z" fill="${v.fur}" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M84 150 l8 -14 l8 14 l8 -14 l8 14" fill="none" stroke="#111" stroke-width="2" opacity=".35"/>
+    <path d="M62 74 L50 14 L92 50 Z" fill="${v.dark}" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M140 72 L156 14 L112 50 Z" fill="${v.dark}" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M64 62 L57 30 L80 51 Z M138 60 L148 30 L123 51 Z" fill="#e7a2a8"/>
+    <path d="M46 86 L34 80 L50 72 Q50 42 100 38 Q152 42 152 72 L170 78 L154 88 Q148 124 100 126 Q56 124 46 86Z" fill="${v.fur}" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>
+    <ellipse cx="101" cy="102" rx="30" ry="20" fill="#d7d6db" stroke="#111" stroke-width="3"/>
+    <ellipse cx="101" cy="90" rx="12" ry="8" fill="#1a1a1a"/><ellipse cx="97" cy="87" rx="3.5" ry="2" fill="#fff" opacity=".7"/>
+    ${mouth}
+    ${eye(70, 64, v.eyeL, v.pupL)}${eye(132, 60, v.eyeR, v.pupR)}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 210" width="400" height="420">
+    <g transform="translate(0 4)"><g stroke="#fff" stroke-width="18" stroke-linejoin="round" fill="#fff">
+      <path d="M62 196 L52 158 L36 168 L44 138 L26 134 L48 116 Q62 98 84 96 L118 96 Q140 98 154 116 L176 132 L158 138 L166 168 L150 158 L140 196 Z"/>
+      <path d="M62 74 L50 14 L92 50 Z"/><path d="M140 72 L156 14 L112 50 Z"/>
+      <path d="M46 86 L34 80 L50 72 Q50 42 100 38 Q152 42 152 72 L170 78 L154 88 Q148 124 100 126 Q56 124 46 86Z"/>
+      <circle cx="70" cy="64" r="${v.eyeL}"/><circle cx="132" cy="60" r="${v.eyeR}"/></g>${body}</g></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+const WOLF_VARIANTS = [
+  { fur: '#8f8e98', dark: '#6f6e79', eyeL: 24, eyeR: 30, pupL: [0.35, -0.2], pupR: [-0.5, 0.3], mouth: 'open', seed: 0.2 },
+  { fur: '#a09fa8', dark: '#7c7b86', eyeL: 30, eyeR: 22, pupL: [0, 0], pupR: [0.1, -0.1], mouth: 'grin', seed: 1.1 },
+  { fur: '#7d7c86', dark: '#5f5e69', eyeL: 27, eyeR: 27, pupL: [-0.4, -0.4], pupR: [0.4, 0.4], mouth: 'open', seed: 2.3 },
+];
+const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+const wolves = { imgs: [], custom: false, byNum: {} };
+(async () => {
+  wolves.imgs = (await Promise.all(WOLF_VARIANTS.map(v => loadImg(wolfSVG(v))))).filter(Boolean);
+  document.querySelectorAll('[data-wolf]').forEach((el, i) => el.src = wolves.imgs[i % wolves.imgs.length].src);
+  if (location.protocol.startsWith("http")) {
+    const loadVid = n => new Promise(res => {
+      const v = document.createElement("video");
+      Object.assign(v, { muted: true, loop: true, playsInline: true, autoplay: true, preload: "auto" });
+      v.onloadeddata = () => { v.pause(); res(v); }; v.onerror = () => res(null);
+      v.src = `wolves/${n}.webm`;
+    });
+    let nums = [];
+    try { nums = (await (await fetch('wolves/list.json')).json()).filter(n => n.endsWith('.webm')).map(n => parseInt(n)); } catch {}
+    const vids = await Promise.all(nums.map(loadVid));
+    vids.forEach((v, i) => { if (v) wolves.byNum[nums[i]] = v; });
+    if (Object.keys(wolves.byNum).length) {
+      wolves.custom = true;
+      const icon = wolves.byNum[11] || Object.values(wolves.byNum)[0];
+      document.querySelectorAll("[data-wolf]").forEach(el => { const v = icon.cloneNode(); v.muted = true; v.width = el.width; v.height = el.height; v.style.cssText = el.style.cssText; el.replaceWith(v); v.play().catch(() => {}); });
+    }
+  }
+})();
+// pick a sticker by number, falling back to the drawn wolves
+const wolfSrc = (num, fallback) => wolves.byNum[num] || wolves.byNum[Object.keys(wolves.byNum)[fallback % Math.max(1, Object.keys(wolves.byNum).length)]] || wolves.imgs[fallback % Math.max(1, wolves.imgs.length)];
+const srcSize = s => s ? (s.videoWidth ? [s.videoWidth, s.videoHeight] : [s.naturalWidth, s.naturalHeight]) : [1, 1];
+const MEMES = ['KEEP THE FIRE BURNING', 'FEED THE FIRE', 'MORE FUEL, WOLF', 'THE FIRE IS HUNGRY', 'DONT LET IT DIE', 'THROW ANOTHER BAG ON', 'WARM PAWS, HOT BAGS', 'FIRE NEEDS SNACKS', 'STOKE IT', 'HOTTER. HOTTER.', 'BURN IT ALL', 'SUPPLY GO DOWN', 'AWOOOOO', 'NO SELL. ONLY BURN.', 'FEED THE FIRE', 'PACK STRONG', 'WAGMI', 'LFG', 'DEGENZ NEVER SLEEP', 'MORE WOOD', 'BYE BYE TOKENS', 'NUMBER GO UP', 'SMELLS LIKE GAINS', 'HOWL AT THE CHART'];
+const meme = () => MEMES[Math.random() * MEMES.length | 0];
+
+// ---------------- the fire ----------------
+const fire = (() => {
+  const cv = $('fire'), ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const INK = '#15111c';
+  let W = 0, H = 0, dpr = 1, baseX = 0, baseY = 0, scale = 1;
+  const blobs = [], sparks = [], puffs = [], coins = [], stars = [];
+  let heat = 0, t = 0, react = null;
+  function reactWith(num) { if (Array.isArray(num)) { const ok = num.filter(n => wolves.byNum[n]); num = ok[Math.random() * ok.length | 0]; } const v = wolves.byNum[num]; if (!v) return; try { v.currentTime = 0; v.play().catch(() => {}); } catch {} react = { num, t0: t }; }
+  // the pack around the fire: [side x as fraction of fire spread, size, flip]
+  const pack = [
+    { dx: -1, size: 1, flip: false, hop: 0, bubble: null, bubbleT: 0, img: 0, num: 10 },
+    { dx: 1, size: 0.95, flip: false, hop: 0, bubble: null, bubbleT: 0, img: 1, num: 13 },
+  ];
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    W = r.width; H = r.height;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    scale = Math.min(1.25, Math.max(0.5, Math.min(W, H * 1.1) / 680));
+    baseX = W / 2; baseY = H * 0.7;
+    stars.length = 0;
+    for (let i = 0; i < 40; i++) stars.push({ x: Math.random() * W, y: Math.random() * H * 0.45, s: 2 + Math.random() * 4, p: Math.random() * 6 });
+    pack[2] && pack.splice(2);
+    if (W > 900) pack.push({ dx: -1.75, size: 0.72, flip: false, hop: 0, bubble: null, bubbleT: 0, img: 2, num: 15, far: true });
+  }
+  new ResizeObserver(resize).observe(cv); resize();
+
+  function path(fn, fill, stroke = INK, lw = 4) {
+    ctx.beginPath(); fn();
+    if (stroke) { ctx.lineWidth = lw * scale; ctx.strokeStyle = stroke; ctx.lineJoin = 'round'; ctx.stroke(); }
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  }
+
+  function star(x, y, r, rot = 0) {
+    ctx.moveTo(x, y - r);
+    for (let i = 1; i <= 8; i++) { const a = rot - Math.PI / 2 + i * Math.PI / 4, rr = i % 2 ? r * 0.32 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+    ctx.closePath();
+  }
+
+  // one flame tongue: a teardrop from a base point up to a leaning tip
+  function tongue(x, by, bw, hh, lean) {
+    ctx.moveTo(x - bw / 2, by);
+    ctx.bezierCurveTo(x - bw * 0.75, by - hh * 0.35, x + lean - bw * 0.2, by - hh * 0.72, x + lean, by - hh);
+    ctx.bezierCurveTo(x + lean + bw * 0.2, by - hh * 0.72, x + bw * 0.75, by - hh * 0.35, x + bw / 2, by);
+    ctx.ellipse(x, by, bw / 2, bw * 0.28, 0, 0, Math.PI);
+  }
+
+  // cel-shaded fire: each colour layer is a set of tongues; strokes for every tongue first, then fills, so the outline hugs the union
+  const TONGUES = [-0.62, -0.4, -0.2, 0, 0.2, 0.42, 0.64];
+  const LAYERS = [['#e3262f', 1, true], ['#ff6a13', 0.78, false], ['#ffd23f', 0.55, false], ['#fff4b8', 0.3, false]];
+  function drawFire() {
+    const spread = (150 + heat * 30) * scale, Hmax = (230 + heat * 70) * scale, by = baseY + 16 * scale;
+    const geo = TONGUES.map((o, i) => {
+      const prof = Math.pow(1 - Math.abs(o) * 1.05, 1.2);
+      const wob = Math.sin(t * (0.11 + i * 0.013) + i * 2.1) * 0.5 + Math.sin(t * 0.23 + i) * 0.25;
+      return { x: baseX + o * spread, h: Hmax * prof * (0.78 + 0.22 * wob), lean: Math.sin(t * 0.07 + i * 1.7) * 26 * scale, bw: (74 - Math.abs(o) * 30) * scale };
+    });
+    for (const [col, k, outline] of LAYERS) {
+      const g = geo.map(q => ({ x: baseX + (q.x - baseX) * (0.6 + k * 0.4), h: q.h * k, lean: q.lean * k, bw: q.bw * (0.45 + k * 0.55) }));
+      if (outline) { ctx.beginPath(); g.forEach(q => tongue(q.x, by, q.bw, q.h, q.lean)); ctx.lineWidth = 9 * scale; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke(); }
+      ctx.beginPath(); g.forEach(q => tongue(q.x, by - (1 - k) * 6 * scale, q.bw, q.h, q.lean)); ctx.fillStyle = col; ctx.fill();
+    }
+  }
+
+  function drawLog(x, y, len, angle, glow) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+    const L = len * scale, R = 20 * scale;
+    path(() => ctx.roundRect(-L / 2, -R, L, R * 2, R * 0.9), '#8a4f2a', INK, 4.5);
+    ctx.fillStyle = '#6b3a1e'; ctx.beginPath(); ctx.roundRect(-L / 2 + 4, R * 0.15, L - 8, R * 0.75, R * 0.5); ctx.fill();
+    ctx.strokeStyle = 'rgba(21,17,28,.55)'; ctx.lineWidth = 2.5 * scale; ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) { const sx = -L / 2 + L * (0.18 + i * 0.2); ctx.beginPath(); ctx.moveTo(sx, -R * 0.5); ctx.lineTo(sx + L * 0.08, -R * 0.55); ctx.stroke(); }
+    ctx.fillStyle = `rgba(255,${110 + glow * 60 | 0},30,${0.35 + glow * 0.35})`; ctx.beginPath(); ctx.roundRect(-L * 0.25, -R * 0.85, L * 0.5, R * 0.55, R * 0.3); ctx.fill();
+    path(() => ctx.ellipse(L / 2 - 3 * scale, 0, R * 0.5, R * 0.95, 0, 0, Math.PI * 2), '#e9b77c', INK, 4);
+    ctx.strokeStyle = '#a8703f'; ctx.lineWidth = 2.5 * scale; ctx.beginPath(); ctx.ellipse(L / 2 - 3 * scale, 0, R * 0.25, R * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawStone(x, y, r, glow) {
+    path(() => ctx.ellipse(x, y, r * 1.2, r * 0.78, 0, 0, Math.PI * 2), `rgb(${118 + glow * 50 | 0},${110 + glow * 20 | 0},${128})`, INK, 4);
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(x - r * 0.4, y - r * 0.32, r * 0.35, r * 0.16, -0.3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawWolf(w, i, glow) {
+    const img = wolfSrc(w.num, w.img);
+    if (img && img.paused) img.play().catch(() => {}); // only on-screen stickers decode
+    const s = 250 * scale * w.size * (w.far ? 0.9 : 1);
+    const gap = (w.far ? 1 : 1) * (220 * scale + s * 0.25);
+    const x = Math.max(s * 0.42, Math.min(W - s * 0.42, baseX + w.dx * gap)), groundY = baseY + (w.far ? 20 : 70) * scale;
+    w.hop *= 0.9;
+    const bob = Math.sin(t * 0.08 + i * 2) * 3 * scale + Math.abs(Math.sin(t * 0.25 + i)) * heat * 6 * scale;
+    const y = groundY - bob - w.hop;
+    // shadow
+    ctx.fillStyle = 'rgba(10,6,20,.45)'; ctx.beginPath(); ctx.ellipse(x, groundY + 4 * scale, s * 0.38, s * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    if (img) {
+      const [iw, ih] = srcSize(img), ar = ih / iw || 1.05;
+      ctx.save(); ctx.translate(x, y); if (w.flip) ctx.scale(-1, 1);
+      ctx.rotate(Math.sin(t * 0.05 + i) * 0.04 - (w.hop > 4 ? 0.08 : 0));
+      ctx.drawImage(img, -s / 2, -s * ar, s, s * ar);
+      // firelight rim on the side facing the fire
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.restore();
+    }
+    if (w.bubble && t < w.bubbleT) {
+      const txt = w.bubble, fs = Math.max(16, 26 * scale);
+      ctx.font = `400 ${fs}px Bangers, Impact, sans-serif`;
+      const tw = ctx.measureText(txt).width, bw = tw + 28 * scale, bh = fs * 1.6;
+      let bx = x - bw / 2 + (w.flip ? -30 : 30) * scale, byy = y - s * 1.15 - bh;
+      bx = Math.max(10, Math.min(W - bw - 10, bx)); byy = Math.max(110, byy);
+      const pop = Math.min(1, (w.bubbleT - t) / 8, (t - (w.bubbleT - 150)) / 6);
+      ctx.save(); ctx.translate(bx + bw / 2, byy + bh / 2); ctx.scale(pop, pop); ctx.rotate(w.flip ? 0.04 : -0.04); ctx.translate(-(bx + bw / 2), -(byy + bh / 2));
+      path(() => { ctx.roundRect(bx, byy, bw, bh, 14 * scale); ctx.moveTo(x - 10 * scale, byy + bh - 2); ctx.lineTo(x, byy + bh + 18 * scale); ctx.lineTo(x + 12 * scale, byy + bh - 2); }, '#fff', INK, 4);
+      ctx.fillStyle = '#fff'; ctx.fillRect(x - 8 * scale, byy + bh - 6 * scale, 18 * scale, 7 * scale);
+      ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, bx + bw / 2, byy + bh / 2 + 1);
+      ctx.restore();
+    }
+  }
+
+  function drawCoin(c) {
+    const s = c.size;
+    ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.rot); ctx.scale(Math.max(0.15, Math.abs(Math.cos(c.spin))), 1);
+    path(() => ctx.arc(0, 0, s, 0, Math.PI * 2), '#ffc928', INK, 4);
+    path(() => ctx.arc(0, 0, s * 0.72, 0, Math.PI * 2), '#ffdf6b', '#c98a00', 2.5);
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.ellipse(-s * 0.4, -s * 0.42, s * 0.22, s * 0.1, -0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = INK; ctx.font = `400 ${s * 1.05}px Bangers, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('D', 0, s * 0.06);
+    ctx.restore();
+  }
+
+  function toss(amount, loud, fromX, fromY) {
+    const mag = Math.min(1, Math.log10(1 + Math.max(0, amount)) / 9);
+    const n = Math.max(1, Math.min(8, Math.round(1 + mag * 7)));
+    if (coins.length > 40) coins.splice(0, coins.length - 40);
+    for (let i = 0; i < n; i++) {
+      // coins come from a wolf's paws most of the time
+      const w = pack[Math.random() * pack.length | 0];
+      const sx = fromX ?? (baseX + w.dx * (220 * scale + 60 * scale)), sy = fromY ?? (baseY - 120 * scale);
+      const tx = baseX + (Math.random() - 0.5) * 80 * scale, ty = baseY - 20 * scale;
+      const T = 42 + Math.random() * 16, g = 0.42 * scale;
+      coins.push({ x: sx, y: sy, vx: (tx - sx) / T, vy: (ty - sy) / T - 0.5 * g * T, g, rot: 0, spin: Math.random() * 6, size: (13 + mag * 10) * scale, mag, delay: i * 5 });
+      if (fromX == null) w.hop = 26 * scale;
+    }
+    if (loud) { say(meme()); reactWith(mag > 0.8 ? [2, 9, 17] : mag > 0.6 ? [4, 11] : [6, 15]); }
+  }
+
+  function say(text, who) {
+    const w = who ?? pack[Math.random() * pack.length | 0];
+    w.bubble = text; w.bubbleT = t + 150; w.hop = 30 * scale;
+  }
+
+  function impact(c) {
+    heat = Math.min(3, heat + 0.35 + c.mag * 1.2);
+    for (let i = 0; i < 6 + c.mag * 14; i++) spawnSpark(1 + c.mag * 2, c.x, c.y);
+    for (let i = 0; i < 2 + c.mag * 4; i++) spawnBlob(1.5);
+    puffs.push({ x: c.x, y: c.y - 10 * scale, vx: 0, vy: -1.2, r: 12 * scale, life: 0, max: 40, pop: true });
+    if (audio) for (let i = 0; i < 4; i++) setTimeout(() => audio.pop(1.5), i * 40);
+  }
+
+  function spawnSpark(boost, x = baseX, y = baseY - 80 * scale) {
+    sparks.push({ x: x + (Math.random() - 0.5) * 100 * scale, y, vx: (Math.random() - 0.5) * (2 + boost * 1.5), vy: -(2 + Math.random() * 3 + boost * 2) * scale, life: 0, max: 50 + Math.random() * 60, r: (4 + Math.random() * 5) * scale, rot: Math.random() * 3, vr: (Math.random() - 0.5) * 0.2 });
+  }
+  function spawnBlob(boost = 1) {
+    blobs.push({ x: baseX + (Math.random() - 0.5) * 120 * scale, y: baseY - (140 + Math.random() * 60) * scale, vx: (Math.random() - 0.5) * 1.2, vy: -(2.4 + Math.random() * 2 * boost) * scale, r: (10 + Math.random() * 10) * scale, life: 0, max: 30 + Math.random() * 20 });
+  }
+
+  function frame() {
+    t++;
+    heat *= 0.986;
+    const glow = 0.6 + 0.4 * Math.sin(t * 0.17) * Math.sin(t * 0.07 + 1);
+
+    if (!reduce || t % 3 === 0) {
+      if (Math.random() < 0.08 + heat * 0.15) spawnBlob();
+      if (Math.random() < 0.12 + heat * 0.3) spawnSpark(heat * 0.4);
+      if (t % 26 === 0) puffs.push({ x: baseX + (Math.random() - 0.5) * 40 * scale, y: baseY - (250 + heat * 60) * scale, vx: 0.3 + Math.random() * 0.4, vy: -0.7, r: 16 * scale, life: 0, max: 200 });
+    }
+    ctx.clearRect(0, 0, W, H);
+
+    // sky: twinkling cartoon stars + moon
+    for (const s of stars) { const k = 0.6 + 0.4 * Math.sin(t * 0.05 + s.p); ctx.beginPath(); star(s.x, s.y, s.s * k * scale + 1, 0); ctx.fillStyle = `rgba(255,240,190,${0.5 + k * 0.4})`; ctx.fill(); }
+    const mx = W * 0.82, my = H * 0.2, mr = 42 * scale;
+    path(() => ctx.arc(mx, my, mr, 0, Math.PI * 2), '#fff3c9', INK, 4);
+    ctx.fillStyle = '#ead9a4'; [[-14, -8, 9], [12, 10, 12], [8, -18, 6]].forEach(([dx, dy, r]) => { ctx.beginPath(); ctx.arc(mx + dx * scale, my + dy * scale, r * scale, 0, Math.PI * 2); ctx.fill(); });
+
+    // far hills
+    ctx.fillStyle = '#1d1838'; ctx.beginPath(); ctx.moveTo(0, baseY - 40 * scale);
+    for (let x = 0; x <= W + 40; x += 40) ctx.lineTo(x, baseY - 40 * scale - Math.sin(x * 0.006) * 40 * scale - Math.sin(x * 0.017) * 16 * scale);
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+    // pine silhouettes
+    ctx.fillStyle = '#141029';
+    for (let i = 0; i < 9; i++) { const x = (i / 8) * W + Math.sin(i * 7) * 30, h = (80 + (i * 53 % 60)) * scale, y = baseY - 30 * scale; if (Math.abs(x - baseX) < 260 * scale) continue; ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x - h * 0.32, y); ctx.lineTo(x + h * 0.32, y); ctx.fill(); }
+
+    // ground
+    ctx.fillStyle = '#231b40'; ctx.fillRect(0, baseY + 10 * scale, W, H);
+    // firelight pool
+    let g = ctx.createRadialGradient(baseX, baseY + 40 * scale, 10, baseX, baseY + 40 * scale, 420 * scale * (1 + heat * 0.15));
+    g.addColorStop(0, `rgba(255,140,40,${0.55 * glow + heat * 0.08})`); g.addColorStop(0.5, 'rgba(255,90,30,0.15)'); g.addColorStop(1, 'rgba(255,90,30,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // smoke puffs (behind fire)
+    for (let i = puffs.length - 1; i >= 0; i--) {
+      const p = puffs[i]; p.life++; p.x += p.vx + Math.sin(p.life * 0.04) * 0.3; p.y += p.vy; p.r += (p.pop ? 0.8 : 0.22) * scale;
+      const k = p.life / p.max; if (k >= 1) { puffs.splice(i, 1); continue; }
+      ctx.globalAlpha = Math.sin(k * Math.PI) * (p.pop ? 0.9 : 0.55);
+      path(() => { ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.moveTo(p.x + p.r * 1.5, p.y + p.r * 0.2); ctx.arc(p.x + p.r * 0.8, p.y + p.r * 0.2, p.r * 0.7, 0, Math.PI * 2); }, p.pop ? '#fff' : '#9a93b0', INK, 3);
+      ctx.globalAlpha = 1;
+    }
+
+    // far wolf sits behind the fire ring
+    pack.forEach((w, i) => w.far && drawWolf(w, i, glow));
+
+    // stones (back half), back log, fire, front logs, stones front
+    const stones = [];
+    for (let i = 0; i < 12; i++) { const a = Math.PI * 2 * i / 12; stones.push({ x: baseX + Math.cos(a) * 170 * scale, y: baseY + 50 * scale + Math.sin(a) * 34 * scale, r: (20 + (i * 37 % 8)) * scale, front: Math.sin(a) > 0 }); }
+    stones.filter(s => !s.front).forEach(s => drawStone(s.x, s.y, s.r, glow));
+    drawLog(baseX + 6 * scale, baseY + 18 * scale, 230, 2.95, glow);
+    drawFire();
+    drawLog(baseX - 30 * scale, baseY + 40 * scale, 240, -0.28, glow);
+    drawLog(baseX + 34 * scale, baseY + 42 * scale, 240, 0.3, glow);
+    stones.filter(s => s.front).forEach(s => drawStone(s.x, s.y, s.r, glow));
+
+    // detached flame blobs
+    for (let i = blobs.length - 1; i >= 0; i--) {
+      const b = blobs[i]; b.life++; b.x += b.vx; b.y += b.vy;
+      const k = b.life / b.max; if (k >= 1) { blobs.splice(i, 1); continue; }
+      const r = b.r * (1 - k);
+      ctx.beginPath(); tongue(b.x, b.y, r * 1.6, r * 2.6, Math.sin(b.life * 0.2) * r * 0.4);
+      ctx.lineWidth = 4 * scale; ctx.strokeStyle = INK; ctx.stroke(); ctx.fillStyle = k < 0.5 ? '#ff6a13' : '#e3262f'; ctx.fill();
+    }
+
+    // sparks as little cartoon stars
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i]; p.life++; p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.vx *= 0.99; p.rot += p.vr;
+      const k = p.life / p.max; if (k >= 1 || p.y < -20) { sparks.splice(i, 1); continue; }
+      path(() => star(p.x, p.y, p.r * (1 - k * 0.6), p.rot), k < 0.5 ? '#ffd23f' : '#ff8a2a', INK, 2.5);
+    }
+
+    // near wolves
+    pack.forEach((w, i) => !w.far && drawWolf(w, i, glow));
+
+    // coins
+    for (let i = coins.length - 1; i >= 0; i--) {
+      const c = coins[i];
+      if (c.delay > 0) { c.delay--; continue; }
+      c.x += c.vx; c.y += c.vy; c.vy += c.g; c.rot += 0.1; c.spin += 0.22;
+      if (c.y >= baseY - 20 * scale && c.vy > 0) { impact(c); coins.splice(i, 1); continue; }
+      drawCoin(c);
+    }
+
+    // reaction sticker pops up from the bottom right on burns
+    if (react && wolves.custom) {
+      const src = wolves.byNum[react.num];
+      const age = t - react.t0, dur = 190;
+      if (!src || age > dur) { if (src && !pack.some(w => w.num === react.num)) src.pause(); react = null; }
+      else {
+        const [iw, ih] = srcSize(src), s = Math.min(300 * scale + 60, W * 0.4), hh = s * ih / iw;
+        const inK = Math.min(1, age / 18), outK = Math.min(1, (dur - age) / 18);
+        const ease = k => 1 - Math.pow(1 - k, 3) * Math.cos(k * 4.5);
+        const k = Math.min(ease(inK), outK);
+        const x = W - s - 20 * scale, y = H - hh * k + (1 - k) * 40 - 10 * scale;
+        ctx.save(); ctx.translate(x + s / 2, y + hh / 2); ctx.rotate(-0.06 + Math.sin(age * 0.1) * 0.03); ctx.drawImage(src, -s / 2, -hh / 2, s, hh); ctx.restore();
+      }
+    }
+    // wolves chatter now and then
+    if (t % 600 === 300) { say(meme()); if (!react && Math.random() < 0.5) reactWith([9, 11, 16, 5]); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  cv.addEventListener('click', e => {
+    const r = cv.getBoundingClientRect();
+    const x = e.clientX - r.left, y = Math.min(e.clientY - r.top, baseY - 140 * scale);
+    // clicking a wolf makes it howl; clicking anywhere else tosses a handful
+    const hit = pack.find(w => { const gap = 220 * scale + 250 * scale * w.size * 0.25, wx = baseX + w.dx * gap; return Math.abs(e.clientX - r.left - wx) < 90 * scale && e.clientY - r.top > baseY - 200 * scale; });
+    if (hit) { say(Math.random() < 0.5 ? 'AWOOOOO' : meme(), hit); reactWith([5, 7]); if (audio) audio.pop(2); return; }
+    const amount = Math.round(10 ** (3 + Math.random() * 3));
+    simBurn(amount, x, y);
+  });
+
+  return { toss, say, react: reactWith };
+})();
+
+// ---------------- wallets ----------------
+// Desktop: any injected Starknet wallet (Bramble, Ready/Argent X, Braavos, …) via the get-starknet window objects
+// and the wallet-standard registry. Mobile: wallet in-app browsers inject the same objects; from a normal mobile
+// browser, Ready connects over WalletConnect (starknetkit) and Braavos opens this page inside its app.
+const W8 = (() => {
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+  const KNOWN = [
+    { id: 'bramble', match: ['bramble'], name: 'Bramble', blurb: 'Starknet Foundation wallet · Chrome', url: 'https://bramble.fi/', desktopOnly: true },
+    { id: 'argentX', match: ['argent', 'ready'], name: 'Ready (Argent X)', blurb: 'Browser extension', url: 'https://www.ready.co/' },
+    { id: 'braavos', match: ['braavos'], name: 'Braavos', blurb: 'Browser extension', url: 'https://braavos.app/' },
+  ];
+  const found = new Map(); // id -> { id, name, icon, kind, obj }
+  const key = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  function scanInjected() {
+    // extensions often define these as non-enumerable, so Object.keys misses them
+    const names = new Set(['starknet', 'starknet_argentX', 'starknet_braavos', 'starknet_bramble', ...Object.getOwnPropertyNames(window).filter(k => k.startsWith('starknet'))]);
+    for (const k of names) {
+      let w; try { w = window[k]; } catch { continue; }
+      if (!w || typeof w !== 'object' || (!w.request && !w.enable)) continue;
+      const id = w.id || k.replace(/^starknet_?/, '') || 'starknet';
+      if (!found.has(key(id))) found.set(key(id), { id, name: w.name || id, icon: w.icon, kind: 'injected', obj: w });
+    }
+  }
+  // wallet-standard registry (newer wallets may only announce themselves this way)
+  const stdSeen = new Set();
+  function addStd(w) {
+    const feats = Object.keys(w?.features || {});
+    stdSeen.add(w?.name || '?');
+    if (!feats.some(f => f.startsWith('starknet:')) && !(w?.chains || []).some(c => String(c).startsWith('starknet:'))) return;
+    const id = w.name;
+    if (!found.has(key(id))) found.set(key(id), { id, name: w.name, icon: w.icon, kind: 'standard', obj: w });
+    renderSheetIfOpen();
+  }
+  window.addEventListener('wallet-standard:register-wallet', e => { try { e.detail({ register: (...ws) => ws.forEach(addStd) }); } catch {} });
+  try { window.dispatchEvent(new CustomEvent('wallet-standard:app-ready', { detail: { register: (...ws) => ws.forEach(addStd) } })); } catch {}
+
+  const st = { addr: null, wallet: null, request: null, balance: 0n, pending: null };
+  // warm up detection so the picker is right the first time it opens
+  [0, 1000, 3000].forEach(ms => setTimeout(scanInjected, ms));
+  const inAppBrowser = () => { scanInjected(); return isMobile && found.size > 0; };
+
+  // ---- connect paths ----
+  async function connectInjected(w) {
+    let addr;
+    if (w.kind === 'standard') {
+      const r = await w.obj.features['standard:connect'].connect();
+      addr = (r.accounts || w.obj.accounts)[0]?.address;
+      const fs = w.obj.features, api = fs['starknet:walletApi'] || Object.values(fs).find(x => typeof x?.request === 'function');
+      if (!api) throw new Error('This wallet does not expose a Starknet request method.');
+      st.request = call => api.request(call);
+    } else {
+      const o = w.obj;
+      if (o.request) {
+        const accts = await o.request({ type: 'wallet_requestAccounts' });
+        addr = accts?.[0];
+        st.request = call => o.request(call);
+      } else {
+        const accts = await o.enable();
+        addr = accts?.[0] || o.selectedAddress;
+        st.request = call => o.request(call);
+      }
+    }
+    if (!addr) throw new Error('The wallet did not share an account.');
+    return addr;
+  }
+
+  let kitConn = null;
+  async function connectReadyMobile() {
+    const mod = await import('./vendor/ready-mobile.js');
+    kitConn = mod.ArgentMobileConnector.init({ options: {
+      dappName: `${S.symbol} Bonfire`, url: location.hostname, chainId: 'SN_MAIN', description: 'Watch and burn tokens on Starknet',
+      icons: [], rpcUrl: RPCS[0],
+    } });
+    back.hidden = true; // starknetkit shows its own QR / redirect screen
+    let data;
+    try { data = await kitConn.connect(); } catch (e) { back.hidden = false; throw e; }
+    st.request = call => kitConn.request(call);
+    return data.account;
+  }
+
+  function openBraavosApp() { location.href = `https://link.braavos.app/dapp/${location.origin}${location.pathname}${location.search}`; }
+
+  async function finishConnect(addr, wallet) {
+    st.addr = norm(addr); st.wallet = wallet;
+    closeSheet();
+    await refreshMe();
+    fire.say('WELCOME TO THE PACK'); fire.react(12);
+    toast('NEW WOLF IN THE PACK');
+  }
+
+  async function tryConnect(fn, wallet, btn) {
+    try {
+      if (btn) { btn.disabled = true; btn.querySelector('.tag') && (btn.querySelector('.tag').textContent = 'Sniffing…'); }
+      const addr = await Promise.race([fn(), new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 45000))]);
+      await finishConnect(addr, wallet);
+    } catch (e) {
+      console.warn(e);
+      if (!back.hidden || sheetMode) { if (back.hidden) openConnect(); }
+      sheetError(e?.message === 'TIMEOUT' ? 'Your wallet fell asleep by the fire. Open it, unlock it, and try again.' : /reject|cancel|abort|denied/i.test(e?.message || '') || e?.code === 4001 ? 'You chickened out in the wallet. No shame. Okay, a little shame.' : `The wallet coughed up an error: ${e?.message || e}. Unlock it and try again.`);
+      if (btn) { btn.disabled = false; const tg = btn.querySelector('.tag'); if (tg) tg.textContent = 'Retry'; }
+    }
+  }
+
+  function disconnect() {
+    st.addr = st.wallet = st.request = null; st.balance = 0n;
+    try { localStorage.removeItem('bonfire.wallet'); kitConn?.disconnect(); } catch {}
+    renderMe(); renderLeaders();
+  }
+
+  // ---- on-chain reads for the connected wallet ----
+  async function refreshMe() {
+    if (!st.addr) return renderMe();
+    try { st.balance = u256(await call('0x35a73cd311a05d46deda634c5ee045db92f811b4e74bca4437fcb5302b7af33', [st.addr])); } catch {}
+    renderMe(); renderLeaders();
+  }
+
+  // ---- burn ----
+  function toRaw(str) {
+    const s = String(str).replace(/[, _]/g, '');
+    if (!/^\d*\.?\d*$/.test(s) || !s || s === '.') return null;
+    const [i, f = ''] = s.split('.');
+    return BigInt(i || '0') * 10n ** BigInt(S.decimals) + BigInt((f + '0'.repeat(S.decimals)).slice(0, S.decimals) || '0');
+  }
+  async function sendBurn(raw) {
+    const low = raw & ((1n << 128n) - 1n), high = raw >> 128n;
+    const calls = [{ contract_address: TOKEN, entry_point: 'transfer', calldata: ['0xdead', '0x' + low.toString(16), '0x' + high.toString(16)] }];
+    const res = await st.request({ type: 'wallet_addInvokeTransaction', params: { calls } });
+    return res.transaction_hash || res.transactionHash || res;
+  }
+  async function waitTx(hash) {
+    for (let i = 0; i < 90; i++) {
+      try {
+        const r = await rpc('starknet_getTransactionReceipt', [hash]);
+        if (r && (r.finality_status === 'ACCEPTED_ON_L2' || r.finality_status === 'ACCEPTED_ON_L1')) return r.execution_status !== 'REVERTED';
+      } catch {}
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    return null;
+  }
+
+  // ---- UI ----
+  const back = document.createElement('div'); back.className = 'sheet-back'; back.hidden = true;
+  back.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>';
+  document.body.appendChild(back);
+  const sheet = back.firstChild;
+  back.addEventListener('click', e => { if (e.target === back) closeSheet(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !back.hidden) closeSheet(); });
+  let sheetMode = null;
+  function closeSheet() { back.hidden = true; sheetMode = null; clearInterval(scanTimer); }
+  function sheetError(msg) { const el = sheet.querySelector('.warn.err'); if (el) { el.textContent = msg; el.hidden = false; } }
+  function renderSheetIfOpen() { if (sheetMode === 'connect') openConnect(); }
+
+  const icon = w => w.icon ? `<img src="${escapeHtml(typeof w.icon === 'string' ? w.icon : (w.icon.light || w.icon.dark || ''))}" alt="">` : `<span class="ph">${escapeHtml((w.name || '?')[0])}</span>`;
+
+  let scanTimer = 0;
+  function openConnect() {
+    scanInjected(); sheetMode = 'connect';
+    let missing = 0;
+    // extensions can inject a moment late: keep looking while the picker is open
+    clearInterval(scanTimer);
+    scanTimer = setInterval(() => { const n = found.size; scanInjected(); if (sheetMode !== 'connect') clearInterval(scanTimer); else if (found.size !== n) openConnect(); }, 700);
+    const rows = [];
+    const detected = [...found.values()];
+    for (const w of detected) rows.push(`<button class="wopt" type="button" data-inj="${escapeHtml(key(w.id))}">${icon(w)}<span>${escapeHtml(w.name)}<small>${isMobile ? 'Right here in this app' : 'Spotted in your browser'}</small></span><span class="tag on">Connect</span></button>`);
+    if (!isMobile) {
+      for (const k of KNOWN) {
+        // a wallet counts as installed if its injected id or name matches any alias (Ready still reports itself as Argent X)
+        if (detected.some(w => k.match.some(m => key(w.id).includes(m) || key(w.name).includes(m)))) continue;
+        missing++;
+        rows.push(`<a class="wopt" href="${k.url}" target="_blank" rel="noopener"><span class="ph">${k.name[0]}</span><span>${k.name}<small>${k.blurb}</small></span><span class="tag">Install</span></a>`);
+      }
+      rows.push(`<button class="wopt" type="button" data-ready><span class="ph">R</span><span>Ready mobile app<small>Scan a QR with your phone like it's 2021</small></span><span class="tag">QR</span></button>`);
+    } else if (!detected.length) {
+      rows.push(`<button class="wopt" type="button" data-ready><span class="ph">R</span><span>Ready (Argent)<small>Bounces you to the Ready app</small></span><span class="tag">Open app</span></button>`);
+      rows.push(`<button class="wopt" type="button" data-braavos><span class="ph">B</span><span>Braavos<small>Reopens this bonfire inside Braavos</small></span><span class="tag">Open app</span></button>`);
+      rows.push(`<div class="wopt" style="cursor:default"><span class="ph">B</span><span>Bramble<small>Desktop Chrome only for now. Go find a computer, wolf.</small></span><span class="tag">Desktop</span></div>`);
+    }
+    sheet.innerHTML = `<h3 id="sheetTitle">Pick your wallet, wolf <button class="btn x" type="button" data-close aria-label="Close">×</button></h3>
+      <p>${isMobile ? (detected.length ? 'Found your wallet app sniffing around. Tap it.' : 'Choose your weapon. Or open this page in your wallet app\x27s own browser.') : 'Nothing gets burned yet. This just lets the wolves see your bag.'}</p>
+      <div class="wlist">${rows.join('')}</div>
+      ${isMobile && !detected.length ? `<div class="copyline"><input id="pageUrl" readonly value="${escapeHtml(location.href)}" aria-label="Page link"><button class="btn" type="button" data-copy>Copy</button></div>` : ''}
+      ${!isMobile && !detected.length ? `<details style="font-size:12px"><summary style="cursor:pointer;font-weight:600">Wallet installed but not showing?</summary><p style="font-size:12px;margin-top:6px">${location.protocol === 'https:' ? '' : 'Most wallets refuse to load on http pages. Use the https link of this site. '}Unlock the wallet, make sure it is allowed on this site (extension icon, Site access: On all sites), then reload.</p><code style="font-size:11px;display:block;margin-top:6px;overflow-wrap:anywhere">page sees: ${escapeHtml([...new Set(Object.getOwnPropertyNames(window).filter(k => k.startsWith('starknet')))].join(', ') || 'no injected wallets')}${stdSeen.size ? ' · standard: ' + escapeHtml([...stdSeen].join(', ')) : ''}</code></details>` : ''}
+      ${missing ? '<p style="font-size:12px">Already installed one of these? Unlock it, then reload the page. Some wallets hide until they\x27re awake.</p>' : ''}
+      <div class="warn err" hidden></div>`;
+    back.hidden = false;
+    sheet.querySelector('[data-close]').onclick = closeSheet;
+    sheet.querySelectorAll('[data-inj]').forEach(b => b.onclick = () => { const w = found.get(b.dataset.inj); tryConnect(() => connectInjected(w), w, b); });
+    const rb = sheet.querySelector('[data-ready]'); if (rb) rb.onclick = () => tryConnect(connectReadyMobile, { id: 'readyMobile', name: 'Ready mobile' }, rb);
+    const bb = sheet.querySelector('[data-braavos]'); if (bb) bb.onclick = openBraavosApp;
+    const cb = sheet.querySelector('[data-copy]'); if (cb) cb.onclick = () => { const i = $('pageUrl'); navigator.clipboard?.writeText(i.value).then(() => cb.textContent = 'Copied', () => { i.select(); }); };
+  }
+
+  function openConfirm(raw) {
+    sheetMode = 'confirm';
+    const amt = units(raw);
+    sheet.innerHTML = `<h3 id="sheetTitle">Point of no return <button class="btn x" type="button" data-close aria-label="Close">×</button></h3>
+      <div class="confirm-amt">${fmt(amt)} $${escapeHtml(S.symbol)}</div>
+      <p>${usd(amt * S.price)} · sent to <code>0x…dead</code> from ${short(st.addr)}</p>
+      <div class="warn">These tokens go to 0x…dead and never come back. Not even if you cry. Especially not if you cry.</div>
+      <div class="row"><button class="btn primary" type="button" data-go>SEND IT 🔥</button><button class="btn ghost" type="button" data-close2>Paper hands</button></div>
+      <div class="warn err" hidden></div>`;
+    back.hidden = false;
+    sheet.querySelector('[data-close]').onclick = sheet.querySelector('[data-close2]').onclick = closeSheet;
+    sheet.querySelector('[data-go]').onclick = async e => {
+      const b = e.currentTarget; b.disabled = true; b.textContent = 'CHECK YOUR WALLET…';
+      try {
+        const hash = await sendBurn(raw);
+        closeSheet();
+        fire.toss(amt, false); fire.say('ONE OF US!'); fire.react(16); toast(`${fmt(amt)} $${S.symbol} SENT TO THE FIRE`);
+        setMeStatus(`Tokens are flying · <a href="https://voyager.online/tx/${hash}" target="_blank" rel="noopener">view tx</a> · waiting for Starknet to notice…`);
+        const ok = await waitTx(hash);
+        setMeStatus(ok === true ? `Confirmed. Those tokens are ash now · <a href="https://voyager.online/tx/${hash}" target="_blank" rel="noopener">view tx</a>` : ok === false ? 'Starknet spat it back out (reverted). Your tokens are safe, sadly unburned.' : `Still pending · <a href="https://voyager.online/tx/${hash}" target="_blank" rel="noopener">check on Voyager</a>`);
+        await poll(); await refreshMe();
+      } catch (err) {
+        b.disabled = false; b.textContent = 'SEND IT 🔥';
+        sheetError(err?.code === 4001 || /reject|cancel|abort/i.test(err?.message || '') ? 'Cold feet? Nothing was sent. The fire forgives you.' : `The wallet sneezed: ${err?.message || err}`);
+      }
+    };
+  }
+
+  const setMeStatus = html => { const el = $('meStatus'); if (el) { el.innerHTML = html; el.hidden = !html; } };
+
+  function renderMe() {
+    const btn = $('walletBtn');
+    btn.hidden = !st.addr; btn.textContent = st.addr ? '🐺 ' + short(st.addr) : '';
+    btn.classList.toggle('connected', !!st.addr);
+    $('meConnect').hidden = !!st.addr; $('meBody').hidden = !st.addr;
+    if (!st.addr) return;
+    const burned = S.burners.get(st.addr) || 0n;
+    const ranked = [...S.burners.entries()].sort((a, b) => (b[1] > a[1] ? 1 : -1));
+    const rank = ranked.findIndex(([a]) => a === st.addr);
+    $('meBal').textContent = fmt(units(st.balance));
+    $('meBalUsd').textContent = usd(units(st.balance) * S.price);
+    $('meBurned').textContent = fmt(units(burned));
+    $('meBurnedUsd').textContent = usd(units(burned) * S.price);
+    $('meRank').textContent = rank >= 0 ? '#' + (rank + 1) : '—';
+    $('meRankOf').textContent = rank >= 0 ? `of ${ranked.length} wolves` : 'not burned yet';
+  }
+
+  function renderLeaders() {
+    const ranked = [...S.burners.entries()].sort((a, b) => (b[1] > a[1] ? 1 : -1)).slice(0, 10);
+    $('leaders').innerHTML = ranked.length ? ranked.map(([a, r]) => `<li class="${a === st.addr ? 'me' : ''}"><a href="https://voyager.online/contract/${a}" target="_blank" rel="noopener">${a === st.addr ? 'You' : short(a)}</a><span class="amt">${fmt(units(r))}</span></li>`).join('') : '<li style="grid-template-columns:1fr">No burners yet.</li>';
+  }
+
+  // ---- wire up ----
+  $('walletBtn').addEventListener('click', () => st.addr ? (confirmDisconnect()) : openConnect());
+  $('meConnectBtn').addEventListener('click', openConnect);
+  function confirmDisconnect() {
+    sheetMode = 'acct';
+    sheet.innerHTML = `<h3 id="sheetTitle">${short(st.addr)} <button class="btn x" type="button" data-close aria-label="Close">×</button></h3>
+      <p>Running with the pack via ${escapeHtml(st.wallet?.name || 'a wallet')}.</p>
+      <div class="row"><a class="btn" href="https://voyager.online/contract/${st.addr}" target="_blank" rel="noopener">View on Voyager</a><button class="btn ghost" type="button" data-dc>Leave the pack</button></div>`;
+    back.hidden = false;
+    sheet.querySelector('[data-close]').onclick = closeSheet;
+    sheet.querySelector('[data-dc]').onclick = () => { disconnect(); closeSheet(); };
+  }
+  $('burnForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const raw = toRaw($('burnAmt').value);
+    if (!raw || raw <= 0n) return setMeStatus('Type a number, wolf. Like 1000.');
+    if (raw > st.balance) return setMeStatus(`Nice try. You only hold ${fmt(units(st.balance))} ${escapeHtml(S.symbol)}.`);
+    setMeStatus('');
+    openConfirm(raw);
+  });
+  $('burnMax').addEventListener('click', () => { $('burnAmt').value = (Number(st.balance) / 10 ** S.decimals).toString(); });
+
+
+  return { refreshMe, renderMe, renderLeaders, get addr() { return st.addr; } };
+})();
+
+// rotating campfire hype under the title; dims the longer nothing burns
+const HYPE = ['Keep the fire burning.', 'Feed the fire.', 'The fire is hungry. Are you?', 'One bag at a time.', 'Every token you burn makes the pack stronger.', 'Fire doesn\x27t feed itself, wolf.', 'Throw another log on. By log we mean tokens.', 'No sell. Only burn.', 'Warm paws, scorched supply.', 'The wolves are watching the flames.'];
+let hypeI = 0;
+setInterval(() => {
+  const el = $('hype'); el.classList.add('fade');
+  setTimeout(() => { hypeI = (hypeI + 1) % HYPE.length; el.textContent = HYPE[hypeI]; el.classList.remove('fade'); }, 300);
+}, 5000);
+
+render(); tickTotal(); boot();
+})();
+</script>
+</body>
+</html>

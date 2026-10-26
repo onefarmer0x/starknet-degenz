@@ -1,0 +1,31 @@
+/* Shared top menu for the landing page and the bonfire page. */
+.topnav {
+  position: sticky; top: 0; z-index: 40; height: 60px;
+  display: flex; align-items: center; gap: 14px;
+  padding-block: 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: #1b1531; border-bottom: 3px solid #15111c;
+  font-family: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+}
+.topnav .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #ffd23f; font: 400 28px/1 "Bangers", Impact, sans-serif; letter-spacing: 0.04em; -webkit-text-stroke: 1px #15111c; text-shadow: 2px 2px 0 #15111c; white-space: nowrap; }
+.topnav .logo img { width: 36px; height: 36px; border-radius: 9px; border: 2px solid #15111c; }
+.topnav .links { display: flex; gap: 4px; margin-left: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.topnav .links::-webkit-scrollbar { display: none; }
+.topnav .links a { color: #efe6ff; text-decoration: none; font: 400 19px "Bangers", Impact, sans-serif; letter-spacing: 0.05em; padding: 6px 10px; border-radius: 10px; white-space: nowrap; }
+.topnav .links a:hover { background: rgba(255, 255, 255, 0.08); }
+.topnav .links a[aria-current="page"] { background: #ffd23f; color: #15111c; border: 2px solid #15111c; padding: 4px 8px; }
+.topnav .buy {
+  margin-left: auto; white-space: nowrap; text-decoration: none;
+  background: #ff6a13; color: #fff; border: 2.5px solid #15111c; border-radius: 12px; box-shadow: 3px 3px 0 #15111c;
+  padding: 7px 14px; font: 400 19px "Bangers", Impact, sans-serif; letter-spacing: 0.05em; -webkit-text-stroke: 0.5px #15111c;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.topnav .buy:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #15111c; }
+.topnav .buy:active { transform: translate(3px, 3px); box-shadow: none; }
+.topnav a:focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .topnav { gap: 8px; }
+  .topnav .logo span { display: none; }
+  .topnav .links { margin-left: 0; }
+  .topnav .links a { font-size: 17px; padding: 6px 7px; }
+  .topnav .buy { font-size: 16px; padding: 6px 10px; }
+}

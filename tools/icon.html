@@ -1,0 +1,6 @@
+<!doctype html><html><head><style>
+html,body{margin:0;width:512px;height:512px;background:transparent;overflow:hidden}
+.tile{position:absolute;inset:12px;border-radius:110px;background:#2b2350;border:14px solid #15111c;overflow:hidden}
+/* zoom the sticker so the wolf's head fills the tile */
+video{position:absolute;width:820px;left:-190px;top:-40px}
+</style></head><body><div class="tile"><video src="../wolves/10.webm" muted autoplay playsinline></video></div><script>const s=+new URLSearchParams(location.search).get("s")||512;document.documentElement.style.zoom=s/512;</script></body></html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@600&display=block">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: linear-gradient(#2b2350, #120e22 80%); font-family: Fredoka, sans-serif; position: relative; }
+  .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: #231b40; }
+  .glow { position: absolute; left: 640px; bottom: 40px; width: 700px; height: 500px; transform: translateX(-50%); background: radial-gradient(closest-side, rgba(255,140,40,.6), rgba(255,90,30,0)); }
+  .moon { position: absolute; right: 70px; top: 50px; width: 90px; height: 90px; border-radius: 50%; background: #fff3c9; border: 5px solid #15111c; }
+  .star { position: absolute; color: #ffefb8; font-size: 22px; }
+  h1 { position: absolute; left: 60px; top: 46px; margin: 0; font: 400 128px/0.86 Bangers, Impact, sans-serif; letter-spacing: 3px; color: #ffd23f;
+       -webkit-text-stroke: 4px #15111c; paint-order: stroke fill; text-shadow: 7px 7px 0 #15111c, 11px 11px 0 #e3262f; transform: rotate(-3deg); }
+  h1 span { color: #fff; }
+  .tag { position: absolute; left: 70px; top: 330px; background: #ffd23f; border: 4px solid #15111c; border-radius: 14px; padding: 6px 18px;
+         font: 400 44px Bangers, Impact, sans-serif; letter-spacing: 2px; box-shadow: 6px 6px 0 #15111c; transform: rotate(-2deg); }
+  .sub { position: absolute; left: 70px; top: 430px; width: 440px; background: #fff6e3; border: 4px solid #15111c; border-radius: 16px; padding: 12px 18px;
+         font-size: 26px; line-height: 1.25; color: #15111c; box-shadow: 6px 6px 0 #15111c; transform: rotate(1deg); }
+  .fire { position: absolute; left: 640px; bottom: 70px; width: 380px; }
+  .wolf { position: absolute; bottom: 60px; width: 230px; }
+  .w1 { left: 560px; } .w2 { left: 960px; bottom: 50px; }
+</style></head>
+<body>
+  <div class="glow"></div>
+  <div class="moon"></div>
+  <span class="star" style="left:620px;top:60px">✦</span><span class="star" style="left:820px;top:120px">✦</span><span class="star" style="left:980px;top:40px;font-size:16px">✦</span><span class="star" style="left:720px;top:200px;font-size:14px">✦</span>
+  <div class="ground"></div>
+  <svg class="fire" viewBox="0 0 64 64" style="left:700px;width:300px;bottom:60px">
+    <path d="M32 6 C40 18 50 24 48 40 C47 51 40 57 32 57 C24 57 17 51 16 40 C15 31 21 27 24 19 C27 25 29 27 31 27 C30 20 30 13 32 6 Z" fill="#e3262f" stroke="#15111c" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M32 20 C37 28 43 32 41 42 C40 49 36 53 32 53 C27 53 23 49 23 42 C23 36 27 33 28 28 C30 31 31 32 32 32 C31 28 31 24 32 20 Z" fill="#ff6a13"/>
+    <path d="M32 33 C35 38 38 41 37 46 C36.5 50 34.5 52 32 52 C29.5 52 27.5 50 27 46 C27 42 30 40 32 33 Z" fill="#ffd23f"/>
+    <rect x="10" y="53" width="44" height="7" rx="3.5" fill="#8a4f2a" stroke="#15111c" stroke-width="1.6" transform="rotate(-8 32 56)"/>
+    <rect x="10" y="53" width="44" height="7" rx="3.5" fill="#8a4f2a" stroke="#15111c" stroke-width="1.6" transform="rotate(8 32 56)"/>
+  </svg>
+  <video class="wolf w1" src="../wolves/10.webm" muted autoplay playsinline></video>
+  <video class="wolf w2" src="../wolves/16.webm" muted autoplay playsinline></video>
+  <h1>DEGENZ<br><span>BONFIRE</span></h1>
+  <div class="tag">KEEP THE FIRE BURNING</div>
+  <div class="sub">Watch every $DEGENZ burn on Starknet live. Feed the fire with your own bag.</div>
+</body></html>

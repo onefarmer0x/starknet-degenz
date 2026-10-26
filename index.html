@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>$DEGENZ · Starknet Degenz</title>
+<meta name="description" content="$DEGENZ is the Starknet Degenz community memecoin. Holders buy it and burn it themselves. Live price, holders, supply, chart and the contract address.">
+<meta name="theme-color" content="#2b2350">
+<link rel="canonical" href="https://bonfire-chi-olive.vercel.app/">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-64.png" type="image/png" sizes="64x64">
+<link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="$DEGENZ">
+<meta property="og:title" content="$DEGENZ · The Starknet wolf pack">
+<meta property="og:description" content="Community bought, community burned. Live price, holders, chart and contract for $DEGENZ on Starknet.">
+<meta property="og:url" content="https://bonfire-chi-olive.vercel.app/">
+<meta property="og:image" content="https://bonfire-chi-olive.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cartoon Degenz wolves around a bonfire">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@StarknetDegenz">
+<meta name="twitter:title" content="$DEGENZ · The Starknet wolf pack">
+<meta name="twitter:description" content="Community bought, community burned. Live price, holders, chart and contract for $DEGENZ on Starknet.">
+<meta name="twitter:image" content="https://bonfire-chi-olive.vercel.app/og.png">
+<link rel="stylesheet" href="/site.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one long scroll of comic panels on a dusk sky. Single dusk theme by choice, shared with the bonfire page. */
+:root {
+  --sky-top: #2b2350;
+  --sky-bot: #120e22;
+  --ink: #15111c;
+  --paper: #fff6e3;
+  --paper-2: #ffe9c2;
+  --fire: #ff6a13;
+  --flame: #ffd23f;
+  --blood: #e3262f;
+  --mint: #5fe39a;
+  --muted: #6d6476;
+  --display: "Bangers", "Impact", "Arial Black", sans-serif;
+  --body: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+section { padding-block: 64px; }
+h2 { margin: 0 0 22px; font: 400 clamp(40px, 6vw, 64px)/0.95 var(--display); letter-spacing: 0.03em; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink), 6px 6px 0 var(--fire); text-wrap: balance; }
+h2 .y { color: var(--flame); }
+.lead { color: #e6dcfa; font-size: 18px; max-width: 60ch; margin: -6px 0 26px; }
+.card { background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 6px 6px 0 var(--ink); }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer;
+  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); padding: 10px 18px;
+  font: 400 24px var(--display); letter-spacing: 0.05em; color: var(--ink); background: #fff; transition: transform 0.08s, box-shadow 0.08s;
+}
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.btn:active { transform: translate(4px, 4px); box-shadow: none; }
+.btn.fire { background: var(--fire); color: #fff; -webkit-text-stroke: 0.8px var(--ink); }
+.btn.gold { background: var(--flame); }
+.btn:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--flame); outline-offset: 3px; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; overflow: hidden; background: linear-gradient(var(--sky-top), #1f1840 70%, var(--sky-bot)); padding-block: 48px 0; }
+.hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(2px 2px at 12% 18%, #ffefb8 50%, transparent 52%), radial-gradient(2px 2px at 38% 8%, #ffefb8 50%, transparent 52%), radial-gradient(3px 3px at 64% 22%, #ffefb8 50%, transparent 52%), radial-gradient(2px 2px at 86% 12%, #ffefb8 50%, transparent 52%), radial-gradient(2px 2px at 52% 40%, #ffefb8 50%, transparent 52%); opacity: 0.8; pointer-events: none; }
+.hero-grid { position: relative; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; align-items: end; }
+.eyebrow { display: inline-block; background: var(--paper); border: 2.5px solid var(--ink); border-radius: 10px; padding: 4px 12px; font: 600 14px var(--body); letter-spacing: 0.06em; text-transform: uppercase; box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1.5deg); }
+.hero h1 {
+  margin: 18px 0 8px; font: 400 clamp(84px, 15vw, 190px)/0.82 var(--display); letter-spacing: 0.02em; color: var(--flame);
+  -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 7px 7px 0 var(--ink), 12px 12px 0 var(--blood); transform: rotate(-3deg); transform-origin: left;
+}
+.hero h1 small { display: block; font-size: 0.32em; color: #fff; letter-spacing: 0.06em; margin-top: 10px; }
+.hero .pitch { color: #f1e9ff; font-size: clamp(18px, 2vw, 22px); font-weight: 500; max-width: 34ch; margin: 22px 0 26px; }
+.cta { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero-art { position: relative; min-height: 420px; }
+.hero-art video { position: absolute; display: block; }
+.hero-art .chad { width: min(440px, 100%); right: 0; bottom: 0; }
+.hero-art .peek { width: 190px; left: -10px; bottom: 30px; transform: rotate(-8deg); }
+.ticker {
+  position: relative; z-index: 2; margin-top: 18px; margin-bottom: -46px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; padding: 14px 18px;
+}
+.ticker .price { font: 400 44px/1 var(--display); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.ticker .chg { font: 600 15px var(--body); }
+.up { color: #1e8a4f; } .down { color: var(--blood); }
+.ca { display: flex; gap: 8px; align-items: center; min-width: 0; justify-self: end; }
+.ca code { font: 500 14px var(--mono); background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 8px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ca button { flex: none; border: 2.5px solid var(--ink); background: var(--flame); border-radius: 10px; padding: 7px 12px; font: 400 18px var(--display); letter-spacing: 0.05em; cursor: pointer; box-shadow: 2px 2px 0 var(--ink); }
+.ca button:active { transform: translate(2px, 2px); box-shadow: none; }
+.k { font: 600 12px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- marquee ---------- */
+.marquee { background: var(--flame); border-block: 3px solid var(--ink); overflow: hidden; padding-block: 12px; margin-top: 70px; transform: rotate(-1.2deg); }
+.marquee .track { display: flex; gap: 34px; width: max-content; animation: slide 30s linear infinite; font: 400 30px var(--display); letter-spacing: 0.05em; white-space: nowrap; }
+.marquee .track span::after { content: "🔥"; margin-left: 34px; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* ---------- stats ---------- */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat { padding: 16px 18px; min-width: 0; transition: transform 0.15s; }
+.stat:hover { transform: rotate(-1deg) translate(-2px, -2px); }
+.stat .v { font: 400 40px/1.05 var(--display); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat .s { color: var(--muted); font-size: 14px; font-weight: 500; }
+.stat.hot { background: var(--paper-2); }
+.stat.hot .v { color: var(--fire); -webkit-text-stroke: 1px var(--ink); }
+.stat a { color: var(--ink); text-decoration-color: var(--fire); text-decoration-thickness: 2px; }
+.src { margin-top: 14px; color: #bfb3dc; font-size: 13px; }
+
+/* ---------- about + memes ---------- */
+.about { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 26px; align-items: start; }
+.about .card { padding: 24px; }
+.about p { margin: 0 0 12px; font-size: 18px; }
+.about p:last-child { margin: 0; }
+.memes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.meme { aspect-ratio: 1; background: #3a2f63; border: 3px solid var(--ink); border-radius: 16px; overflow: hidden; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--ink); transition: transform 0.15s; }
+.meme:nth-child(odd) { transform: rotate(-1.5deg); } .meme:nth-child(even) { transform: rotate(1.5deg); }
+.meme:hover { transform: scale(1.06) rotate(0); }
+.meme video { width: 92%; height: 92%; object-fit: contain; }
+
+/* ---------- tokenomics ---------- */
+.tok { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 22px; }
+.tok .card { padding: 22px; min-width: 0; }
+.bar { display: flex; height: 46px; border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; margin: 8px 0 14px; background: #fff; }
+.bar span { display: block; height: 100%; min-width: 3px; }
+.legend { display: grid; gap: 8px; }
+.legend div { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: center; font-weight: 500; }
+.legend i { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--ink); }
+.legend b { font: 400 22px var(--display); letter-spacing: 0.03em; font-variant-numeric: tabular-nums; }
+.facts { display: grid; gap: 0; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 2px dashed #e0cfae; }
+.facts div:last-child { border-bottom: 0; }
+.facts span { color: var(--muted); font-weight: 500; }
+.facts b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+
+/* ---------- how to buy ---------- */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
+.step { padding: 20px 18px; counter-increment: step; position: relative; }
+.step::before { content: counter(step); position: absolute; top: -18px; left: 16px; width: 44px; height: 44px; display: grid; place-items: center; background: var(--fire); color: #fff; border: 3px solid var(--ink); border-radius: 50%; font: 400 26px var(--display); -webkit-text-stroke: 0.6px var(--ink); }
+.step h3 { margin: 14px 0 6px; font: 400 26px var(--display); letter-spacing: 0.04em; }
+.step p { margin: 0 0 10px; color: #3d3546; }
+.step a { color: var(--ink); font-weight: 600; text-decoration-color: var(--fire); text-decoration-thickness: 2px; }
+
+/* ---------- chart ---------- */
+.chart { padding: 0; overflow: hidden; }
+.chart iframe { display: block; width: 100%; height: 560px; border: 0; background: #111; }
+.chart-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+
+/* ---------- holders ---------- */
+.holders { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.holders th, .holders td { text-align: left; padding: 10px 12px; border-bottom: 2px dashed #e0cfae; }
+.holders th { font: 600 12px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.holders td:nth-child(3), .holders td:nth-child(4), .holders th:nth-child(3), .holders th:nth-child(4) { text-align: right; }
+.holders td a { color: var(--ink); font-family: var(--mono); font-size: 14px; }
+.holders .tag { display: inline-block; margin-left: 8px; font: 600 11px var(--body); text-transform: uppercase; letter-spacing: 0.06em; background: var(--mint); border: 2px solid var(--ink); border-radius: 999px; padding: 1px 8px; }
+.table-wrap { overflow-x: auto; padding: 8px 10px; }
+
+/* ---------- bonfire teaser ---------- */
+.teaser { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; padding: 26px; background: linear-gradient(120deg, var(--paper), var(--paper-2)); }
+.teaser h3 { margin: 0 0 6px; font: 400 40px/1 var(--display); letter-spacing: 0.03em; }
+.teaser p { margin: 0; font-size: 18px; color: #3d3546; }
+.teaser .burned { font: 400 54px/1 var(--display); color: var(--fire); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; }
+
+/* ---------- footer ---------- */
+footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); padding-block: 40px; }
+.foot-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; }
+.foot-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.foot-links a { color: #fff; text-decoration: none; border: 2px solid #3a2f63; border-radius: 10px; padding: 6px 12px; font: 400 20px var(--display); letter-spacing: 0.05em; }
+.foot-links a:hover { border-color: var(--flame); }
+.disclaimer { font-size: 13px; color: #9d91bd; max-width: 70ch; margin-top: 18px; }
+
+#toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 140%); z-index: 60; background: var(--flame); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); padding: 10px 16px; font: 600 15px var(--body); transition: transform 0.3s cubic-bezier(.2,1.6,.4,1); max-width: calc(100% - 32px); }
+#toast.show { transform: translate(-50%, 0); }
+@media (max-width: 920px) {
+  .hero-grid, .about, .tok { grid-template-columns: 1fr; }
+  .hero-art { min-height: 340px; }
+  .stats, .steps { grid-template-columns: 1fr 1fr; }
+  .ticker { grid-template-columns: auto 1fr; }
+  .ca { grid-column: 1 / -1; justify-self: stretch; }
+  .ca code { flex: 1; }
+}
+@media (max-width: 520px) {
+  section { padding-block: 48px; }
+  .stats, .steps { grid-template-columns: 1fr; }
+  .memes { grid-template-columns: repeat(3, 1fr); }
+  .teaser, .foot-grid { grid-template-columns: 1fr; }
+  .chart iframe { height: 460px; }
+  .hero-art .peek { width: 140px; }
+}
+@media (prefers-reduced-motion: reduce) { .marquee .track { animation: none; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Main">
+  <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
+  <div class="links"><a href="/" aria-current="page">Home</a><a href="#stats">Stats</a><a href="#buy">How to buy</a><a href="#chart">Chart</a><a href="/bonfire">Bonfire</a></div>
+  <a class="buy" id="buyNav" href="#" target="_blank" rel="noopener">BUY $DEGENZ</a>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Starknet's most feral wolf pack</span>
+      <h1>$DEGENZ<small>Starknet Degenz</small></h1>
+      <p class="pitch">A truly community token. The pack buys it with their own money, then throws it on the bonfire. No sell. Only burn.</p>
+      <div class="cta">
+        <a class="btn fire" id="buyHero" href="#" target="_blank" rel="noopener">BUY $DEGENZ</a>
+        <a class="btn gold" href="/bonfire">FEED THE BONFIRE 🔥</a>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <video class="peek" src="/wolves/1.webm" autoplay loop muted playsinline></video>
+      <video class="chad" src="/wolves/4.webm" autoplay loop muted playsinline></video>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="card ticker">
+      <div><div class="k">Price</div><div class="price" id="tPrice">$—</div></div>
+      <div><div class="chg" id="tChg">loading…</div><div class="k" id="tMc">market cap —</div></div>
+      <div class="ca"><span class="k">CA</span><code id="caText">0x049092ff…b100</code><button type="button" id="copyCa">COPY</button></div>
+    </div>
+  </div>
+  <div class="marquee" aria-hidden="true"><div class="track" id="marquee"></div></div>
+</header>
+
+<main>
+  <section id="stats">
+    <div class="wrap">
+      <h2>The <span class="y">numbers</span></h2>
+      <p class="lead">Read live from Starknet and DexScreener every time you load the page.</p>
+      <div class="stats">
+        <div class="card stat"><div class="k">Price</div><div class="v" id="sPrice">—</div><div class="s" id="sChg">24h —</div></div>
+        <div class="card stat"><div class="k">Market cap</div><div class="v" id="sMc">—</div><div class="s">fully diluted</div></div>
+        <div class="card stat"><div class="k">Liquidity</div><div class="v" id="sLiq">—</div><div class="s" id="sDex">Ekubo pool</div></div>
+        <div class="card stat"><div class="k">24h volume</div><div class="v" id="sVol">—</div><div class="s" id="sTx">— buys · — sells</div></div>
+        <div class="card stat"><div class="k">Holders</div><div class="v" id="sHolders">—</div><div class="s">wallets holding any $DEGENZ</div></div>
+        <div class="card stat"><div class="k">Total supply</div><div class="v" id="sSupply">—</div><div class="s">minted once, at launch</div></div>
+        <div class="card stat hot"><div class="k">Burned forever</div><div class="v" id="sBurned">—</div><div class="s" id="sBurnedPct"><a href="/bonfire">see the bonfire</a></div></div>
+        <div class="card stat"><div class="k">Circulating</div><div class="v" id="sCirc">—</div><div class="s">supply minus burned</div></div>
+      </div>
+      <p class="src" id="srcNote">Supply, holders and burns come from the token contract on Starknet. Price, liquidity and volume come from DexScreener.</p>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="wrap about">
+      <div>
+        <h2>Join the <span class="y">pack</span></h2>
+        <div class="card">
+          <p>$DEGENZ belongs to the Starknet Degenz community. Nobody is farming you here.</p>
+          <p>Holders buy it from their own pockets and burn it by sending it to the dead address. Two wolves alone burned 3M between them, and others promised to do the same.</p>
+          <p>Every burn shows up on the bonfire, live. Bring snacks. The fire is always hungry.</p>
+        </div>
+      </div>
+      <div>
+        <h2>The <span class="y">memes</span></h2>
+        <div class="memes" id="memes"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tokenomics">
+    <div class="wrap">
+      <h2>Token<span class="y">omics</span></h2>
+      <div class="tok">
+        <div class="card">
+          <div class="k">Where the supply sits</div>
+          <div class="bar" id="supplyBar"><span style="flex:1;background:#eee"></span></div>
+          <div class="legend" id="supplyLegend"></div>
+        </div>
+        <div class="card facts">
+          <div><span>Name</span><b id="fName">Starknet Degenz</b></div>
+          <div><span>Ticker</span><b>$DEGENZ</b></div>
+          <div><span>Chain</span><b>Starknet</b></div>
+          <div><span>Decimals</span><b id="fDec">18</b></div>
+          <div><span>Total supply</span><b id="fSupply">—</b></div>
+          <div><span>Main pool</span><b>Ekubo · DEGENZ / STRK</b></div>
+          <div><span>Contract</span><b><a id="fCa" href="#" target="_blank" rel="noopener" style="color:inherit">0x0490…b100</a></b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="buy">
+    <div class="wrap">
+      <h2>How to <span class="y">buy</span></h2>
+      <div class="steps">
+        <div class="card step"><h3>Get a wallet</h3><p>Install a Starknet wallet: <a href="https://bramble.fi/" target="_blank" rel="noopener">Bramble</a>, <a href="https://www.ready.co/" target="_blank" rel="noopener">Ready</a> or <a href="https://braavos.app/" target="_blank" rel="noopener">Braavos</a>.</p></div>
+        <div class="card step"><h3>Load up STRK</h3><p>Buy STRK on an exchange or bridge it in, then send it to your Starknet wallet.</p></div>
+        <div class="card step"><h3>Swap for $DEGENZ</h3><p>Open <a id="buyStep" href="#" target="_blank" rel="noopener">AVNU</a> (we copy the CA for you), paste it in the token search, and swap STRK for $DEGENZ.</p></div>
+        <div class="card step"><h3>Feed the fire</h3><p>Hold with the pack, or burn a bag on the <a href="/bonfire">bonfire</a> and climb the leaderboard.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="chart">
+    <div class="wrap">
+      <h2>The <span class="y">chart</span></h2>
+      <div class="card chart"><iframe id="chartFrame" title="DEGENZ price chart on DexScreener" loading="lazy"></iframe></div>
+      <div class="chart-links">
+        <a class="btn" id="dexLink" href="https://dexscreener.com/starknet/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100" target="_blank" rel="noopener">DEXSCREENER</a>
+        <a class="btn" id="voyLink" href="#" target="_blank" rel="noopener">VOYAGER</a>
+        <a class="btn fire" id="buyChart" href="#" target="_blank" rel="noopener">BUY ON AVNU</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="holders">
+    <div class="wrap">
+      <h2>Top <span class="y">holders</span></h2>
+      <p class="lead">Rebuilt from every transfer the contract has ever made. The dead address is left out, it's on the bonfire.</p>
+      <div class="card table-wrap">
+        <table class="holders">
+          <thead><tr><th>#</th><th>Wallet</th><th>Holding</th><th>% supply</th></tr></thead>
+          <tbody id="holderRows"><tr><td colspan="4">Counting wolves…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <a class="card teaser" href="/bonfire" style="text-decoration:none;color:inherit">
+        <div><h3>The bonfire is lit</h3><p>Watch every burn land in the fire, see the top burners, and toss in your own bag.</p></div>
+        <div class="burned" id="teaserBurned">—</div>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div style="font:400 40px var(--display);color:var(--flame);letter-spacing:.04em">$DEGENZ</div>
+      <p class="disclaimer">$DEGENZ is a memecoin with no intrinsic value and no expectation of financial return. There is no team promising anything. Nothing on this site is financial advice. Only spend what you're happy to see on fire.</p>
+    </div>
+    <div class="foot-links">
+      <a href="https://x.com/StarknetDegenz" target="_blank" rel="noopener">X</a>
+      <a href="https://t.me/addstickers/Starknet_Degenz_Wolf_by_fStikBot" target="_blank" rel="noopener">STICKERS</a>
+      <a id="dexFoot" href="https://dexscreener.com/starknet/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100" target="_blank" rel="noopener">DEXSCREENER</a>
+      <a id="voyFoot" href="#" target="_blank" rel="noopener">VOYAGER</a>
+      <a href="/bonfire">BONFIRE</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+'use strict';
+const TOKEN = '0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100';
+const STRK = '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d';
+const DEPLOY = 16480353;
+const RPC = 'https://api.cartridge.gg/x/starknet/mainnet';
+const SEL_TRANSFER = '0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9';
+const SEL_SUPPLY = '0x1557182e4359a1f0c6301278e8f5b35a776ab58d39892581e357578fb287836';
+const EKUBO_CORE = 0x00000005dd3d2f4429af886cd1a3b08289dbcea99a294197e9eb43b0e0325b4bn;
+const DEAD = 0xdeadn;
+const LABELS = new Map([[EKUBO_CORE, 'Ekubo pool']]);
+// AVNU ignores token params for unlisted tokens, so buy links open AVNU and copy the CA in the same click
+const BUY_URL = 'https://app.avnu.fi/en';
+const VOYAGER = `https://voyager.online/token/${TOKEN}`;
+const $ = id => document.getElementById(id);
+
+// static links
+['buyNav', 'buyHero', 'buyStep', 'buyChart'].forEach(id => $(id).href = BUY_URL);
+['voyLink', 'voyFoot', 'fCa'].forEach(id => $(id).href = VOYAGER);
+$('caText').textContent = TOKEN;
+$('fCa').textContent = TOKEN.slice(0, 8) + '…' + TOKEN.slice(-4);
+['buyNav', 'buyHero', 'buyStep', 'buyChart'].forEach(id => $(id).addEventListener('click', () => {
+  navigator.clipboard?.writeText(TOKEN).then(() => toast('CA copied. Paste it into AVNU\x27s token search.'), () => {});
+}));
+function toast(msg) {
+  let t = $('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.className = 'show'; clearTimeout(t._h); t._h = setTimeout(() => t.className = '', 3500);
+}
+$('copyCa').addEventListener('click', e => {
+  const b = e.currentTarget;
+  navigator.clipboard.writeText(TOKEN).then(() => { b.textContent = 'COPIED!'; setTimeout(() => b.textContent = 'COPY', 1600); },
+    () => { const r = document.createRange(); r.selectNodeContents($('caText')); getSelection().removeAllRanges(); getSelection().addRange(r); });
+});
+
+// marquee + memes
+const LINES = ['NO SELL. ONLY BURN', 'KEEP THE FIRE BURNING', 'FEED THE FIRE', 'COMMUNITY BOUGHT', 'COMMUNITY BURNED', 'AWOOOOO', 'WAGMI', 'STARKNET WILL MELT FACES'];
+$('marquee').innerHTML = [...LINES, ...LINES].map(t => `<span>${t}</span>`).join('');
+fetch('/wolves/list.json').then(r => r.json()).then(files => {
+  const nums = files.filter(f => f.endsWith('.webm')).map(f => parseInt(f)).sort((a, b) => a - b);
+  $('memes').innerHTML = nums.map(n => `<div class="meme"><video data-src="/wolves/${n}.webm" muted loop playsinline preload="none"></video></div>`).join('');
+  // play stickers only while they're on screen
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    const v = e.target;
+    if (e.isIntersecting) { if (!v.src) v.src = v.dataset.src; v.play().catch(() => {}); } else v.pause();
+  }), { rootMargin: '100px' });
+  document.querySelectorAll('.meme video').forEach(v => io.observe(v));
+}).catch(() => {});
+
+// formatting
+const fmt = n => !isFinite(n) ? '—' : n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+const usd = n => !isFinite(n) || n == null ? '$—' : n >= 1000 ? '$' + fmt(n) : n >= 1 ? '$' + n.toFixed(2) : '$' + n.toPrecision(4);
+const pct = p => p < 0.01 ? p.toFixed(4) + '%' : p.toFixed(2) + '%';
+const units = raw => Number(raw) / 1e18;
+const short = a => { const h = a.toString(16).padStart(64, '0'); return '0x' + h.slice(0, 4) + '…' + h.slice(-4); };
+
+async function rpc(method, params) {
+  const r = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+  const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result;
+}
+
+let supply = 0, burned = 0, pool = 0;
+
+async function market() {
+  try {
+    const j = await (await fetch('https://api.dexscreener.com/latest/dex/tokens/' + TOKEN)).json();
+    const p = (j.pairs || []).filter(p => p.chainId === 'starknet').sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+    if (!p) return;
+    const price = +p.priceUsd, chg = p.priceChange?.h24 ?? 0;
+    $('tPrice').textContent = usd(price); $('sPrice').textContent = usd(price);
+    const cls = chg >= 0 ? 'up' : 'down', txt = `${chg >= 0 ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)}% · 24h`;
+    $('tChg').className = 'chg ' + cls; $('tChg').textContent = txt;
+    $('sChg').innerHTML = `<span class="${cls}">${txt}</span>`;
+    $('tMc').textContent = 'market cap ' + usd(p.marketCap || p.fdv);
+    $('sMc').textContent = usd(p.marketCap || p.fdv);
+    $('sLiq').textContent = usd(p.liquidity?.usd);
+    $('sDex').textContent = `${p.dexId === 'ekubo' ? 'Ekubo' : p.dexId} · ${p.baseToken.symbol}/${p.quoteToken.symbol}`;
+    $('sVol').textContent = usd(p.volume?.h24);
+    $('sTx').textContent = `${p.txns?.h24?.buys ?? 0} buys · ${p.txns?.h24?.sells ?? 0} sells`;
+    $('dexLink').href = $('dexFoot').href = p.url;
+    if (!$('chartFrame').src) $('chartFrame').src = p.url + '?embed=1&theme=dark&trades=0&info=0';
+  } catch {}
+}
+
+function renderSupply() {
+  if (!supply) return;
+  const holders = Math.max(0, supply - burned - pool);
+  $('sSupply').textContent = fmt(supply); $('fSupply').textContent = supply.toLocaleString('en-US');
+  $('sBurned').textContent = fmt(burned); $('teaserBurned').textContent = fmt(burned) + ' 🔥';
+  $('sBurnedPct').innerHTML = `${pct(burned / supply * 100)} of supply · <a href="/bonfire">see the bonfire</a>`;
+  $('sCirc').textContent = fmt(supply - burned);
+  const parts = [['Holders', holders, '#ffd23f'], ['Ekubo pool', pool, '#5fe39a'], ['Burned', burned, '#ff6a13']];
+  $('supplyBar').innerHTML = parts.map(([, v, c]) => `<span style="flex:${v};background:${c}" title=""></span>`).join('');
+  $('supplyLegend').innerHTML = parts.map(([n, v, c]) => `<div><i style="background:${c}"></i><span>${n}</span><b>${fmt(v)} · ${pct(v / supply * 100)}</b></div>`).join('');
+}
+
+// replay every Transfer to rebuild balances: holders, burned, pool share
+async function chain() {
+  try {
+    const s = await rpc('starknet_call', [{ contract_address: TOKEN, entry_point_selector: SEL_SUPPLY, calldata: [] }, 'latest']);
+    supply = units(BigInt(s[0]) + (BigInt(s[1]) << 128n));
+    renderSupply();
+    const bal = new Map(); let token, safety = 0;
+    do {
+      const r = await rpc('starknet_getEvents', { filter: { from_block: { block_number: DEPLOY }, to_block: 'latest', address: TOKEN, keys: [[SEL_TRANSFER]], chunk_size: 1000, ...(token ? { continuation_token: token } : {}) } });
+      for (const e of r.events) {
+        if (e.keys.length < 3) continue;
+        const v = BigInt(e.data[0]) + (BigInt(e.data[1] || 0) << 128n), from = BigInt(e.keys[1]), to = BigInt(e.keys[2]);
+        bal.set(from, (bal.get(from) || 0n) - v); bal.set(to, (bal.get(to) || 0n) + v);
+      }
+      token = r.continuation_token;
+    } while (token && ++safety < 200);
+    burned = units(bal.get(DEAD) || 0n); pool = units(bal.get(EKUBO_CORE) || 0n);
+    const holders = [...bal].filter(([a, b]) => b > 0n && a !== 0n && a !== DEAD).sort((a, b) => (b[1] > a[1] ? 1 : -1));
+    $('sHolders').textContent = holders.length.toLocaleString();
+    renderSupply();
+    $('holderRows').innerHTML = holders.slice(0, 10).map(([a, b], i) => {
+      const hex = '0x' + a.toString(16).padStart(64, '0');
+      return `<tr><td>${i + 1}</td><td><a href="https://voyager.online/contract/${hex}" target="_blank" rel="noopener">${short(a)}</a>${LABELS.has(a) ? `<span class="tag">${LABELS.get(a)}</span>` : ''}</td><td>${fmt(units(b))}</td><td>${pct(units(b) / supply * 100)}</td></tr>`;
+    }).join('');
+  } catch {
+    $('holderRows').innerHTML = '<tr><td colspan="4">Starknet is being slow. Reload in a moment.</td></tr>';
+  }
+}
+
+market(); chain();
+setInterval(market, 60000);
+})();
+</script>
+</body>
+</html>
