@@ -722,7 +722,7 @@ const fire = (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const INK = '#15111c';
   let W = 0, H = 0, dpr = 1, baseX = 0, baseY = 0, scale = 1;
-  const blobs = [], sparks = [], puffs = [], coins = [], stars = [];
+  const blobs = [], sparks = [], puffs = [], coins = [], stars = [], embers = [];
   let heat = 0, t = 0, react = null;
   function reactWith(num) { if (Array.isArray(num)) { const ok = num.filter(n => wolves.byNum[n]); num = ok[Math.random() * ok.length | 0]; } const v = wolves.byNum[num]; if (!v) return; try { v.currentTime = 0; v.play().catch(() => {}); } catch {} react = { num, t0: t }; }
   // the pack around the fire: [side x as fraction of fire spread, size, flip]
@@ -767,20 +767,46 @@ const fire = (() => {
   }
 
   // cel-shaded fire: each colour layer is a set of tongues; strokes for every tongue first, then fills, so the outline hugs the union
-  const TONGUES = [-0.62, -0.4, -0.2, 0, 0.2, 0.42, 0.64];
+  const TONGUES = [-0.66, -0.48, -0.3, -0.12, 0.06, 0.24, 0.42, 0.6];
   const LAYERS = [['#e3262f', 1, true], ['#ff6a13', 0.78, false], ['#ffd23f', 0.55, false], ['#fff4b8', 0.3, false]];
   function drawFire() {
     const spread = (150 + heat * 30) * scale, Hmax = (230 + heat * 70) * scale, by = baseY + 16 * scale;
     const geo = TONGUES.map((o, i) => {
       const prof = Math.pow(1 - Math.abs(o) * 1.05, 1.2);
-      const wob = Math.sin(t * (0.11 + i * 0.013) + i * 2.1) * 0.5 + Math.sin(t * 0.23 + i) * 0.25;
-      return { x: baseX + o * spread, h: Hmax * prof * (0.78 + 0.22 * wob), lean: Math.sin(t * 0.07 + i * 1.7) * 26 * scale, bw: (74 - Math.abs(o) * 30) * scale };
+      // layered sines at different speeds read as real flicker instead of a slow sway
+      const wob = Math.sin(t * (0.11 + i * 0.013) + i * 2.1) * 0.45 + Math.sin(t * 0.29 + i * 1.3) * 0.3 + Math.sin(t * 0.53 + i * 4.1) * 0.15;
+      return { x: baseX + o * spread, h: Hmax * prof * (0.8 + 0.25 * wob), lean: (Math.sin(t * 0.07 + i * 1.7) * 22 + Math.sin(t * 0.19 + i) * 10) * scale, bw: (70 - Math.abs(o) * 28) * scale };
     });
     for (const [col, k, outline] of LAYERS) {
       const g = geo.map(q => ({ x: baseX + (q.x - baseX) * (0.6 + k * 0.4), h: q.h * k, lean: q.lean * k, bw: q.bw * (0.45 + k * 0.55) }));
       if (outline) { ctx.beginPath(); g.forEach(q => tongue(q.x, by, q.bw, q.h, q.lean)); ctx.lineWidth = 9 * scale; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke(); }
       ctx.beginPath(); g.forEach(q => tongue(q.x, by - (1 - k) * 6 * scale, q.bw, q.h, q.lean)); ctx.fillStyle = col; ctx.fill();
     }
+    // dark-orange shading on the left side of the outer layer gives the cel fire some volume
+    ctx.save(); ctx.globalAlpha = 0.35; ctx.beginPath(); geo.forEach(q => { if (q.x < baseX) tongue(q.x - q.bw * 0.18, by, q.bw * 0.5, q.h * 0.85, q.lean * 0.9); }); ctx.fillStyle = '#a3141c'; ctx.fill(); ctx.restore();
+    // white-hot glints dancing in the core
+    for (let i = 0; i < 3; i++) { const gx = baseX + Math.sin(t * 0.09 + i * 2.3) * 30 * scale, gy = by - (40 + i * 26 + Math.sin(t * 0.21 + i) * 10) * scale; ctx.beginPath(); star(gx, gy, (7 + Math.sin(t * 0.3 + i) * 3) * scale, t * 0.05 + i); ctx.fillStyle = '#ffffff'; ctx.fill(); }
+  }
+  // soft additive glow drawn behind the flames, breathing with the fire
+  function drawGlow(glow) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const r = (260 + heat * 80) * scale * (0.92 + glow * 0.12), cy = baseY - 90 * scale;
+    const g = ctx.createRadialGradient(baseX, cy, 0, baseX, cy, r);
+    g.addColorStop(0, 'rgba(255,170,60,0.55)'); g.addColorStop(0.35, 'rgba(255,90,20,0.22)'); g.addColorStop(1, 'rgba(255,60,10,0)');
+    ctx.fillStyle = g; ctx.fillRect(baseX - r, cy - r, r * 2, r * 2); ctx.restore();
+  }
+  // tiny glowing embers that zig-zag up out of the fire
+  function drawEmbers() {
+    if (Math.random() < 0.5 + heat * 0.6) embers.push({ x: baseX + (Math.random() - 0.5) * 160 * scale, y: baseY - 60 * scale, vy: -(1.2 + Math.random() * 2.2) * scale, ph: Math.random() * 6, life: 0, max: 80 + Math.random() * 90, r: (1.5 + Math.random() * 2.2) * scale });
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = embers.length - 1; i >= 0; i--) {
+      const e = embers[i]; e.life++; e.y += e.vy; e.x += Math.sin(e.life * 0.08 + e.ph) * 0.9;
+      const k = e.life / e.max; if (k >= 1) { embers.splice(i, 1); continue; }
+      const a = (1 - k) * (0.6 + 0.4 * Math.sin(e.life * 0.4 + e.ph));
+      ctx.fillStyle = `rgba(255,${200 - k * 120 | 0},80,${a})`; ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 2.4, 0, Math.PI * 2); ctx.globalAlpha = 0.25; ctx.fill();
+      ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
   }
 
   function drawLog(x, y, len, angle, glow) {
@@ -932,6 +958,7 @@ const fire = (() => {
     const stones = [];
     for (let i = 0; i < 12; i++) { const a = Math.PI * 2 * i / 12; stones.push({ x: baseX + Math.cos(a) * 170 * scale, y: baseY + 50 * scale + Math.sin(a) * 34 * scale, r: (20 + (i * 37 % 8)) * scale, front: Math.sin(a) > 0 }); }
     stones.filter(s => !s.front).forEach(s => drawStone(s.x, s.y, s.r, glow));
+    drawGlow(glow);
     drawLog(baseX + 6 * scale, baseY + 18 * scale, 230, 2.95, glow);
     drawFire();
     drawLog(baseX - 30 * scale, baseY + 40 * scale, 240, -0.28, glow);
@@ -947,6 +974,7 @@ const fire = (() => {
       ctx.lineWidth = 4 * scale; ctx.strokeStyle = INK; ctx.stroke(); ctx.fillStyle = k < 0.5 ? '#ff6a13' : '#e3262f'; ctx.fill();
     }
 
+    if (!reduce) drawEmbers();
     // sparks as little cartoon stars
     for (let i = sparks.length - 1; i >= 0; i--) {
       const p = sparks[i]; p.life++; p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.vx *= 0.99; p.rot += p.vr;

@@ -1283,13 +1283,61 @@ function respawn(k) {
 }
 const fxG = new THREE.IcosahedronGeometry(1, 0);
 function explode(pos, size = 1) { emit({ e: 'boom', x: +pos.x.toFixed(1), z: +pos.z.toFixed(1), s: size }); }
+// an explosion is layered: white flash + light, a swelling toon fireball, a ground shockwave ring, flying chunks
+// of fire, dark debris that bounces, and smoke that rolls upward and lingers. Each piece animates itself via upd().
+const fxSphere = new THREE.SphereGeometry(1, 16, 12), fxRing = new THREE.RingGeometry(0.8, 1, 40);
+let camShake = 0;
 function explodeFx(pos, size = 1) {
   boom();
-  for (const [c, n, s] of [[0xffd23f, 6, 1], [0xff6a13, 8, 1.4], [0xe3262f, 6, 1.1], [0x9a93b0, 6, 1.6]]) for (let i = 0; i < n; i++) {
-    const m = outlined(new THREE.Mesh(fxG, toon(c, { emissive: c === 0x9a93b0 ? 0 : 0x331100 })), 1.12);
-    m.position.copy(pos); m.position.y = 2;
-    const v = new THREE.Vector3((Math.random() - 0.5) * 2, Math.random() * 1.4 + 0.3, (Math.random() - 0.5) * 2).multiplyScalar(14 * size);
-    scene.add(m); fx.push({ m, v, life: 0.7 + Math.random() * 0.4, max: 1, s: s * size * (0.8 + Math.random() * 0.8) });
+  const x = pos.x, z = pos.z, add = (m, f) => { scene.add(m); fx.push(Object.assign({ m, life: f.max }, f)); };
+  // flash light
+  const L = new THREE.PointLight(0xffa040, 0, 60 * size, 1.6); L.position.set(x, 6, z);
+  add(L, { max: 0.45, upd: (f) => { L.intensity = 900 * size * Math.pow(f.life / f.max, 2); } });
+  // white-hot core flash
+  const core = new THREE.Mesh(fxSphere, new THREE.MeshBasicMaterial({ color: 0xfff6d0, transparent: true, depthWrite: false })); core.position.set(x, 3, z);
+  add(core, { max: 0.18, upd: (f) => { const k = 1 - f.life / f.max; core.scale.setScalar(size * (3 + k * 6)); core.material.opacity = 1 - k; } });
+  // fireball: a few toon spheres that swell, rise and cool from yellow to red
+  for (let i = 0; i < 5; i++) {
+    const mat = toon(0xffd23f, { emissive: 0x662200, transparent: true });
+    const m = outlined(new THREE.Mesh(fxSphere, mat), 1.08);
+    const off = new THREE.Vector3((Math.random() - 0.5) * 4, 1.5 + Math.random() * 3, (Math.random() - 0.5) * 4).multiplyScalar(size);
+    m.position.set(x + off.x, off.y, z + off.z);
+    const grow = (2.6 + Math.random() * 1.6) * size, max = 0.55 + Math.random() * 0.25;
+    add(m, { max, upd: (f, dt) => { const k = 1 - f.life / f.max; m.scale.setScalar(grow * (0.4 + Math.sqrt(k) * 1.1) * (1 - Math.pow(k, 4))); m.position.y += dt * 6 * size; mat.color.setHex(k < 0.3 ? 0xffd23f : k < 0.6 ? 0xff6a13 : 0xe3262f); } });
+  }
+  // shockwave ring on the ground
+  const ring = new THREE.Mesh(fxRing, new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(x, 0.3, z);
+  add(ring, { max: 0.5, upd: (f) => { const k = 1 - f.life / f.max; ring.scale.setScalar(size * (2 + k * 22)); ring.material.opacity = 0.9 * (1 - k); } });
+  // flying fire chunks + dark debris (debris bounces off the ground)
+  for (const [c, n, s, debris] of [[0xffd23f, 6, 0.7, false], [0xff6a13, 8, 0.9, false], [0x3a3a46, 7, 0.55, true]]) for (let i = 0; i < n; i++) {
+    const m = outlined(new THREE.Mesh(fxG, toon(c, { emissive: debris ? 0 : 0x331100 })), 1.12);
+    m.position.set(x, 2.5, z);
+    const v = new THREE.Vector3((Math.random() - 0.5) * 2, Math.random() * 1.5 + 0.5, (Math.random() - 0.5) * 2).multiplyScalar((debris ? 18 : 15) * size);
+    const sc = s * size * (0.7 + Math.random() * 0.8), spin = new THREE.Vector3(Math.random(), Math.random(), Math.random()).multiplyScalar(12);
+    add(m, { max: debris ? 1.2 + Math.random() * 0.4 : 0.5 + Math.random() * 0.35, upd: (f, dt) => {
+      v.y -= 40 * dt; m.position.addScaledVector(v, dt); v.multiplyScalar(1 - dt * (debris ? 0.6 : 2.2));
+      if (debris && m.position.y < 0.4) { m.position.y = 0.4; v.y = Math.abs(v.y) * 0.4; v.x *= 0.7; v.z *= 0.7; }
+      m.rotation.x += spin.x * dt; m.rotation.y += spin.y * dt;
+      m.scale.setScalar(Math.max(0.01, sc * Math.min(1, f.life / f.max * (debris ? 4 : 1.6))));
+    } });
+  }
+  // smoke: grey puffs that roll up slowly after the fire's gone
+  for (let i = 0; i < 6; i++) {
+    const mat = toon(0x6f6884, { transparent: true }), ink = new THREE.MeshBasicMaterial({ color: 0x15111c, side: THREE.BackSide, transparent: true }); const m = new THREE.Mesh(fxSphere, mat), o = new THREE.Mesh(fxSphere, ink); o.scale.setScalar(1.08); m.add(o);
+    m.position.set(x + (Math.random() - 0.5) * 5 * size, 2 + Math.random() * 2, z + (Math.random() - 0.5) * 5 * size);
+    const g = (1.4 + Math.random()) * size, max = 1.3 + Math.random() * 0.7, dl = 0.15 + Math.random() * 0.2, drift = (Math.random() - 0.5) * 3;
+    m.scale.setScalar(0.01);
+    add(m, { max, upd: (f, dt) => { const k = 1 - f.life / f.max; if (k < dl) return; const kk = (k - dl) / (1 - dl); m.scale.setScalar(g * (0.6 + kk * 1.4)); m.position.y += dt * 5; m.position.x += drift * dt; mat.opacity = ink.opacity = 0.85 * (1 - kk); } });
+  }
+  // shake the camera when it goes off near you
+  const me = karts[meIdx]; if (me) { const d = Math.hypot(me.m.position.x - x, me.m.position.z - z); camShake = Math.max(camShake, size * Math.max(0, 1 - d / 70) * 1.6); }
+}
+function stepFx(dt) {
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i]; f.life -= dt;
+    if (f.life <= 0) { scene.remove(f.m); fx.splice(i, 1); continue; }
+    f.upd(f, dt);
   }
 }
 // push karts out of walls and obstacles
@@ -1552,11 +1600,7 @@ function collisions(dt) {
     }
     if (done) { scene.remove(pr.m); projectiles.splice(i, 1); }
   }
-  for (let i = fx.length - 1; i >= 0; i--) {
-    const f = fx[i]; f.life -= dt; f.v.y -= 30 * dt; f.m.position.addScaledVector(f.v, dt); f.v.multiplyScalar(1 - dt * 2);
-    f.m.scale.setScalar(Math.max(0.01, f.s * (f.life + 0.3))); f.m.rotation.x += dt * 5;
-    if (f.life < 0) { scene.remove(f.m); fx.splice(i, 1); }
-  }
+  stepFx(dt);
 }
 // pooled smoke / dust puffs: grow, rise and fade
 const puffG = new THREE.IcosahedronGeometry(1, 1), puffs = [];
@@ -2089,6 +2133,7 @@ function updateCamera(dt, instant) {
   camPos.lerp(desired, instant ? 1 : 1 - Math.pow(0.0015, dt));
   camLook.lerp(new THREE.Vector3(p.m.position.x + Math.sin(camYaw) * 10, 2.5, p.m.position.z + Math.cos(camYaw) * 10), instant ? 1 : 1 - Math.pow(0.0004, dt));
   camera.position.copy(camPos); camera.lookAt(camLook);
+  if (camShake > 0.01) { camera.position.x += (Math.random() - 0.5) * camShake; camera.position.y += (Math.random() - 0.5) * camShake; camShake *= Math.pow(0.02, dt); }
   camFov += (baseFov + (p.boost > 0 ? 10 : 0) + Math.max(0, p.speed) * 0.04 - camFov) * (instant ? 1 : 1 - Math.pow(0.05, dt));
   camera.fov = camFov; camera.updateProjectionMatrix();
 }
@@ -2362,7 +2407,7 @@ function tick(dt, now) {
         // bump off other karts locally so you can't drive through them
         const p = ME(); if (p && p.alive) for (const o of karts) { if (o === p || !o.alive) continue; const dx = p.m.position.x - o.m.position.x, dz = p.m.position.z - o.m.position.z, d = Math.hypot(dx, dz); if (d < 5.6 && d > 0.01) { p.m.position.x += dx / d * (5.6 - d); p.m.position.z += dz / d * (5.6 - d); } }
         driftNetMeshes(dt);
-        for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.life -= dt; f.v.y -= 30 * dt; f.m.position.addScaledVector(f.v, dt); f.v.multiplyScalar(1 - dt * 2); f.m.scale.setScalar(Math.max(0.01, f.s * (f.life + 0.3))); if (f.life < 0) { scene.remove(f.m); fx.splice(i, 1); } }
+        stepFx(dt);
       }
     } else {
       if (state === 'countdown') {
@@ -2399,7 +2444,7 @@ function tick(dt, now) {
   if (audio && ME() && state !== 'title') { const s = Math.abs(ME().speed); audio.eng.frequency.value = 60 + s * 2.2 + (ME().boost > 0 ? 40 : 0); audio.g.gain.value = state === 'race' ? 0.04 + s / 3000 : 0; }
 }
 // test hook: advance the simulation without rendering (used for automated playtests)
-window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart };
+window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart, explodeFx };
 
 setWorld(); renderLobby(); renderSettings(); applyGfx();
 // invite links: ?room=CODE opens the join screen straight away
