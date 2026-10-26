@@ -4,273 +4,507 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Degenz Kart</title>
-<meta name="description" content="Cartoon kart racing and arena battles with Starknet memecoin mascots. Pick a coin or paste any Starknet token address to drive as its avatar.">
+<meta name="description" content="Cartoon kart racing and arena battles with Starknet memecoin mascots. Play bots solo or create a room and share the code with friends.">
 <meta name="theme-color" content="#2b2350">
+<meta property="og:title" content="Degenz Kart">
+<meta property="og:description" content="Kart racing and arena battles with Starknet memecoin mascots. Create a room, share the code, smash your friends.">
+<meta property="og:image" content="https://www.starknetdegenz.fun/og-home.png">
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=DM+Mono:wght@500&family=Fredoka:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@500;600;700&family=DM+Mono:wght@500&display=swap">
 <style>
-/* Layout: full-screen 3D game with comic menu panels and HUD on top. Single bright cartoon look by choice. */
+/* Layout: full-screen 3D game; chunky blue arcade panels on top (lobby, rooms, HUD), Smash Karts style. Single bright look by choice. */
 :root {
+  --blue: #4c7ce0;
+  --blue-l: #79a2ff;
+  --blue-d: #2c56b9;
+  --navy: #1f3a86;
+  --sky: #b7d6ff;
+  --yellow: #ffcd2e;
+  --orange: #ff8a1f;
+  --red: #ee4b4b;
+  --green: #48c46a;
   --ink: #15111c;
-  --paper: #fff6e3;
-  --paper-2: #ffe9c2;
-  --flame: #ffd23f;
-  --fire: #ff6a13;
-  --blood: #e3262f;
-  --mint: #5fe39a;
-  --muted: #5d5468;
+  --white: #ffffff;
+  --ui: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
   --display: "Bangers", Impact, "Arial Black", sans-serif;
-  --body: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
   --mono: "DM Mono", ui-monospace, Consolas, monospace;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #8fd3ff; color: var(--ink); font-family: var(--body); -webkit-user-select: none; user-select: none; touch-action: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sky); color: var(--white); font-family: var(--ui); -webkit-user-select: none; user-select: none; touch-action: none; }
 #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-.outline-text { -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink); }
 button, input { font-family: inherit; }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--flame); outline-offset: 3px; }
-
-/* ---------- menus ---------- */
-.screen { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; overflow-y: auto; touch-action: pan-y;
-  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-  background: radial-gradient(70% 70% at 50% 40%, rgba(58, 47, 99, 0.88), rgba(18, 14, 34, 0.95)); }
-.panel { width: min(1000px, 100%); display: grid; gap: 18px; justify-items: center; text-align: center; }
-.logo { margin: 0; font: 400 clamp(64px, 12vw, 128px)/0.85 var(--display); letter-spacing: 0.03em; color: var(--flame); transform: rotate(-3deg);
-  -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 7px 7px 0 var(--ink), 12px 12px 0 var(--blood); }
-.logo span { color: #fff; }
-.tag { margin: 0; color: #efe6ff; font-size: 18px; font-weight: 500; max-width: 48ch; }
-.btn { appearance: none; cursor: pointer; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); background: #fff; color: var(--ink);
-  padding: 10px 22px; font: 400 26px var(--display); letter-spacing: 0.05em; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.08s, box-shadow 0.08s; }
-.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
-.btn:active { transform: translate(4px, 4px); box-shadow: none; }
-.btn:disabled { opacity: 0.55; cursor: default; transform: none; }
-.btn.go { background: var(--fire); color: #fff; -webkit-text-stroke: 1px var(--ink); font-size: 34px; padding: 12px 34px; }
-.btn.small { font-size: 18px; padding: 6px 14px; }
-.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
-.keys { color: #cfc4ea; font-size: 14px; margin: 0; }
-.keys kbd { display: inline-block; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 6px; padding: 0 6px; font: 600 13px var(--body); box-shadow: 1px 1px 0 var(--ink); margin: 0 2px; }
-.pause-menu { display: grid; gap: 12px; width: min(320px, 100%); }
-.pause-menu .btn { width: 100%; }
-.best { color: var(--flame); font: 400 20px var(--display); letter-spacing: 0.05em; margin: 0; }
-
-/* ---------- setup modal ---------- */
-.setup { width: min(1000px, 100%); background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 8px 8px 0 var(--ink); padding: 18px; display: grid; gap: 16px; text-align: left; }
-.setup-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.setup h2 { margin: 0; font: 400 40px/1 var(--display); letter-spacing: 0.04em; }
-.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+/* the arcade text style: white with a deep blue drop shadow */
+.t { color: #fff; text-shadow: 0 3px 0 var(--blue-d), 0 4px 0 rgba(0,0,0,0.15); font-weight: 800; }
+.panel { background: linear-gradient(180deg, var(--blue-l), var(--blue)); border: 4px solid var(--blue-d); border-radius: 20px; box-shadow: inset 0 3px 0 rgba(255,255,255,0.35), 0 6px 0 var(--navy); }
+.panel.dark { background: linear-gradient(180deg, #3e64c4, #2d4fa8); }
+.btn { appearance: none; cursor: pointer; border: 4px solid var(--blue-d); border-radius: 16px; background: linear-gradient(180deg, #6f9bff, var(--blue)); color: #fff;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,0.4), 0 5px 0 var(--navy); padding: 8px 22px; font: 800 24px/1.1 var(--ui); text-shadow: 0 2px 0 var(--blue-d);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; transition: transform 0.08s, box-shadow 0.08s; }
+.btn:hover { filter: brightness(1.06); }
+.btn:active { transform: translateY(4px); box-shadow: inset 0 3px 0 rgba(255,255,255,0.4), 0 1px 0 var(--navy); }
+.btn:disabled { filter: grayscale(0.6) brightness(0.9); cursor: default; }
+.btn.yellow { background: linear-gradient(180deg, #ffe066, var(--yellow) 55%, #f6a313); border-color: #c97a08; box-shadow: inset 0 4px 0 rgba(255,255,255,0.55), 0 6px 0 #a35b00; text-shadow: 0 3px 0 #c97a08; }
+.btn.green { background: linear-gradient(180deg, #7be08f, var(--green)); border-color: #2b8a45; box-shadow: inset 0 3px 0 rgba(255,255,255,0.45), 0 5px 0 #1f6b34; text-shadow: 0 2px 0 #2b8a45; }
+.btn.red { background: linear-gradient(180deg, #ff8080, var(--red)); border-color: #b02b2b; box-shadow: inset 0 3px 0 rgba(255,255,255,0.45), 0 5px 0 #861f1f; text-shadow: 0 2px 0 #b02b2b; }
+.btn.small { font-size: 18px; padding: 5px 14px; border-width: 3px; border-radius: 12px; }
+.round { width: 54px; height: 54px; padding: 0; border-radius: 16px; font-size: 26px; }
 .field { display: grid; gap: 6px; min-width: 0; }
-.field > span, .k { font: 700 12px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.field input { width: 100%; min-width: 0; border: 2.5px solid var(--ink); border-radius: 12px; padding: 10px 12px; font: 600 17px var(--body); background: #fff; color: var(--ink); -webkit-user-select: text; user-select: text; }
-.seg { display: inline-flex; border: 2.5px solid var(--ink); border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 2px 2px 0 var(--ink); width: max-content; max-width: 100%; }
-.seg button { appearance: none; border: 0; background: transparent; color: var(--ink); padding: 8px 14px; font: 400 20px var(--display); letter-spacing: 0.05em; cursor: pointer; }
-.seg button + button { border-left: 2px solid #e6d8bd; }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--flame); }
-.mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.mode-card { cursor: pointer; text-align: left; border: 3px solid var(--ink); border-radius: 16px; background: #fff; padding: 12px 14px; box-shadow: 4px 4px 0 var(--ink); display: grid; gap: 2px; }
-.mode-card b { font: 400 30px/1 var(--display); letter-spacing: 0.04em; }
-.mode-card small { color: var(--muted); font-size: 14px; font-weight: 500; }
-.mode-card[aria-pressed="true"] { background: var(--flame); }
-.opts { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.lbl { font: 800 14px var(--ui); letter-spacing: 0.04em; text-transform: uppercase; color: #dfe9ff; text-shadow: 0 2px 0 var(--blue-d); }
+.input { width: 100%; min-width: 0; border: 4px solid var(--blue-d); border-radius: 14px; padding: 6px 14px; font: 800 22px var(--ui); color: var(--blue-d); background: #e9f0ff; box-shadow: inset 0 3px 0 rgba(0,0,0,0.08); -webkit-user-select: text; user-select: text; }
+.input::placeholder { color: #8ea6dc; }
+.seg { display: inline-flex; border: 3px solid var(--blue-d); border-radius: 12px; overflow: hidden; background: #e9f0ff; max-width: 100%; }
+.seg button { appearance: none; border: 0; background: transparent; color: var(--blue-d); padding: 5px 13px; font: 800 17px var(--ui); cursor: pointer; }
+.seg button + button { border-left: 2px solid #c3d3fb; }
+.seg button[aria-pressed="true"] { background: var(--blue-d); color: #fff; }
+
+/* ---------- screens ---------- */
+.screen { position: fixed; inset: 0; z-index: 10; overflow-y: auto; touch-action: pan-y;
+  padding: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); }
+.screen.modal { display: grid; place-items: center; background: rgba(28, 44, 104, 0.55); backdrop-filter: blur(3px); }
+.modal-card { position: relative; width: min(980px, 100%); padding: 20px; display: grid; gap: 16px; }
+.modal-card h2 { margin: 0; font: 800 34px/1 var(--ui); }
+.close { position: absolute; top: -18px; right: -14px; }
+
+/* lobby (title) */
+#scrTitle { display: grid; grid-template-columns: 300px 1fr 300px; grid-template-rows: auto 1fr auto; gap: 14px; background: radial-gradient(70% 70% at 50% 55%, rgba(124,168,255,0) 30%, rgba(44,86,185,0.55)); }
+.logo { grid-column: 2; justify-self: center; margin: 0; text-align: center; font: 400 clamp(56px, 9vw, 112px)/0.82 var(--display); letter-spacing: 0.02em; transform: rotate(-3deg); }
+.logo .a { display: block; color: #3b7bff; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 7px 0 var(--ink); }
+.logo .b { display: block; color: var(--orange); -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 7px 0 var(--ink); font-size: 1.15em; }
+.side { grid-row: 2 / 4; align-self: start; padding: 14px; display: grid; gap: 12px; }
+.side.left { grid-column: 1; }
+.me-card { display: flex; align-items: center; gap: 10px; }
+.me-card img { width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--blue-d); background: #fff; object-fit: cover; }
+.me-card b { font: 800 20px/1.1 var(--ui); }
+.me-card small { display: block; font: 700 13px var(--ui); color: #dfe9ff; }
+.best { font: 700 14px var(--ui); color: #fff; background: rgba(31,58,134,0.35); border-radius: 12px; padding: 8px 10px; }
+.cta { grid-column: 2; grid-row: 3; justify-self: center; display: grid; gap: 12px; justify-items: center; width: min(520px, 100%); }
+.btn.play { width: 100%; font-size: clamp(48px, 7vw, 72px); padding: 6px 30px; border-width: 5px; border-radius: 24px; letter-spacing: 0.02em; }
+.btn.play::before { content: ""; width: 0; height: 0; border-left: 36px solid #fff; border-top: 24px solid transparent; border-bottom: 24px solid transparent; filter: drop-shadow(0 3px 0 #c97a08); margin-right: 10px; }
+.cta .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.corner { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; z-index: 11; }
+.hint { font: 700 14px var(--ui); color: #fff; text-shadow: 0 2px 0 var(--blue-d); text-align: center; margin: 0; }
+
+/* garage */
 .roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.racer { position: relative; cursor: pointer; text-align: center; background: #fff; border: 3px solid var(--ink); border-radius: 16px; box-shadow: 3px 3px 0 var(--ink); padding: 10px 8px; display: grid; justify-items: center; gap: 4px; min-width: 0; }
-.racer[aria-pressed="true"] { background: var(--flame); transform: rotate(-1.5deg); }
-.racer img, .racer .ph { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid var(--ink); background: var(--paper-2); }
-.racer b { font: 400 22px/1 var(--display); letter-spacing: 0.04em; overflow-wrap: anywhere; }
-.racer small { color: var(--muted); font-weight: 600; font-size: 12px; overflow-wrap: anywhere; }
-.racer .del { position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--blood); color: #fff; font: 700 15px var(--body); cursor: pointer; display: grid; place-items: center; line-height: 1; }
-.racer.add { border-style: dashed; background: var(--paper-2); }
-.racer.add .ph { display: grid; place-items: center; font: 400 40px var(--display); }
-.stats { width: 100%; display: grid; gap: 2px; margin-top: 2px; }
-.stat { display: grid; grid-template-columns: 38px 1fr; gap: 4px; align-items: center; font: 700 10px var(--body); text-transform: uppercase; color: var(--muted); }
-.stat i { display: block; height: 6px; border-radius: 99px; background: #e6d8bd; overflow: hidden; border: 1.5px solid var(--ink); }
-.stat i::before { content: ""; display: block; height: 100%; width: var(--v); background: var(--fire); }
-.addbox { display: grid; gap: 8px; background: #fff; border: 2.5px dashed var(--ink); border-radius: 14px; padding: 12px; }
+.racer { position: relative; cursor: pointer; text-align: center; background: linear-gradient(180deg, #8fb2ff, #6c94f2); border: 4px solid var(--blue-d); border-radius: 16px; box-shadow: inset 0 3px 0 rgba(255,255,255,0.35), 0 4px 0 var(--navy); padding: 10px 8px; display: grid; justify-items: center; gap: 2px; min-width: 0; color: #fff; }
+.racer[aria-pressed="true"] { background: linear-gradient(180deg, #ffe066, var(--yellow)); border-color: #c97a08; box-shadow: inset 0 3px 0 rgba(255,255,255,0.5), 0 4px 0 #a35b00; }
+.racer img, .racer .ph { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid var(--blue-d); background: #fff; }
+.racer b { font: 800 19px/1.1 var(--ui); text-shadow: 0 2px 0 rgba(0,0,0,0.25); overflow-wrap: anywhere; }
+.racer small { font: 700 12px var(--ui); opacity: 0.9; overflow-wrap: anywhere; }
+.racer .del { position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #b02b2b; background: var(--red); color: #fff; font: 800 15px var(--ui); display: grid; place-items: center; line-height: 1; cursor: pointer; }
+.racer.add { background: linear-gradient(180deg, #a9c3ff, #86a7f5); border-style: dashed; }
+.racer.add .ph { display: grid; place-items: center; font: 800 40px var(--ui); color: var(--blue-d); }
+.stats { width: 100%; display: grid; gap: 2px; margin-top: 4px; }
+.stat { display: grid; grid-template-columns: 40px 1fr; gap: 4px; align-items: center; font: 800 10px var(--ui); text-transform: uppercase; }
+.stat i { display: block; height: 7px; border-radius: 99px; background: rgba(31,58,134,0.45); overflow: hidden; }
+.stat i::before { content: ""; display: block; height: 100%; width: var(--v); background: #fff; }
+.addbox { display: grid; gap: 8px; padding: 12px; }
 .addrow { display: flex; gap: 8px; flex-wrap: wrap; }
-.addrow input { flex: 1 1 240px; font: 500 14px var(--mono); }
-.addnote { margin: 0; font-size: 13px; color: var(--muted); font-weight: 500; }
-.addnote.err { color: var(--blood); }
-.setup-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.addrow .input { flex: 1 1 260px; font: 500 15px var(--mono); }
+.addnote { margin: 0; font: 700 14px var(--ui); color: #eef3ff; }
+.addnote.err { color: #ffd6d6; }
+
+/* settings */
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+
+/* map select */
+.maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.map { position: relative; cursor: pointer; padding: 0; overflow: hidden; border: 4px solid var(--blue-d); border-radius: 18px; background: #6c94f2; box-shadow: 0 5px 0 var(--navy); display: grid; grid-template-rows: 170px auto; text-align: center; color: #fff; }
+.map[aria-pressed="true"] { border-color: #c97a08; box-shadow: 0 0 0 4px var(--yellow), 0 5px 0 #a35b00; }
+.map .art { position: relative; display: grid; place-items: center; font-size: 64px; }
+.map .art.race { background: linear-gradient(160deg, #8fd3ff 0 38%, #5fbf4f 38% 70%, #4a4458 70% 78%, #5fbf4f 78%); }
+.map .art.arena { background: linear-gradient(160deg, #8fd3ff 0 34%, #e9c98f 34%); }
+.map .chip { position: absolute; top: 8px; right: 8px; background: rgba(31,58,134,0.75); border-radius: 10px; padding: 2px 10px; font: 800 18px var(--ui); }
+.map .tag { position: absolute; top: 10px; left: -30px; transform: rotate(-35deg); background: var(--red); padding: 2px 34px; font: 800 14px var(--ui); }
+.map .name { background: rgba(31,58,134,0.6); padding: 8px; font: 800 24px/1.1 var(--ui); text-shadow: 0 2px 0 var(--blue-d); }
+.map .name small { display: block; font: 700 14px var(--ui); color: var(--yellow); }
+
+/* rooms */
+.code { font: 800 clamp(42px, 8vw, 72px)/1 var(--ui); letter-spacing: 0.08em; color: var(--yellow); text-shadow: 0 4px 0 #a35b00; text-align: center; -webkit-user-select: all; user-select: all; }
+.room-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+.plist { display: grid; gap: 8px; align-content: start; padding: 12px; min-height: 200px; }
+.pl { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; background: rgba(31,58,134,0.35); border-radius: 12px; padding: 5px 10px; }
+.pl img { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--blue-d); background: #fff; object-fit: cover; }
+.pl b { font: 800 19px var(--ui); overflow-wrap: anywhere; }
+.pl span { font: 800 12px var(--ui); background: var(--yellow); color: #7a4a00; border-radius: 8px; padding: 1px 8px; }
+.pl.bot { opacity: 0.7; }
+.linkrow { display: flex; gap: 8px; }
+.linkrow .input { flex: 1; font: 500 14px var(--mono); }
+.status { font: 700 15px var(--ui); color: #eef3ff; text-align: center; margin: 0; min-height: 1.4em; }
+
+/* end screen */
+.end-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 22px; flex-wrap: wrap; }
+.end-head b { font: 800 clamp(26px, 4vw, 40px)/1 var(--ui); }
+.end-head span { font: 800 20px/1.2 var(--ui); color: var(--yellow); text-align: right; }
+.tabs { display: flex; gap: 8px; }
+.tab { padding: 8px 20px; border-radius: 14px 14px 0 0; border: 4px solid var(--blue-d); border-bottom: 0; background: linear-gradient(180deg, #6f9bff, var(--blue)); font: 800 22px var(--ui); cursor: pointer; color: #fff; }
+.tab[aria-selected="false"] { background: #3e64c4; color: #cbd8ff; }
+.board-panel { padding: 12px; display: grid; gap: 6px; max-height: 52vh; overflow-y: auto; }
+.lrow { display: grid; grid-template-columns: 34px 40px minmax(0, 1fr) 64px 64px; gap: 10px; align-items: center; background: linear-gradient(180deg, #8fb2ff, #7aa1f5); border-radius: 12px; padding: 4px 12px; box-shadow: inset 0 2px 0 rgba(255,255,255,0.35); }
+.lrow.head { background: none; box-shadow: none; padding-top: 0; padding-bottom: 0; font: 800 15px var(--ui); color: #dfe9ff; }
+.lrow.me { background: linear-gradient(180deg, #ffb35c, var(--orange)); }
+.lrow b { font: 800 22px var(--ui); text-align: center; }
+.lrow img { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--blue-d); background: #fff; object-fit: cover; }
+.lrow span { font: 800 20px var(--ui); overflow-wrap: anywhere; }
+.lrow em { font: 800 20px var(--ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; }
+.res-log { display: grid; gap: 4px; max-height: 52vh; overflow-y: auto; padding: 12px; }
+.res-log .ev { background: rgba(31,58,134,0.45); }
 
 /* ---------- HUD ---------- */
 .hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
 .hud > * { position: absolute; }
-.pos { left: max(16px, env(safe-area-inset-left, 0px)); top: max(14px, env(safe-area-inset-top, 0px)); font: 400 clamp(56px, 9vw, 96px)/0.9 var(--display); color: var(--flame); }
-.pos sup { font-size: 0.4em; vertical-align: top; margin-left: 2px; }
-.lap { left: max(18px, env(safe-area-inset-left, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + clamp(60px, 9vw, 100px)); font: 400 26px var(--display); color: #fff; letter-spacing: 0.05em; }
-.hp { left: max(18px, env(safe-area-inset-left, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + clamp(96px, 13vw, 138px)); width: 180px; height: 18px; border: 3px solid var(--ink); border-radius: 99px; background: rgba(255,255,255,0.75); overflow: hidden; box-shadow: 3px 3px 0 var(--ink); }
-.hp span { display: block; height: 100%; width: 100%; background: var(--mint); transition: width 0.2s, background 0.2s; }
-.hp.low span { background: var(--blood); }
-.timer { right: max(16px, env(safe-area-inset-right, 0px)); top: max(14px, env(safe-area-inset-top, 0px)); font: 400 30px var(--display); color: #fff; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
-.item { left: 50%; top: max(12px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: 86px; height: 86px; border-radius: 18px; background: rgba(255, 246, 227, 0.92); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); display: grid; place-items: center; font-size: 44px; }
-.item small { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font: 400 18px var(--display); color: #fff; letter-spacing: 0.06em; white-space: nowrap; }
-.item b { position: absolute; top: -10px; right: -12px; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 99px; background: var(--fire); color: #fff; border: 2.5px solid var(--ink); font: 400 18px/25px var(--display); text-align: center; }
+.pill { display: flex; align-items: center; height: 54px; background: linear-gradient(180deg, var(--blue-l), var(--blue)); border: 4px solid var(--blue-d); border-radius: 18px; box-shadow: inset 0 3px 0 rgba(255,255,255,0.35), 0 4px 0 var(--navy); padding: 0 16px 0 4px; font: 800 28px/1 var(--ui); text-shadow: 0 3px 0 var(--blue-d); }
+.pill .ico { width: 54px; height: 54px; margin: -4px 8px -4px -4px; display: grid; place-items: center; font-size: 26px; background: linear-gradient(180deg, #6f9bff, var(--blue-d)); border: 4px solid var(--blue-d); border-radius: 18px; }
+.rank { left: max(14px, env(safe-area-inset-left, 0px)); top: max(12px, env(safe-area-inset-top, 0px)); }
+.rank sup { font-size: 0.55em; }
+.topc { left: 50%; top: max(12px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); display: flex; gap: 14px; }
+.hp { width: 230px; padding-right: 8px; }
+.hp .bar { flex: 1; height: 22px; border-radius: 99px; background: #e9f0ff; overflow: hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,0.12); }
+.hp .bar span { display: block; height: 100%; width: 100%; background: linear-gradient(180deg, #7be08f, var(--green)); transition: width 0.2s; }
+.hp.low .bar span { background: linear-gradient(180deg, #ff8080, var(--red)); }
+.tr { right: max(14px, env(safe-area-inset-right, 0px)); top: max(12px, env(safe-area-inset-top, 0px)); display: flex; gap: 8px; pointer-events: auto; }
+.net { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(max(12px, env(safe-area-inset-top, 0px)) + 64px); font: 800 18px/1.2 var(--ui); text-align: right; text-shadow: 0 2px 0 var(--blue-d); }
+.board { left: max(14px, env(safe-area-inset-left, 0px)); top: calc(max(12px, env(safe-area-inset-top, 0px)) + 68px); width: min(300px, 40vw); padding: 6px; display: grid; gap: 2px; background: rgba(76,124,224,0.82); border: 4px solid var(--blue-d); border-radius: 16px; }
+.board div { display: grid; grid-template-columns: 26px minmax(0, 1fr) 30px; gap: 8px; align-items: center; padding: 1px 8px; border-radius: 10px; font: 800 17px/1.4 var(--ui); text-shadow: 0 2px 0 var(--blue-d); }
+.board div.me { color: var(--yellow); background: rgba(255,255,255,0.12); }
+.board i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--blue-d); border: 2px solid #9fbaff; }
+.board span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board b { text-align: right; }
+.feed { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(max(12px, env(safe-area-inset-top, 0px)) + 120px); display: grid; gap: 4px; justify-items: end; }
+.feed div { background: rgba(31,58,134,0.75); border-radius: 10px; padding: 1px 10px; font: 800 15px var(--ui); animation: in 0.25s cubic-bezier(.2,1.8,.4,1); }
+.feed div.me { background: rgba(255,138,31,0.9); }
+@keyframes in { from { transform: scale(0.6); opacity: 0; } }
+.msg { left: 50%; top: 48%; transform: translate(-50%, -50%); width: min(900px, 92vw); text-align: center; font: 800 clamp(26px, 4.4vw, 52px)/1.1 var(--ui); text-shadow: 0 4px 0 var(--blue-d), 0 5px 0 rgba(0,0,0,0.15); transition: opacity 0.3s; }
+.msg .who { color: #6fe0ff; }
+.msg .nem { color: var(--red); }
+.banner { left: 50%; top: 24%; transform: translate(-50%, -50%); font: 800 clamp(48px, 9vw, 110px)/1 var(--ui); color: var(--yellow); white-space: nowrap; text-shadow: 0 5px 0 #a35b00, 0 7px 0 rgba(0,0,0,0.15); transition: transform 0.25s cubic-bezier(.2,1.8,.4,1), opacity 0.3s; }
+.banner.pop { transform: translate(-50%, -50%) scale(1.12); }
+.dead { left: 50%; top: 62%; transform: translateX(-50%); font: 800 26px var(--ui); white-space: nowrap; text-shadow: 0 3px 0 var(--blue-d); }
+.item { left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 30px); transform: translateX(-50%); width: 84px; height: 84px; border-radius: 22px; background: linear-gradient(180deg, var(--blue-l), var(--blue)); border: 4px solid var(--blue-d); box-shadow: inset 0 3px 0 rgba(255,255,255,0.35), 0 4px 0 var(--navy); display: grid; place-items: center; font-size: 42px; }
+.item small { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); font: 800 16px var(--ui); white-space: nowrap; text-shadow: 0 2px 0 var(--blue-d); }
+.item b { position: absolute; top: -10px; right: -12px; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 99px; background: var(--orange); border: 3px solid #a35b00; font: 800 16px/24px var(--ui); text-align: center; }
 .item.roll { animation: roll 0.12s steps(1) infinite; }
 @keyframes roll { 50% { transform: translateX(-50%) rotate(8deg); } }
-#minimap { right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); width: 170px; height: 170px; border-radius: 18px; background: rgba(21, 17, 28, 0.55); border: 3px solid var(--ink); }
-.speed { left: max(18px, env(safe-area-inset-left, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); font: 400 44px/1 var(--display); color: #fff; font-variant-numeric: tabular-nums; }
-.speed small { font-size: 0.45em; margin-left: 4px; }
-.drift { left: max(18px, env(safe-area-inset-left, 0px)); bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 52px); width: 150px; height: 14px; border-radius: 99px; border: 3px solid var(--ink); background: rgba(255,255,255,0.7); overflow: hidden; }
+#minimap { right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: 170px; height: 170px; border-radius: 22px; background: rgba(31,58,134,0.55); border: 4px solid var(--blue-d); }
+.speed { left: calc(50% + 60px); bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 46px); font: 800 30px/1 var(--ui); text-shadow: 0 3px 0 var(--blue-d); font-variant-numeric: tabular-nums; }
+.speed small { font-size: 0.5em; margin-left: 3px; }
+.drift { left: 50%; transform: translateX(-50%); bottom: max(10px, env(safe-area-inset-bottom, 0px)); width: 150px; height: 12px; border-radius: 99px; border: 3px solid var(--blue-d); background: #e9f0ff; overflow: hidden; }
 .drift span { display: block; height: 100%; width: 0; background: #59c3ff; }
-.drift.l2 span { background: var(--fire); } .drift.l3 span { background: #c86bff; }
+.drift.l2 span { background: var(--orange); } .drift.l3 span { background: #c86bff; }
 .speed-lines { inset: 0; opacity: 0; transition: opacity 0.25s; background: repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,255,255,0) 0deg 4deg, rgba(255,255,255,0.55) 4deg 4.6deg, rgba(255,255,255,0) 4.6deg 9deg);
-  -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent 32%, #000 70%); mask-image: radial-gradient(circle at 50% 46%, transparent 32%, #000 70%); animation: lines 0.18s steps(2) infinite; }
+  -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent 32%, #000 70%); mask-image: radial-gradient(circle at 50% 46%, transparent 32%, #000 70%); }
 .speed-lines.on { opacity: 1; }
-@keyframes lines { 50% { transform: rotate(2deg) scale(1.04); } }
-@media (prefers-reduced-motion: reduce) { .speed-lines { display: none; } }
-.banner { left: 50%; top: 38%; transform: translate(-50%, -50%); font: 400 clamp(64px, 14vw, 160px)/1 var(--display); color: var(--flame); white-space: nowrap; letter-spacing: 0.04em; transition: transform 0.25s cubic-bezier(.2,1.8,.4,1), opacity 0.3s; }
-.banner.pop { transform: translate(-50%, -50%) scale(1.15); }
-.feed { right: max(16px, env(safe-area-inset-right, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + 44px); display: grid; gap: 6px; justify-items: end; }
-.feed div { background: var(--paper); border: 2.5px solid var(--ink); border-radius: 10px; padding: 3px 10px; font: 600 14px var(--body); box-shadow: 2px 2px 0 var(--ink); animation: in 0.3s cubic-bezier(.2,1.8,.4,1); }
-.feed div.me { background: var(--flame); }
-@keyframes in { from { transform: scale(0.6); opacity: 0; } }
-.log { left: max(16px, env(safe-area-inset-left, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + 170px); width: min(330px, 46vw); pointer-events: auto; display: grid; gap: 4px; }
-.hud:not(.arena) .log { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 140px); }
-.log-head { justify-self: start; appearance: none; cursor: pointer; border: 2.5px solid var(--ink); border-radius: 10px; background: var(--paper); box-shadow: 2px 2px 0 var(--ink); padding: 3px 10px; font: 400 16px var(--display); letter-spacing: 0.06em; color: var(--ink); }
-.log-head span { display: inline-block; margin-left: 4px; font: 600 11px var(--body); border: 1.5px solid var(--ink); border-radius: 4px; padding: 0 4px; }
-.log-list { max-height: 30vh; overflow-y: auto; display: grid; gap: 3px; padding-right: 2px; scrollbar-width: thin; touch-action: pan-y; }
+.log { left: max(14px, env(safe-area-inset-left, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: min(340px, 38vw); pointer-events: auto; display: grid; gap: 4px; }
+.log-head { justify-self: start; appearance: none; cursor: pointer; border: 3px solid var(--blue-d); border-radius: 10px; background: linear-gradient(180deg, var(--blue-l), var(--blue)); color: #fff; padding: 1px 10px; font: 800 14px var(--ui); text-shadow: 0 2px 0 var(--blue-d); }
+.log-head span { margin-left: 4px; font-size: 11px; border: 2px solid #fff; border-radius: 4px; padding: 0 4px; }
+.log-list { max-height: 24vh; overflow-y: auto; display: grid; gap: 3px; scrollbar-width: thin; touch-action: pan-y; }
 .log.closed .log-list { display: none; }
-.ev { background: rgba(21, 17, 28, 0.72); color: #fff; border-radius: 8px; padding: 3px 8px; font: 500 12.5px/1.35 var(--body); border-left: 4px solid #8a8495; }
-.ev time { font: 500 11px var(--mono); color: #cfc4ea; margin-right: 6px; }
-.ev.kill { border-left-color: var(--flame); } .ev.death { border-left-color: var(--blood); } .ev.hit { border-left-color: var(--mint); } .ev.hurt { border-left-color: #ff8a8a; } .ev.pick { border-left-color: #59c3ff; }
-body.has-touch .log { width: min(260px, 60vw); } body.has-touch .log-list { max-height: 18vh; }
-.res-log { width: min(560px, 100%); max-height: 34vh; overflow-y: auto; display: grid; gap: 3px; text-align: left; touch-action: pan-y; }
-.res-log h3 { margin: 6px 0 4px; font: 400 22px var(--display); letter-spacing: 0.05em; color: #fff; }
-.board { right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 186px); display: grid; gap: 4px; min-width: 150px; }
-.board div { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; background: rgba(255,246,227,0.9); border: 2px solid var(--ink); border-radius: 8px; padding: 2px 8px; font: 600 13px var(--body); }
-.board div.me { background: var(--flame); }
-.board b { font: 400 16px var(--display); }
-.dead { left: 50%; top: 58%; transform: translateX(-50%); font: 400 28px var(--display); color: #fff; letter-spacing: 0.05em; white-space: nowrap; }
-.hud-pause { right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 186px); pointer-events: auto; }
-.hud.arena .hud-pause { bottom: auto; top: calc(max(14px, env(safe-area-inset-top, 0px)) + 44px); }
-.hud.arena .feed { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 96px); }
+.ev { background: rgba(31,58,134,0.72); color: #fff; border-radius: 8px; padding: 2px 8px; font: 700 13px/1.35 var(--ui); border-left: 4px solid #9fbaff; }
+.ev time { font: 500 11px var(--mono); color: #cfdcff; margin-right: 6px; }
+.ev.kill { border-left-color: var(--yellow); } .ev.death { border-left-color: var(--red); } .ev.hit { border-left-color: var(--green); } .ev.hurt { border-left-color: #ff9a9a; } .ev.pick { border-left-color: #6fe0ff; }
 
-/* ---------- touch controls ---------- */
+/* ---------- touch ---------- */
 .touch { position: fixed; inset: auto 0 0 0; z-index: 6; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none;
   padding: 0 max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); }
 .touch .grp { display: flex; gap: 12px; pointer-events: auto; }
-.tbtn { width: 74px; height: 74px; border-radius: 50%; border: 3px solid var(--ink); background: rgba(255, 246, 227, 0.85); box-shadow: 3px 3px 0 var(--ink); font: 400 24px var(--display); color: var(--ink); display: grid; place-items: center; touch-action: none; }
-.tbtn.on { background: var(--flame); transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.tbtn.gas { background: rgba(255, 106, 19, 0.9); color: #fff; }
-body.has-touch #minimap { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 96px); width: 120px; height: 120px; }
-body.has-touch .speed, body.has-touch .drift, body.has-touch .board { display: none; }
+.tbtn { width: 74px; height: 74px; border-radius: 50%; border: 4px solid var(--blue-d); background: rgba(121,162,255,0.85); box-shadow: 0 4px 0 var(--navy); font: 800 20px var(--ui); color: #fff; display: grid; place-items: center; touch-action: none; text-shadow: 0 2px 0 var(--blue-d); }
+.tbtn.on { background: var(--yellow); transform: translateY(3px); box-shadow: 0 1px 0 var(--navy); }
+.tbtn.gas { background: rgba(255,138,31,0.92); border-color: #a35b00; }
+body.has-touch #minimap { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 96px); width: 110px; height: 110px; }
+body.has-touch .speed, body.has-touch .drift, body.has-touch .log { display: none; }
+body.has-touch .item { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 96px); width: 64px; height: 64px; font-size: 32px; }
 
-/* ---------- results ---------- */
-.results { width: min(560px, 100%); background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 6px 6px 0 var(--ink); padding: 14px; display: grid; gap: 6px; }
-.res { display: grid; grid-template-columns: 34px 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; text-align: left; }
-.res.me { background: var(--flame); }
-.res b { font: 400 28px var(--display); }
-.res img { width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ink); object-fit: cover; background: #fff; }
-.res span { font: 600 16px var(--body); overflow-wrap: anywhere; }
-.res em { font: 600 14px var(--body); font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); }
-@media (max-width: 760px) { .grid2, .mode-cards { grid-template-columns: minmax(0, 1fr); } .roster { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
-@media (max-width: 420px) { .tbtn { width: 60px; height: 60px; font-size: 19px; } .touch .grp { gap: 8px; } .setup { padding: 14px; } .setup h2 { font-size: 32px; } }
-@media (prefers-reduced-motion: reduce) { .item.roll { animation: none; } }
+#toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 160%); z-index: 50; transition: transform 0.3s cubic-bezier(.2,1.6,.4,1); padding: 8px 18px; font: 800 18px var(--ui); max-width: calc(100% - 32px); text-align: center; }
+#toast.show { transform: translate(-50%, 0); }
+
+@media (max-width: 900px) {
+  #scrTitle { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; }
+  .logo, .cta { grid-column: 1; }
+  .side.left { grid-column: 1; grid-row: 2; }
+  .cta { grid-row: 4; }
+  .room-grid { grid-template-columns: minmax(0, 1fr); }
+  .board { width: min(220px, 46vw); }
+  .board div { font-size: 14px; }
+  .hp { width: 160px; }
+  .topc { top: calc(max(12px, env(safe-area-inset-top, 0px)) + 62px); }
+}
+@media (max-width: 480px) {
+  .tbtn { width: 60px; height: 60px; font-size: 16px; } .touch .grp { gap: 8px; }
+  .pill { height: 46px; font-size: 22px; } .pill .ico { width: 46px; height: 46px; font-size: 20px; }
+  .round { width: 46px; height: 46px; font-size: 22px; }
+  .lrow { grid-template-columns: 26px 32px minmax(0, 1fr) 44px 44px; gap: 6px; } .lrow img { width: 30px; height: 30px; } .lrow span, .lrow em, .lrow b { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .item.roll { animation: none; } .speed-lines { display: none; } }
+
+/* ================= DEGENZ skin =================
+   Same arcade layout, dressed like starknetdegenz.fun: dusk purple panels, ink outlines with hard offset
+   shadows, cream paper, flame yellow and fire orange, Bangers headlines over Fredoka. */
+:root {
+  --blue: #3a2f63; --blue-l: #4b3d82; --blue-d: #15111c; --navy: #15111c; --sky: #8fd3ff;
+  --yellow: #ffd23f; --orange: #ff6a13; --red: #e3262f; --green: #5fe39a;
+  --paper: #fff6e3; --paper-2: #ffe9c2;
+  --ui: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+}
+.t { text-shadow: 3px 3px 0 var(--ink); }
+.modal-card h2 { font: 400 clamp(36px, 5vw, 48px)/1 var(--display); letter-spacing: 0.04em; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink), 6px 6px 0 var(--orange); }
+.panel { background: linear-gradient(180deg, #4b3d82, #2b2350); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 6px 6px 0 var(--ink); }
+.panel.dark { background: #1f1838; }
+.btn { border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font: 400 24px/1.1 var(--display); letter-spacing: 0.05em; text-shadow: none; }
+.btn:hover { filter: none; transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.btn.yellow { background: var(--yellow); border-color: var(--ink); color: var(--ink); box-shadow: 5px 5px 0 var(--ink); text-shadow: none; }
+.btn.green { background: var(--orange); border-color: var(--ink); color: #fff; -webkit-text-stroke: 1px var(--ink); box-shadow: 4px 4px 0 var(--ink); text-shadow: none; }
+.btn.red { background: var(--red); border-color: var(--ink); color: #fff; -webkit-text-stroke: 1px var(--ink); box-shadow: 4px 4px 0 var(--ink); text-shadow: none; }
+.btn.play { background: var(--orange); color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink); font-size: clamp(54px, 8vw, 84px); border-width: 4px; box-shadow: 7px 7px 0 var(--ink); }
+.btn.play::before { border-left-color: #fff; filter: drop-shadow(3px 3px 0 var(--ink)); }
+.round { font-family: var(--ui); }
+.lbl { color: var(--yellow); text-shadow: 2px 2px 0 var(--ink); font: 700 13px var(--ui); letter-spacing: 0.08em; }
+.input { border: 3px solid var(--ink); background: var(--paper); color: var(--ink); font: 700 21px var(--ui); box-shadow: 3px 3px 0 var(--ink); border-radius: 12px; }
+.input::placeholder { color: #a99ab0; }
+.seg { border: 3px solid var(--ink); background: var(--paper); box-shadow: 2px 2px 0 var(--ink); }
+.seg button { color: var(--ink); font: 400 19px var(--display); letter-spacing: 0.05em; }
+.seg button + button { border-left: 2px solid #e6d8bd; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--yellow); }
+.screen.modal { background: radial-gradient(70% 70% at 50% 40%, rgba(58, 47, 99, 0.82), rgba(18, 14, 34, 0.9)); backdrop-filter: none; }
+#scrTitle { background: radial-gradient(75% 75% at 50% 55%, rgba(43,35,80,0) 30%, rgba(18,14,34,0.6)); }
+.logo .a { color: var(--yellow); -webkit-text-stroke: 5px var(--ink); text-shadow: 7px 7px 0 var(--ink), 12px 12px 0 var(--red); }
+.logo .b { color: #fff; -webkit-text-stroke: 5px var(--ink); text-shadow: 7px 7px 0 var(--ink), 12px 12px 0 var(--orange); }
+.me-card img, .racer img, .racer .ph, .pl img, .lrow img { border-color: var(--ink); }
+.me-card b { font: 400 24px/1 var(--display); letter-spacing: 0.04em; }
+.me-card small, .best { color: #e8deff; }
+.best { background: rgba(21,17,28,0.35); border: 2px solid rgba(255,255,255,0.12); }
+.hint { text-shadow: 2px 2px 0 var(--ink); color: #efe6ff; }
+.racer { background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.racer[aria-pressed="true"] { background: var(--yellow); border-color: var(--ink); box-shadow: 4px 4px 0 var(--ink); transform: rotate(-1.5deg); }
+.racer b { font: 400 22px/1 var(--display); letter-spacing: 0.04em; text-shadow: none; }
+.racer small { color: #5d5468; }
+.racer.add { background: var(--paper-2); }
+.racer.add .ph { color: var(--ink); background: #fff; }
+.racer .del { border-color: var(--ink); }
+.stat { color: #5d5468; }
+.stat i { background: #e6d8bd; border: 1.5px solid var(--ink); }
+.stat i::before { background: var(--orange); }
+.addnote { color: #efe6ff; } .addnote.err { color: #ffb4b4; }
+.map { border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); background: var(--paper); color: var(--ink); }
+.map[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 4px var(--yellow), 5px 5px 0 var(--ink); }
+.map .art.race { background: linear-gradient(160deg, #2b2350 0 38%, #5fbf4f 38% 70%, #4a4458 70% 78%, #5fbf4f 78%); }
+.map .art.arena { background: linear-gradient(160deg, #2b2350 0 34%, #e9c98f 34%); }
+.map .chip { background: var(--ink); color: var(--yellow); font-family: var(--ui); }
+.map .tag { background: var(--orange); border-block: 2px solid var(--ink); font: 400 15px var(--display); letter-spacing: 0.06em; }
+.map .name { background: var(--paper); color: var(--ink); border-top: 3px solid var(--ink); font: 400 26px/1 var(--display); letter-spacing: 0.04em; text-shadow: none; }
+.map .name small { color: var(--orange); font: 700 14px var(--ui); letter-spacing: 0; }
+.code { color: var(--yellow); font: 400 clamp(52px, 9vw, 88px)/1 var(--display); letter-spacing: 0.12em; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 5px 5px 0 var(--ink), 8px 8px 0 var(--red); }
+.pl { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.pl b { font: 400 22px var(--display); letter-spacing: 0.04em; }
+.pl span { background: var(--orange); color: #fff; border: 2px solid var(--ink); font-family: var(--display); letter-spacing: 0.05em; font-weight: 400; font-size: 14px; }
+.status { color: #efe6ff; text-shadow: 1px 1px 0 var(--ink); }
+.end-head b { font: 400 clamp(30px, 5vw, 46px)/1 var(--display); letter-spacing: 0.04em; }
+.end-head span { color: var(--yellow); }
+.tab { border: 3px solid var(--ink); border-bottom: 0; background: var(--paper); color: var(--ink); font: 400 22px var(--display); letter-spacing: 0.05em; }
+.tab[aria-selected="false"] { background: #3a2f63; color: #cfc4ea; }
+.lrow { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.lrow.head { background: none; border: 0; box-shadow: none; color: var(--yellow); }
+.lrow.me { background: var(--yellow); }
+.lrow b, .lrow span, .lrow em { font-family: var(--display); font-weight: 400; letter-spacing: 0.03em; }
+/* HUD */
+.pill { background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); text-shadow: none; font: 400 30px/1 var(--display); letter-spacing: 0.04em; }
+.pill .ico { background: var(--yellow); border: 3px solid var(--ink); border-radius: 14px; }
+.hp .bar { background: #e6d8bd; border: 2px solid var(--ink); }
+.hp .bar span { background: var(--green); }
+.hp.low .bar span { background: var(--red); }
+.board { background: rgba(21,17,28,0.72); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.board div { text-shadow: 2px 2px 0 var(--ink); font-family: var(--ui); font-weight: 700; }
+.board div.me { color: var(--yellow); background: rgba(255,210,63,0.16); }
+.board i { background: var(--orange); border: 2px solid var(--ink); color: #fff; }
+.net, .dead { text-shadow: 2px 2px 0 var(--ink); }
+.feed div { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); font: 600 14px var(--ui); }
+.feed div.me { background: var(--yellow); }
+.msg { font: 400 clamp(30px, 5vw, 58px)/1.1 var(--display); letter-spacing: 0.03em; color: #fff; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--ink); }
+.msg .who { color: var(--yellow); } .msg .nem { color: var(--red); }
+.banner { font: 400 clamp(56px, 11vw, 140px)/1 var(--display); letter-spacing: 0.04em; color: var(--yellow); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 6px 6px 0 var(--ink), 10px 10px 0 var(--red); }
+.item { background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.item small, .speed { color: #fff; font-family: var(--display); font-weight: 400; letter-spacing: 0.05em; text-shadow: 2px 2px 0 var(--ink); -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; }
+.item b { background: var(--orange); border: 2.5px solid var(--ink); font-family: var(--display); font-weight: 400; }
+#minimap { background: rgba(21,17,28,0.6); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.drift { border: 3px solid var(--ink); background: var(--paper); }
+.log-head { background: var(--paper); color: var(--ink); border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); text-shadow: none; font: 400 15px var(--display); letter-spacing: 0.05em; }
+.log-head span { border-color: var(--ink); }
+.ev { background: rgba(21,17,28,0.75); border-left-color: #8a8495; font-family: var(--ui); }
+.ev.kill { border-left-color: var(--yellow); } .ev.death { border-left-color: var(--red); } .ev.hit { border-left-color: var(--green); } .ev.pick { border-left-color: #59c3ff; }
+.tbtn { background: rgba(255,246,227,0.88); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); text-shadow: none; font: 400 20px var(--display); letter-spacing: 0.04em; }
+.tbtn.on { background: var(--yellow); }
+.tbtn.gas { background: var(--orange); color: #fff; border-color: var(--ink); }
+#toast { background: var(--yellow); color: var(--ink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<!-- title -->
+<!-- lobby -->
 <section class="screen" id="scrTitle">
-  <div class="panel">
-    <h1 class="logo">DEGENZ<br><span>KART</span></h1>
-    <p class="tag">Race Bonfire Bay or brawl in the Arena as Starknet's memecoin mascots. Bring your own coin: paste any Starknet token address and drive as its avatar.</p>
-    <button class="btn go" id="btnPlay" type="button">PLAY</button>
-    <p class="best" id="bestLine"></p>
-    <div class="row"><a class="btn small" href="/">← $DEGENZ HOME</a></div>
+  <h1 class="logo" aria-label="Degenz Kart"><span class="a">DEGENZ</span><span class="b">KART</span></h1>
+  <div class="panel side left">
+    <div class="field"><label class="lbl" for="cfgName">Your name</label><input class="input" id="cfgName" maxlength="14" placeholder="Wolf" autocomplete="off"></div>
+    <div class="me-card"><img id="meImg" alt=""><div><b id="meName">DEGENZ</b><small id="meCoin">Starknet Degenz</small></div></div>
+    <button class="btn" id="btnCustomize" type="button">🔧 Customize</button>
+    <div class="best" id="bestLine">No races yet. Go smash something.</div>
+  </div>
+  <div class="cta">
+    <button class="btn yellow play" id="btnPlay" type="button">PLAY</button>
+    <div class="row2"><button class="btn" id="btnCreate" type="button">Create</button><button class="btn" id="btnJoin" type="button">Join</button></div>
+    <p class="hint">PLAY is you vs bots. CREATE makes a room code friends can JOIN.</p>
+  </div>
+</section>
+<div class="corner" id="lobbyCorner">
+  <a class="btn round" href="/" title="$DEGENZ home" aria-label="$DEGENZ home">🏠</a>
+  <button class="btn round" id="btnSettings" type="button" title="Settings" aria-label="Settings">⚙️</button>
+</div>
+
+<!-- garage -->
+<section class="screen modal" id="scrGarage" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="garageTitle">
+    <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
+    <h2 class="t" id="garageTitle">Pick your driver</h2>
+    <div class="roster" id="roster" role="group" aria-label="Drivers"></div>
+    <div class="panel dark addbox" id="addbox" hidden>
+      <span class="lbl">Add a Starknet memecoin</span>
+      <div class="addrow"><input class="input" id="addAddr" placeholder="0x… token contract address" spellcheck="false" autocomplete="off"><button class="btn small yellow" id="btnAdd" type="button">Fetch avatar</button><button class="btn small" id="btnAddCancel" type="button">Cancel</button></div>
+      <p class="addnote" id="addNote">We look the token up on DexScreener and GeckoTerminal and use its logo as your driver's head. Saved in this browser.</p>
+    </div>
   </div>
 </section>
 
-<!-- setup -->
-<section class="screen" id="scrSetup" hidden>
-  <div class="setup" role="dialog" aria-labelledby="setupTitle">
-    <div class="setup-head">
-      <h2 id="setupTitle">Game setup</h2>
-      <button class="btn small" id="btnSetupBack" type="button">← BACK</button>
-    </div>
-    <div class="mode-cards" role="group" aria-label="Mode">
-      <button class="mode-card" type="button" data-mode="race" aria-pressed="true"><b>🏁 RACE</b><small>Laps around Bonfire Bay. Drift, grab items, finish first.</small></button>
-      <button class="mode-card" type="button" data-mode="arena" aria-pressed="false"><b>💥 ARENA</b><small>Grab weapons off the ground and blow up other karts. Most kills wins.</small></button>
-    </div>
-    <div class="grid2">
-      <label class="field"><span>Your name</span><input id="cfgName" maxlength="14" placeholder="Wolf" autocomplete="off"></label>
-      <div class="field"><span>Bots</span>
-        <div class="seg" data-cfg="bots"><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button></div></div>
-    </div>
+<!-- settings -->
+<section class="screen modal" id="scrSettings" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="setTitle" style="width:min(760px,100%)">
+    <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
+    <h2 class="t" id="setTitle">Settings</h2>
     <div class="opts">
-      <div class="field" data-for="race"><span>Laps</span><div class="seg" data-cfg="laps"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
-      <div class="field" data-for="arena"><span>Match length</span><div class="seg" data-cfg="mins"><button data-v="2">2 MIN</button><button data-v="3">3 MIN</button><button data-v="5">5 MIN</button></div></div>
-      <div class="field"><span>Bots skill</span><div class="seg" data-cfg="diff"><button data-v="chill">CHILL</button><button data-v="normal">NORMAL</button><button data-v="degen">DEGEN</button></div></div>
-      <div class="field"><span>Sound</span><div class="seg" data-cfg="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
-      <div class="field"><span>Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">HIGH</button><button data-v="low">LOW</button></div></div>
+      <div class="field"><span class="lbl">Bots</span><div class="seg" data-cfg="bots"><button data-v="0">0</button><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button></div></div>
+      <div class="field"><span class="lbl">Race laps</span><div class="seg" data-cfg="laps"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
+      <div class="field"><span class="lbl">Arena length</span><div class="seg" data-cfg="mins"><button data-v="2">2 min</button><button data-v="3">3 min</button><button data-v="5">5 min</button></div></div>
+      <div class="field"><span class="lbl">Bot skill</span><div class="seg" data-cfg="diff"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="degen">Degen</button></div></div>
+      <div class="field"><span class="lbl">Sound</span><div class="seg" data-cfg="sound"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="field"><span class="lbl">Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
     </div>
-    <div class="field"><span>Your driver</span><div class="roster" id="roster" role="group" aria-label="Drivers"></div></div>
-    <div class="addbox" id="addbox" hidden>
-      <span class="k">Add a Starknet memecoin</span>
-      <div class="addrow"><input id="addAddr" placeholder="0x… token contract address" spellcheck="false" autocomplete="off"><button class="btn small" id="btnAdd" type="button">FETCH AVATAR</button><button class="btn small" id="btnAddCancel" type="button">CANCEL</button></div>
-      <p class="addnote" id="addNote">We look the token up on DexScreener and GeckoTerminal and use its logo as your driver's head. Saved in this browser.</p>
+    <p class="hint" id="keysLine">↑ gas · ↓ brake · ← → steer · hold Space to drift · X or click to fire / use item · L battle log · Esc menu</p>
+  </div>
+</section>
+
+<!-- map select -->
+<section class="screen modal" id="scrMaps" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="mapTitle">
+    <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
+    <h2 class="t" id="mapTitle">Pick a map</h2>
+    <div class="maps" id="maps">
+      <button class="map" type="button" data-mode="race"><div class="art race">🏁<span class="chip">👤 8</span><span class="tag">RACE</span></div><div class="name">Bonfire Bay<small id="mapRaceSub">3 laps</small></div></button>
+      <button class="map" type="button" data-mode="arena"><div class="art arena">💥<span class="chip">👤 8</span><span class="tag">NEW</span></div><div class="name">The Pit<small id="mapArenaSub">Free for all · 3 mins</small></div></button>
     </div>
-    <div class="setup-foot">
-      <p class="keys" id="keysLine"></p>
-      <button class="btn go" id="btnStart" type="button">START</button>
+  </div>
+</section>
+
+<!-- join -->
+<section class="screen modal" id="scrJoin" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="joinTitle" style="width:min(520px,100%)">
+    <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
+    <h2 class="t" id="joinTitle">Join a room</h2>
+    <input class="input" id="joinCode" maxlength="9" placeholder="WOLF-7K2Q" autocomplete="off" spellcheck="false" style="text-transform:uppercase;text-align:center;font-size:32px;letter-spacing:.08em">
+    <button class="btn yellow" id="btnJoinGo" type="button">Join</button>
+    <p class="status" id="joinStatus"></p>
+  </div>
+</section>
+
+<!-- room lobby -->
+<section class="screen modal" id="scrRoom" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="roomTitle">
+    <h2 class="t" id="roomTitle">Room</h2>
+    <div class="code" id="roomCode">----</div>
+    <div class="linkrow"><input class="input" id="roomLink" readonly aria-label="Invite link"><button class="btn small yellow" id="btnCopyLink" type="button">Copy link</button></div>
+    <div class="room-grid">
+      <div class="panel dark plist" id="roomPlayers" aria-live="polite"></div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <span class="lbl">Map</span>
+        <button class="map" type="button" id="roomMap"><div class="art race" id="roomMapArt">🏁</div><div class="name" id="roomMapName">Bonfire Bay<small>3 laps</small></div></button>
+        <p class="status" id="roomStatus">Waiting for players…</p>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <button class="btn red" id="btnRoomLeave" type="button">Leave</button>
+      <button class="btn green" id="btnRoomStart" type="button">Start match</button>
     </div>
   </div>
 </section>
 
 <!-- results -->
-<section class="screen" id="scrDone" hidden>
-  <div class="panel">
-    <h2 class="logo" id="doneTitle" style="font-size:clamp(44px,8vw,84px)">Finish!</h2>
-    <p class="best" id="doneBest"></p>
-    <div class="results" id="results"></div>
-    <div class="res-log" id="resLog"></div>
-    <div class="row"><button class="btn go" id="btnAgain" type="button">PLAY AGAIN</button><button class="btn small" id="btnSetup2" type="button">SETUP</button><button class="btn small" id="btnDoneQuit" type="button">MENU</button></div>
+<section class="screen modal" id="scrDone" hidden>
+  <div style="width:min(900px,100%);display:grid;gap:14px">
+    <div class="panel end-head"><b class="t" id="doneMap">Bonfire Bay</b><span id="doneMode">Race · 3 laps</span></div>
+    <div class="t" id="doneTitle" style="text-align:center;font:800 clamp(34px,6vw,64px)/1 var(--ui);color:var(--yellow);text-shadow:0 4px 0 #a35b00">FINISH!</div>
+    <p class="status" id="doneBest"></p>
+    <div>
+      <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-tab="board">Leaderboard</button><button class="tab" role="tab" aria-selected="false" data-tab="log">Battle log</button></div>
+      <div class="panel board-panel" id="results"></div>
+      <div class="panel res-log" id="resLog" hidden></div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+      <button class="btn yellow" id="btnAgain" type="button">Play again</button>
+      <button class="btn" id="btnDoneQuit" type="button">Menu</button>
+    </div>
+    <p class="status" id="doneWait"></p>
   </div>
 </section>
 
-<!-- pause menu -->
-<section class="screen" id="scrPause" hidden>
-  <div class="panel">
-    <h2 class="logo" style="font-size:clamp(52px,10vw,96px)">PAUSED</h2>
-    <div class="pause-menu">
-      <button class="btn go" id="btnResume" type="button">RESUME</button>
-      <button class="btn" id="btnRestart" type="button">RESTART</button>
-      <button class="btn" id="btnPauseSetup" type="button">GAME SETUP</button>
-      <button class="btn" id="btnQuit" type="button">QUIT TO MENU</button>
-      <a class="btn small" href="/">← $DEGENZ HOME</a>
-    </div>
-    <p class="keys"><kbd>Esc</kbd> or <kbd>P</kbd> to resume</p>
+<!-- pause -->
+<section class="screen modal" id="scrPause" hidden>
+  <div class="panel modal-card" style="width:min(380px,100%);justify-items:stretch">
+    <h2 class="t" style="text-align:center">Paused</h2>
+    <button class="btn yellow" id="btnResume" type="button">Resume</button>
+    <button class="btn" id="btnRestart" type="button">Restart</button>
+    <button class="btn" id="btnPauseSettings" type="button">Settings</button>
+    <button class="btn red" id="btnQuit" type="button">Quit to lobby</button>
+    <p class="hint" id="pauseNote">Esc or P to resume</p>
   </div>
 </section>
 
 <!-- HUD -->
 <div class="hud" id="hud" hidden>
-  <div class="pos outline-text" id="hPos">1<sup>st</sup></div>
-  <div class="lap outline-text" id="hLap">LAP 1/3</div>
-  <div class="hp" id="hHp" hidden><span></span></div>
-  <div class="timer outline-text" id="hTime">0:00.00</div>
-  <div class="item" id="hItem" aria-label="Item"><span id="hItemIcon"></span><small class="outline-text" id="hItemName"></small><b id="hAmmo" hidden></b></div>
+  <div class="pill rank"><span class="ico">🏆</span><span id="hPos">1<sup>st</sup> / 6</span></div>
+  <div class="board" id="hBoard"></div>
+  <div class="topc">
+    <div class="pill hp" id="hHp"><span class="ico">❤️</span><span class="bar"><span></span></span></div>
+    <div class="pill" id="hLapPill"><span class="ico">🏁</span><span id="hLap">1/3</span></div>
+    <div class="pill"><span class="ico">⏱️</span><span id="hTime">0:00</span></div>
+  </div>
+  <div class="tr">
+    <button class="btn round" id="btnInvite" type="button" title="Room code" aria-label="Room code" hidden>👥</button>
+    <button class="btn round" id="btnSoundHud" type="button" title="Sound" aria-label="Sound">🔊</button>
+    <button class="btn round" id="btnPause" type="button" title="Menu" aria-label="Menu">⚙️</button>
+  </div>
+  <div class="net" id="hNet"></div>
   <div class="feed" id="hFeed"></div>
-  <div class="log" id="hLog"><button class="log-head" id="btnLog" type="button" aria-expanded="true">📜 BATTLE LOG <span>L</span></button><div class="log-list" id="hLogList" aria-live="polite"></div></div>
-  <div class="board" id="hBoard" hidden></div>
-  <canvas id="minimap" width="340" height="340"></canvas>
-  <div class="drift" id="hDrift"><span></span></div>
-  <div class="speed outline-text" id="hSpeed">0<small>KM/H</small></div>
-  <div class="dead outline-text" id="hDead" hidden></div>
   <div class="speed-lines" id="speedLines" aria-hidden="true"></div>
-  <div class="banner outline-text" id="hBanner"></div>
-  <div class="hud-pause"><button class="btn small" id="btnPause" type="button" aria-label="Menu">☰ MENU</button></div>
+  <div class="banner" id="hBanner"></div>
+  <div class="msg" id="hMsg"></div>
+  <div class="dead" id="hDead" hidden></div>
+  <div class="item" id="hItem" aria-label="Item"><span id="hItemIcon"></span><small id="hItemName"></small><b id="hAmmo" hidden></b></div>
+  <div class="speed" id="hSpeed">0<small>KM/H</small></div>
+  <div class="drift" id="hDrift"><span></span></div>
+  <canvas id="minimap" width="340" height="340"></canvas>
+  <div class="log" id="hLog"><button class="log-head" id="btnLog" type="button" aria-expanded="true">📜 Battle log <span>L</span></button><div class="log-list" id="hLogList" aria-live="polite"></div></div>
 </div>
 
 <div class="touch" id="touch" hidden>
   <div class="grp"><button class="tbtn" data-k="left" aria-label="Steer left">◀</button><button class="tbtn" data-k="right" aria-label="Steer right">▶</button></div>
   <div class="grp"><button class="tbtn" data-k="item" id="tItem" aria-label="Use item">ITEM</button><button class="tbtn" data-k="drift" aria-label="Drift">DRIFT</button><button class="tbtn gas" data-k="gas" aria-label="Gas">GO</button></div>
 </div>
+<div class="panel" id="toast" role="status"></div>
 
 <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -531,6 +765,32 @@ for (let i = 0, placed = 0; i < 900 && placed < 140; i++) {
     n++;
   }
 })();
+// billboards and lamp posts along Bonfire Bay
+(() => {
+  const boards = ['NO SELL. ONLY BURN', 'BUY $DEGENZ', 'FEED THE FIRE', 'STARKNET DEGENZ', 'AWOOOOO', 'KEEP THE FIRE BURNING'];
+  const legM = toon(0x3a3a46);
+  [0.16, 0.33, 0.47, 0.64, 0.8, 0.95].forEach((frac, n) => {
+    const i = Math.floor(frac * N), j = (i + 30) % N, turn = TAN[i].x * TAN[j].z - TAN[i].z * TAN[j].x, side = turn > 0 ? 1 : -1;
+    const base = PTS[i].clone().addScaledVector(NRM[i], side * (ROAD_W / 2 + 18));
+    const g = new THREE.Group(); g.position.copy(base); g.rotation.y = Math.atan2(TAN[i].x, TAN[i].z) + (side > 0 ? -Math.PI / 2 : Math.PI / 2);
+    const tex = canvasTex(512, 192, (c, w, h) => {
+      c.fillStyle = n % 2 ? '#2b2350' : '#ffd23f'; c.fillRect(0, 0, w, h); c.strokeStyle = '#15111c'; c.lineWidth = 14; c.strokeRect(7, 7, w - 14, h - 14);
+      c.font = '400 64px Bangers, Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.lineWidth = 8; c.strokeStyle = '#15111c'; c.fillStyle = n % 2 ? '#ffd23f' : '#fff6e3'; c.strokeText(boards[n], w / 2, h / 2 + 4); c.fillText(boards[n], w / 2, h / 2 + 4);
+    });
+    const board = outlined(new THREE.Mesh(new THREE.BoxGeometry(24, 9, 0.8), [legM, legM, legM, legM, new THREE.MeshBasicMaterial({ map: tex }), legM]), 1.03); board.position.y = 12; g.add(board);
+    for (const x of [-8, 8]) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 9, 6), legM); leg.position.set(x, 4, -0.2); g.add(leg); }
+    trackGroup.add(shade(g, true, false));
+  });
+  const poleM = toon(0xd9dde4), bulbM = new THREE.MeshBasicMaterial({ color: 0xfff3c0 });
+  for (let i = 30; i < N; i += 70) for (const side of [-1, 1]) {
+    if ((i / 70 | 0) % 2 === (side > 0 ? 0 : 1)) continue;
+    const p = PTS[i].clone().addScaledVector(NRM[i], side * (ROAD_W / 2 + 4));
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 12, 6), poleM); pole.position.set(p.x, 6, p.z); trackGroup.add(pole);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 3), poleM); arm.position.set(p.x - NRM[i].x * side * 1.4, 12, p.z - NRM[i].z * side * 1.4); arm.lookAt(PTS[i].x, 12, PTS[i].z); trackGroup.add(arm);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), bulbM); bulb.position.set(p.x - NRM[i].x * side * 2.8, 11.6, p.z - NRM[i].z * side * 2.8); trackGroup.add(bulb);
+  }
+})();
 const raceBoxes = [];
 for (const frac of [0.12, 0.37, 0.6, 0.83]) {
   const i = Math.floor(frac * N);
@@ -561,7 +821,13 @@ const obstacles = []; // axis-aligned boxes {x, z, hx, hz} plus round ones {x, z
     const top = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 1.2, d + 0.2), stripeM); top.position.set(x, 5.4, z); arenaGroup.add(top);
   }
   // crate stacks and pillars to dodge behind
-  const crateTex = canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#b97a3e'; g.fillRect(0, 0, w, h); g.strokeStyle = '#7a4a1e'; g.lineWidth = 6; g.strokeRect(3, 3, w - 6, h - 6); g.beginPath(); g.moveTo(3, 3); g.lineTo(w - 3, h - 3); g.stroke(); });
+  const crateTex = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = '#c4884a'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 21) { g.fillStyle = y % 42 ? '#b97a3e' : '#cf9455'; g.fillRect(0, y, w, 19); g.fillStyle = 'rgba(0,0,0,0.15)'; g.fillRect(0, y + 19, w, 2); }
+    g.strokeStyle = '#6b3f17'; g.lineWidth = 12; g.strokeRect(6, 6, w - 12, h - 12);
+    g.beginPath(); g.moveTo(10, 10); g.lineTo(w - 10, h - 10); g.stroke();
+    g.fillStyle = '#9aa0ab'; for (const [x, y] of [[0, 0], [w - 22, 0], [0, h - 22], [w - 22, h - 22]]) { g.fillRect(x, y, 22, 22); g.fillStyle = '#5d6370'; g.fillRect(x + 8, y + 8, 6, 6); g.fillStyle = '#9aa0ab'; }
+  });
   const crateM = toon(0xffffff, { map: crateTex }), pillarM = toon(0x8a6cf0), bumperM = toon(0x2a8fdc);
   const crates = [[-80, -80], [80, -80], [-80, 80], [80, 80], [0, -100], [0, 100], [-100, 0], [100, 0], [-45, -40], [45, 40], [45, -40], [-45, 40]];
   crates.forEach(([x, z], i) => {
@@ -597,7 +863,66 @@ const obstacles = []; // axis-aligned boxes {x, z, hx, hz} plus round ones {x, z
     const pos = [[t * AR, -AR + 0.2, 0], [t * AR, AR - 0.2, Math.PI], [-AR + 0.2, t * AR, Math.PI / 2], [AR - 0.2, t * AR, -Math.PI / 2]][side];
     b.position.set(pos[0], 2.6, pos[1]); b.rotation.y = pos[2]; arenaGroup.add(b);
   }
+  // painted floor: hazard stripes along the walls, lane lines, a big DEGENZ roundel round the bonfire, oil stains
+  const decal = canvasTex(1024, 1024, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    const band = 26;
+    g.save(); g.beginPath(); g.rect(0, 0, w, h); g.rect(band, band, w - band * 2, h - band * 2); g.clip('evenodd');
+    for (let i = -h; i < w + h; i += 36) { g.fillStyle = (i / 36) % 2 ? '#15111c' : '#ffd23f'; g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 18, 0); g.lineTo(i + 18 - h, h); g.lineTo(i - h, h); g.fill(); }
+    g.restore();
+    g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 6; g.setLineDash([28, 22]);
+    for (const t of [0.25, 0.75]) { g.beginPath(); g.moveTo(w * t, band); g.lineTo(w * t, h - band); g.stroke(); g.beginPath(); g.moveTo(band, h * t); g.lineTo(w - band, h * t); g.stroke(); }
+    g.setLineDash([]);
+    g.fillStyle = 'rgba(21,17,28,0.18)'; for (let i = 0; i < 14; i++) { g.beginPath(); g.ellipse(80 + Math.random() * (w - 160), 80 + Math.random() * (h - 160), 20 + Math.random() * 40, 12 + Math.random() * 24, Math.random() * 3, 0, Math.PI * 2); g.fill(); }
+    g.lineWidth = 10; g.strokeStyle = '#15111c'; g.fillStyle = 'rgba(255,106,19,0.85)';
+    g.beginPath(); g.arc(w / 2, h / 2, 150, 0, Math.PI * 2); g.arc(w / 2, h / 2, 108, 0, Math.PI * 2, true); g.fill(); g.stroke();
+    g.font = '400 54px Bangers, Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff6e3';
+    const word = '$DEGENZ · $DEGENZ · '; for (let i = 0; i < word.length; i++) { const a = i / word.length * Math.PI * 2 - Math.PI / 2; g.save(); g.translate(w / 2 + Math.cos(a) * 129, h / 2 + Math.sin(a) * 129); g.rotate(a + Math.PI / 2); g.fillText(word[i], 0, 0); g.restore(); }
+  });
+  const decalPlane = new THREE.Mesh(new THREE.PlaneGeometry(AR * 2, AR * 2), new THREE.MeshToonMaterial({ map: decal, gradientMap: ramp, transparent: true, depthWrite: false }));
+  decalPlane.rotation.x = -Math.PI / 2; decalPlane.position.y = 0.04; decalPlane.receiveShadow = true; arenaGroup.add(decalPlane);
+  // concrete jersey barriers with red/white caps
+  const concrete = toon(0xd8d4dc), capM = toon(0xe3262f), capW = toon(0xfff6e3);
+  for (const [x, z, horiz] of [[-100, -45, 1], [100, 45, 1], [45, -100, 0], [-45, 100, 0]]) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); if (!horiz) g.rotation.y = Math.PI / 2;
+    const base = shade(outlined(new THREE.Mesh(new THREE.BoxGeometry(24, 1.6, 4.2), concrete), 1.03), true, true); base.position.y = 0.8; g.add(base);
+    const top = shade(outlined(new THREE.Mesh(new THREE.BoxGeometry(24, 2.2, 2.2), concrete), 1.04), true, true); top.position.y = 2.7; g.add(top);
+    for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 2.3), i % 2 ? capM : capW); s.position.set(-10 + i * 4, 4.05, 0); g.add(s); }
+    arenaGroup.add(g);
+    obstacles.push(horiz ? { x, z, hx: 12.5, hz: 2.4 } : { x, z, hx: 2.4, hz: 12.5 });
+  }
+  // explosive barrel clusters (they're just cover, they don't blow up)
+  const barrelG = new THREE.CylinderGeometry(1.6, 1.6, 4, 14), barrelM = toon(0xe3262f), ringM = toon(0x15111c), hazM = new THREE.MeshBasicMaterial({ color: 0xffd23f });
+  for (const [x, z] of [[-70, 105], [70, -105], [105, 70], [-105, -70]]) {
+    for (const [ox, oz, s] of [[0, 0, 1], [3, 1.5, 0.9], [1, -3, 0.95]]) {
+      const b = shade(outlined(new THREE.Mesh(barrelG, barrelM), 1.06), true, true); b.position.set(x + ox, 2 * s, z + oz); b.scale.setScalar(s); arenaGroup.add(b);
+      for (const y of [-1.1, 1.1]) { const r = new THREE.Mesh(new THREE.TorusGeometry(1.62, 0.12, 6, 18), ringM); r.rotation.x = Math.PI / 2; r.position.y = y; b.add(r); }
+      const sign = new THREE.Mesh(new THREE.CircleGeometry(0.7, 3), hazM); sign.position.set(0, 0, 1.62); sign.rotation.z = Math.PI / 2; b.add(sign);
+    }
+    obstacles.push({ x: x + 1.3, z: z - 0.5, r: 5 });
+  }
 })();
+// ---- boost pads ----
+const PADS = [];
+const padTex = canvasTex(128, 256, (g, w, h) => {
+  g.fillStyle = '#ff6a13'; g.fillRect(0, 0, w, h); g.strokeStyle = '#15111c'; g.lineWidth = 10; g.strokeRect(5, 5, w - 10, h - 10);
+  g.fillStyle = '#ffd23f'; for (let y = 30; y < h; y += 60) { g.beginPath(); g.moveTo(20, y + 30); g.lineTo(w / 2, y); g.lineTo(w - 20, y + 30); g.lineTo(w - 20, y + 48); g.lineTo(w / 2, y + 18); g.lineTo(20, y + 48); g.fill(); }
+});
+function addPad(group, world, x, z, rot) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(7, 13), new THREE.MeshBasicMaterial({ map: padTex, transparent: true }));
+  m.rotation.set(-Math.PI / 2, 0, rot + Math.PI); m.position.set(x, 0.07, z); group.add(m); // chevrons point the way you drive
+  PADS.push({ x, z, rot, hx: 3.6, hz: 6.6, world, m });
+}
+for (const [x, z, rot] of [[0, -82, 0], [0, 82, Math.PI], [82, 0, -Math.PI / 2], [-82, 0, Math.PI / 2], [-60, -125, Math.PI / 2], [60, 125, -Math.PI / 2]]) addPad(arenaGroup, 'arena', x, z, rot);
+for (const frac of [0.04, 0.28, 0.52, 0.74, 0.9]) { const i = Math.floor(frac * N); addPad(trackGroup, 'race', PTS[i].x, PTS[i].z, Math.atan2(TAN[i].x, TAN[i].z)); }
+function padCheck(k) {
+  for (const p of PADS) {
+    if (p.world !== mode) continue;
+    const dx = k.m.position.x - p.x, dz = k.m.position.z - p.z, c = Math.cos(p.rot), s = Math.sin(p.rot);
+    const lx = dx * c - dz * s, lz = dx * s + dz * c;
+    if (Math.abs(lx) < p.hx && Math.abs(lz) < p.hz && k.boost < 0.6) { k.boost = Math.max(k.boost, 1.1); if (k.isPlayer) { blip(900, 0.1); blip(1300, 0.12); } }
+  }
+}
 const SPAWNS = [[-120, -60], [120, 60], [-60, 120], [60, -120], [-130, 30], [130, -30], [30, 130], [-30, -130]];
 const arenaBoxes = [[-100, -100], [100, -100], [-100, 100], [100, 100], [0, -130], [0, 130], [-130, 0], [130, 0], [-30, -70], [30, 70], [70, -30], [-70, 30], [0, -40], [0, 40]].map(([x, z]) => {
   const m = new THREE.Mesh(boxG, boxMat); m.position.set(x, 2.4, z); arenaGroup.add(m); return { m, respawn: 0, baseY: 2.4 };
@@ -620,6 +945,35 @@ function stickerTexture(src) {
     tex.needsUpdate = true;
   };
   img.src = src; texCache.set(src, tex); return tex;
+}
+// round "face" texture: the avatar filling the front of the head, ringed by the coin's colour
+const faceCache = new Map();
+function faceTexture(src, ring) {
+  const key = src + '|' + ring;
+  if (faceCache.has(key)) return faceCache.get(key);
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const paint = img => {
+    // equirectangular-ish layout: the face sits in the middle third (the front of the sphere)
+    g.fillStyle = '#' + ring.toString(16).padStart(6, '0'); g.fillRect(0, 0, 512, 256);
+    if (img) { g.save(); g.beginPath(); g.ellipse(256, 128, 92, 112, 0, 0, Math.PI * 2); g.clip(); g.drawImage(img, 256 - 112, 128 - 112, 224, 224); g.restore(); }
+    g.lineWidth = 8; g.strokeStyle = '#15111c'; g.beginPath(); g.ellipse(256, 128, 92, 112, 0, 0, Math.PI * 2); g.stroke();
+    tex.needsUpdate = true;
+  };
+  paint(null);
+  const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => paint(img); img.src = src;
+  faceCache.set(key, tex); return tex;
+}
+const HEAD = { ball: new THREE.SphereGeometry(1.65, 32, 20), ear: new THREE.ConeGeometry(0.55, 1.1, 8), helmet: new THREE.SphereGeometry(1.75, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.42) };
+function buildHead(r) {
+  const g = new THREE.Group();
+  const face = new THREE.MeshToonMaterial({ map: faceTexture(r.img, r.color), gradientMap: ramp });
+  const ball = outlined(new THREE.Mesh(HEAD.ball, face), 1.05);
+  ball.rotation.y = -Math.PI / 2; // texture centre faces forward (+z)
+  g.add(ball);
+  const helmet = outlined(new THREE.Mesh(HEAD.helmet, toon(r.accent)), 1.04); helmet.position.y = 0.12; helmet.rotation.x = -0.35; g.add(helmet);
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.22, 0.9), toon(0x15111c)); visor.position.set(0, 0.95, 1.25); visor.rotation.x = -0.35; g.add(visor);
+  return shade(g, true, false);
 }
 function nameTag(text, mine) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d');
@@ -674,21 +1028,25 @@ function buildKart(r, label, mine) {
     const e = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.38, 1.1, 10), metalM); e.rotation.x = Math.PI / 2 - 0.25; e.position.set(sx, 1.7, -3.7); k.add(e);
     const f = new THREE.Mesh(KART.flame, flameM.clone()); f.position.set(sx, 1.85, -4.2); f.visible = false; k.add(f); exhausts.push(f);
   }
-  const gun = outlined(new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 2.6), darkM), 1.1); gun.position.set(0, 2.4, 3.0); gun.visible = false; k.add(gun);
-  const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: stickerTexture(r.img) }));
-  head.scale.set(3.1, 3.1, 1); head.position.set(0, 4.9, -0.8); k.add(head);
+  const gun = new THREE.Group(); gun.position.set(0, 2.5, 2.4); k.add(gun);
+  const launcher = WMODEL.launcher.clone(true), minigun = WMODEL.minigun.clone(true); gun.add(launcher, minigun); launcher.visible = minigun.visible = false;
+  const head = buildHead(r); head.position.set(0, 4.85, -0.8); k.add(head);
   let tag = null; if (label) { tag = nameTag(label, mine); tag.position.set(0, 7.4, -0.8); tag.scale.set(6.4, 1.6, 1); k.add(tag); }
   const sparkM = new THREE.MeshBasicMaterial({ color: 0x59c3ff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending });
   const sparks = []; for (const s of [-1, 1]) { const sp = new THREE.Mesh(new THREE.OctahedronGeometry(0.6), sparkM); sp.position.set(s * 2.6, 0.6, -3); sp.visible = false; k.add(sp); sparks.push(sp); }
   const blob = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 10), KART.blob); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.08; k.add(blob);
   shade(k, true, false);
-  k.userData = { wheels, head, sparks, sparkM, gun, tag, exhausts, blob };
+  k.userData = { wheels, head, sparks, sparkM, gun, launcher, minigun, tag, exhausts, blob };
   scene.add(k);
   return k;
 }
 
 // ---------------- game state ----------------
 let mode = cfg.mode, karts = [], state = 'title', raceT = 0, countdown = 0, finishOrder = [], LAPS = cfg.laps, matchLen = 180;
+// meIdx: which kart this browser drives. net: the room connection (null when playing solo)
+let meIdx = 0, net = null;
+const ME = () => karts[meIdx];
+const isClient = () => !!(net && !net.host);
 const keys = { up: false, down: false, left: false, right: false, drift: false, item: false, fire: false };
 const hazards = [], projectiles = [], fx = [];
 const SKILL = { chill: 0.86, normal: 0.95, degen: 1.04 };
@@ -705,7 +1063,7 @@ const WEAPONS = {
 const WEAPON_POOL = ['rocket', 'rocket', 'gun', 'gun', 'mine', 'homing', 'boost'];
 
 function makeKart(r, slot, isPlayer, label) {
-  const m = buildKart(r, mode === 'arena' ? label : null, isPlayer);
+  const m = buildKart(r, mode === 'arena' || net ? label : null, isPlayer);
   const k = {
     r, m, isPlayer, label, heading: 0, speed: 0, vy: 0, y: 0, side: 0,
     idx: 0, lap: 0, passedHalf: false, progress: 0, finished: false, finishTime: 0,
@@ -726,31 +1084,8 @@ function makeKart(r, slot, isPlayer, label) {
 function setWorld() {
   trackGroup.visible = mode === 'race'; arenaGroup.visible = mode === 'arena';
   $('hud').classList.toggle('arena', mode === 'arena');
-  $('hHp').hidden = mode !== 'arena'; $('hBoard').hidden = mode !== 'arena'; $('hDrift').hidden = false;
+  $('hHp').hidden = mode !== 'arena'; $('hLapPill').hidden = mode !== 'race'; $('hDrift').hidden = false;
   $('tItem').textContent = mode === 'arena' ? 'FIRE' : 'ITEM';
-}
-
-function startGame() {
-  mode = cfg.mode; LAPS = cfg.laps; matchLen = cfg.mins * 60;
-  karts.forEach(k => scene.remove(k.m));
-  [...hazards, ...projectiles, ...fx].forEach(h => scene.remove(h.m)); hazards.length = projectiles.length = fx.length = 0;
-  [...raceBoxes, ...arenaBoxes].forEach(b => { b.m.visible = true; b.respawn = 0; });
-  setWorld();
-  const me = driverOf(cfg.driver), myName = (cfg.name || 'You').toUpperCase().slice(0, 14);
-  // bots: the other drivers first, then repeats if more bots than drivers
-  const pool = allDrivers().filter(d => d !== me).sort(() => Math.random() - 0.5);
-  const bots = []; for (let i = 0; i < cfg.bots; i++) bots.push(pool.length ? pool[i % pool.length] : me);
-  const playerSlot = mode === 'race' ? cfg.bots : 0;
-  const seen = {}; // repeat drivers get numbered: DEGENZ, DEGENZ 2…
-  const botName = r => { seen[r.id] = (seen[r.id] || (r === me ? 1 : 0)) + 1; return seen[r.id] > 1 ? `${r.name} ${seen[r.id]}` : r.name; };
-  karts = [makeKart(me, playerSlot, true, myName), ...bots.map((r, i) => makeKart(r, mode === 'race' ? i : i + 1, false, botName(r)))];
-  finishOrder = []; raceT = 0; countdown = 3.999; state = 'countdown';
-  updateCamera(0, true);
-  $('hFeed').innerHTML = ''; setItemHud(null); $('hDead').hidden = true;
-  battleLog.length = 0; $('hLogList').innerHTML = '';
-  logEvent(mode === 'arena' ? `💥 Arena match started: ${karts.length} karts, ${cfg.mins} min` : `🏁 Race started: ${karts.length} karts, ${LAPS} lap${LAPS > 1 ? 's' : ''}`);
-  resize(); show('hud'); $('touch').hidden = !document.body.classList.contains('has-touch');
-  initAudio();
 }
 
 // ---------------- race logic ----------------
@@ -767,7 +1102,8 @@ function track(k) {
   return Math.sqrt(bd);
 }
 function onLap(k) {
-  if (k.lap >= LAPS && !k.finished) { k.finished = true; k.finishTime = raceT; finishOrder.push(k); logEvent(`🏁 ${k.isPlayer ? 'You' : k.label} finished ${finishOrder.length}${SUF[finishOrder.length] || 'th'} in ${fmtT(raceT)}`, k.isPlayer ? 'kill' : ''); if (k.isPlayer) endGame(); return; }
+  if (isClient()) return; // the host decides laps and finishes
+  if (k.lap >= LAPS && !k.finished) { k.finished = true; k.finishTime = raceT; finishOrder.push(k); emit({ e: 'fin', p: karts.indexOf(k), place: finishOrder.length, t: raceT }); checkRaceEnd(); return; }
   if (k.isPlayer && k.lap > 0) { banner(k.lap === LAPS - 1 ? 'FINAL LAP!' : `LAP ${k.lap + 1}`, 1.4); blip(880, 0.2); }
 }
 function placeOf(k) {
@@ -782,27 +1118,67 @@ function giveRaceItem(k) {
   for (let i = 0; i < 3; i++) { if ((x -= w[i]) <= 0) { item = RACE_ITEMS[i]; break; } }
   if (k.isPlayer) { k.rolling = 0.9; k.rollItem = item; setItemHud('roll'); } else k.item = item;
 }
-const peelG = new THREE.ConeGeometry(1.6, 1.4, 6), peelM = toon(0xffd23f);
-const missileG = new THREE.CapsuleGeometry(0.9, 2.2, 4, 8), missileM = toon(0xe3262f, { emissive: 0x330000 });
-const bulletG = new THREE.SphereGeometry(0.45, 6, 4), bulletM = new THREE.MeshBasicMaterial({ color: 0xffd23f });
-const mineG = new THREE.SphereGeometry(1.3, 10, 8), mineM = toon(0x26222e);
+// weapon models: built once, cloned per shot. Rockets point along +z.
+const WMODEL = (() => {
+  const rocket = (body, nose) => {
+    const g = new THREE.Group();
+    const tube = outlined(new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 2.8, 12).rotateX(Math.PI / 2), toon(body)), 1.08); g.add(tube);
+    const tip = outlined(new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.2, 12).rotateX(Math.PI / 2), toon(nose)), 1.08); tip.position.z = 2.0; g.add(tip);
+    for (let i = 0; i < 4; i++) { const fin = outlined(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.9, 0.9), toon(nose)), 1.1); fin.position.set(0, 0, -1.1); fin.rotation.z = i * Math.PI / 2; fin.translateY(0.6); g.add(fin); }
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.6, 10).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+    flame.position.z = -2.2; flame.name = 'flame'; g.add(flame);
+    return g;
+  };
+  const mine = (() => {
+    const g = new THREE.Group();
+    g.add(outlined(new THREE.Mesh(new THREE.SphereGeometry(1.15, 16, 12), toon(0x2b2733)), 1.08));
+    const spikeG = new THREE.ConeGeometry(0.22, 0.7, 6);
+    for (const d of [[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1],[0.7,0.7,0],[-0.7,0.7,0],[0,0.7,0.7],[0,0.7,-0.7]]) {
+      const s = new THREE.Mesh(spikeG, toon(0x8f8e98)); const v = new THREE.Vector3(...d).normalize(); s.position.copy(v).multiplyScalar(1.25); s.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v); g.add(s);
+    }
+    const light = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff2b2b })); light.position.y = 1.2; light.name = 'light'; g.add(light);
+    return g;
+  })();
+  const peel = (() => { // banana peel: three curved yellow flaps around a stub
+    const g = new THREE.Group(), m = toon(0xffd23f), tip = toon(0x6b4a1e);
+    for (let i = 0; i < 3; i++) { const f = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.45, 1.6, 4, 8), m), 1.1); f.rotation.set(1.2, i * Math.PI * 2 / 3, 0); f.position.set(Math.sin(i * 2.1) * 0.7, 0.2, Math.cos(i * 2.1) * 0.7); g.add(f); }
+    const stub = outlined(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 1.2, 8), m), 1.1); stub.position.y = 0.7; g.add(stub);
+    const end = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.3, 6), tip); end.position.y = 1.4; g.add(end);
+    return g;
+  })();
+  const tracer = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 1.6, 2, 6).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff0a0, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
+  // kart-mounted weapons
+  const launcher = (() => { const g = new THREE.Group(); const t = outlined(new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 3, 10).rotateX(Math.PI / 2), toon(0x3d4a2b)), 1.08); g.add(t); const r = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.12, 6, 12), toon(0xe3262f)); r.position.z = 1.5; g.add(r); return g; })();
+  const minigun = (() => { const g = new THREE.Group(); const hub = outlined(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1, 10).rotateX(Math.PI / 2), toon(0x3a3a46)), 1.08); g.add(hub); const barrels = new THREE.Group(); barrels.name = 'barrels';
+    for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 2.6, 6).rotateX(Math.PI / 2), toon(0xa8adb8)); b.position.set(Math.cos(i * Math.PI / 3) * 0.32, Math.sin(i * Math.PI / 3) * 0.32, 1.4); barrels.add(b); }
+    g.add(barrels); return g; })();
+  return {
+    rocket: rocket(0xe3262f, 0xfff6e3), homing: rocket(0x8a6cf0, 0xffd23f), dump: rocket(0xe3262f, 0x15111c),
+    mine, peel, tracer, launcher, minigun,
+  };
+})();
+function makeModel(kind) {
+  const src = { rocket: WMODEL.rocket, homing: WMODEL.homing, dump: WMODEL.dump, bullet: WMODEL.tracer, mine: WMODEL.mine, rug: WMODEL.peel }[kind];
+  const m = src.clone(true); scene.add(m); return m;
+}
 const fwdOf = k => new THREE.Vector3(Math.sin(k.heading), 0, Math.cos(k.heading));
 function useRaceItem(k) {
   const it = k.item; if (!it) return; k.item = null;
   if (k.isPlayer) { setItemHud(null); blip(500, 0.15, 'sawtooth'); }
-  if (it.id === 'pump') { k.boost = 1.6; if (k.isPlayer) { say('🚀 PUMP!'); logEvent('🚀 You used PUMP', 'pick'); } }
+  if (it.id === 'pump') { k.boost = 1.6; if (k.remote) emit({ e: 'boost', p: karts.indexOf(k), t: 1.6 }); if (k.isPlayer) { say('🚀 PUMP!'); logEvent('🚀 You used PUMP', 'pick'); } }
   if (it.id === 'rug') {
-    const m = outlined(new THREE.Mesh(peelG, peelM), 1.12); m.position.copy(k.m.position).addScaledVector(fwdOf(k), -6); m.position.y = 0.7;
-    scene.add(m); hazards.push({ m, owner: k, life: 40, kind: 'rug', arm: 0.5 }); if (k.isPlayer) { say('🍌 RUG DROPPED'); logEvent('🍌 You dropped a RUG', 'pick'); }
+    const m = makeModel('rug'); m.position.copy(k.m.position).addScaledVector(fwdOf(k), -6); m.position.y = 0.5;
+    hazards.push({ m, owner: k, life: 40, kind: 'rug', arm: 0.5 }); if (k.isPlayer) { say('🍌 RUG DROPPED'); logEvent('🍌 You dropped a RUG', 'pick'); }
   }
   if (it.id === 'dump') {
     const ahead = karts.filter(o => o !== k && o.progress > k.progress).sort((a, b) => a.progress - b.progress)[0];
-    const m = outlined(new THREE.Mesh(missileG, missileM), 1.1); m.position.copy(k.m.position); m.position.y = 2;
-    scene.add(m); projectiles.push({ m, owner: k, kind: 'dump', target: ahead || null, idx: k.idx, life: 6, speed: 110 });
+    const m = makeModel('dump'); m.position.copy(k.m.position); m.position.y = 2;
+    projectiles.push({ m, owner: k, kind: 'dump', target: ahead || null, idx: k.idx, life: 6, speed: 110 });
     if (k.isPlayer) { say(ahead ? `📉 DUMP → ${ahead.label}` : '📉 DUMP'); logEvent(ahead ? `📉 You fired a DUMP at ${ahead.label}` : '📉 You fired a DUMP', 'pick'); }
   }
 }
 function spinOut(k, why) {
+  if (k.remote) { emit({ e: 'spin', p: karts.indexOf(k), why }); return; } // their browser spins its own kart
   if (k.spin > 0) return;
   k.spin = 1.1; k.speed *= 0.25; k.boost = 0; k.drifting = false;
   if (k.isPlayer) { say(why); blip(160, 0.4, 'sawtooth', 0.2); }
@@ -817,16 +1193,16 @@ function giveWeapon(k) {
 function fire(k) {
   if (!k.weapon || k.fireCd > 0 || !k.alive) return;
   const w = k.weapon, f = fwdOf(k), pos = k.m.position.clone().addScaledVector(f, 4.5); pos.y = 2.2;
-  if (w === 'rocket') { const m = outlined(new THREE.Mesh(missileG, missileM), 1.1); m.position.copy(pos); scene.add(m); projectiles.push({ m, owner: k, kind: 'rocket', dir: f.clone(), speed: 150, life: 2.2, dmg: 100, splash: 8 }); k.fireCd = 0.5; blip(220, 0.25, 'sawtooth'); }
-  if (w === 'gun') { const spread = (Math.random() - 0.5) * 0.06, d = new THREE.Vector3(Math.sin(k.heading + spread), 0, Math.cos(k.heading + spread)); const m = new THREE.Mesh(bulletG, bulletM); m.position.copy(pos); scene.add(m); projectiles.push({ m, owner: k, kind: 'bullet', dir: d, speed: 260, life: 0.8, dmg: 12 }); k.fireCd = 0.09; if (k.isPlayer) blip(900, 0.04, 'square', 0.06); }
-  if (w === 'mine') { const m = outlined(new THREE.Mesh(mineG, mineM), 1.15); m.position.copy(k.m.position).addScaledVector(f, -5); m.position.y = 1; scene.add(m); hazards.push({ m, owner: k, kind: 'mine', life: 30, arm: 0.6, dmg: 100 }); k.fireCd = 0.4; blip(300, 0.1); }
+  if (w === 'rocket') { const m = makeModel('rocket'); m.position.copy(pos); projectiles.push({ m, owner: k, kind: 'rocket', dir: f.clone(), speed: 150, life: 2.2, dmg: 100, splash: 8 }); k.fireCd = 0.5; blip(220, 0.25, 'sawtooth'); }
+  if (w === 'gun') { const spread = (Math.random() - 0.5) * 0.06, d = new THREE.Vector3(Math.sin(k.heading + spread), 0, Math.cos(k.heading + spread)); const m = makeModel('bullet'); m.position.copy(pos); projectiles.push({ m, owner: k, kind: 'bullet', dir: d, speed: 260, life: 0.8, dmg: 12 }); k.fireCd = 0.09; if (k.isPlayer) blip(900, 0.04, 'square', 0.06); }
+  if (w === 'mine') { const m = makeModel('mine'); m.position.copy(k.m.position).addScaledVector(f, -5); m.position.y = 1.2; hazards.push({ m, owner: k, kind: 'mine', life: 30, arm: 0.6, dmg: 100 }); k.fireCd = 0.4; blip(300, 0.1); }
   if (w === 'homing') {
-    const target = nearestEnemy(k, 0.5, 220); const m = outlined(new THREE.Mesh(missileG, toon(0x8a6cf0, { emissive: 0x220044 })), 1.1); m.position.copy(pos); scene.add(m);
+    const target = nearestEnemy(k, 0.5, 220); const m = makeModel('homing'); m.position.copy(pos);
     projectiles.push({ m, owner: k, kind: 'homing', dir: f.clone(), target, speed: 115, life: 4, dmg: 100, splash: 6 }); k.fireCd = 0.5; blip(500, 0.3, 'triangle');
     if (k.isPlayer && target) say(`🎯 LOCKED ON ${target.label}`);
-    if (target?.isPlayer && !k.isPlayer) logEvent(`🎯 ${k.label} locked a homing missile on you`, 'hurt');
+    if (target) emit({ e: 'lock', a: karts.indexOf(k), v: karts.indexOf(target) });
   }
-  if (w === 'boost') { k.boost = 2; if (k.isPlayer) say('⚡ NITRO'); }
+  if (w === 'boost') { k.boost = 2; if (k.remote) emit({ e: 'boost', p: karts.indexOf(k), t: 2 }); if (k.isPlayer) say('⚡ NITRO'); }
   if (k.isPlayer && w !== 'gun') logEvent({ rocket: '🚀 You fired a rocket', mine: '💣 You dropped a mine', homing: '🎯 You launched a homing missile', boost: '⚡ You hit the nitro' }[w], 'pick');
   if (k.isPlayer && w === 'gun' && k.ammo === WEAPONS.gun.ammo) logEvent('🔫 You opened fire with the minigun', 'pick');
   if (--k.ammo <= 0) { k.weapon = null; }
@@ -847,29 +1223,14 @@ const HOW = { rocket: ['🚀', 'rocket'], homing: ['🎯', 'homing missile'], gu
 function damage(k, dmg, by, how, splash) {
   if (!k.alive || k.invuln > 0) return;
   dmg = Math.round(dmg);
-  k.hp -= dmg; k.hitFlash = 0.15; k.lastHitBy = by; k.lastHow = how;
-  const [icon, wname] = HOW[how] || ['💥', how];
-  if (k.isPlayer) blip(200, 0.08, 'square', 0.12);
-  // log every hit that involves you; bot-on-bot chip damage would flood it
-  if (k.hp > 0 && (k.isPlayer || by?.isPlayer) && by && by !== k) {
-    if (how === 'ram') { if (by.isPlayer) logEvent(`💥 You rammed ${k.label}`, 'hit', dmg); else logEvent(`💥 ${by.label} rammed you`, 'hurt', dmg); }
-    else if (by.isPlayer) logEvent(`${icon} You hit ${k.label} with your ${wname}${splash ? ' (splash)' : ''}`, 'hit', dmg);
-    else logEvent(`${icon} ${by.label} hit you with a ${wname}`, 'hurt', dmg);
-  }
-  if (k.hp <= 0) {
-    k.alive = false; k.hp = 0; k.deaths++; k.respawnT = 2.6; k.m.visible = false; k.speed = 0; k.weapon = null; k.drifting = false;
-    explode(k.m.position, 1.4);
-    const killer = by && by !== k ? by : null;
-    if (killer) killer.kills++;
-    say(`${killer ? killer.label : '💀'} ${icon} ${k.label}`, killer?.isPlayer || k.isPlayer);
-    const who = x => x.isPlayer ? 'You' : x.label;
-    const killNo = killer?.isPlayer ? ` (kill #${killer.kills})` : '';
-    if (killer && how === 'ram') logEvent(`💥 ${who(killer)} rammed ${k.isPlayer ? 'you' : k.label} into scrap${killNo}`, killer.isPlayer ? 'kill' : k.isPlayer ? 'death' : '');
-    else if (killer) logEvent(`${icon} ${who(killer)} smashed ${k.isPlayer ? 'you' : k.label} with ${killer.isPlayer ? 'your' : 'a'} ${wname}${killNo}`, killer.isPlayer ? 'kill' : k.isPlayer ? 'death' : '');
-    else logEvent(`💀 ${who(k)} ${k.isPlayer ? 'blew yourself up' : 'blew up'} with ${k.isPlayer ? 'your own' : 'their own'} ${wname}`, k.isPlayer ? 'death' : '');
-    if (k.isPlayer) { setItemHud(null); $('hDead').hidden = false; }
-    if (killer?.isPlayer) { banner(killer.kills % 3 === 0 ? `${killer.kills} KILLS!` : how === 'ram' ? 'RAMMED!' : 'SMASHED!', 0.9); blip(1200, 0.12); }
-  }
+  k.hp -= dmg; k.lastHitBy = by; k.lastHow = how;
+  const v = karts.indexOf(k), a = by ? karts.indexOf(by) : -1;
+  if (k.hp > 0) { emit({ e: 'hit', v, a, h: how, d: dmg, sp: splash ? 1 : 0 }); return; }
+  k.alive = false; k.hp = 0; k.deaths++; k.respawnT = 2.6; k.m.visible = false; k.speed = 0; k.weapon = null; k.drifting = false;
+  explode(k.m.position, 1.4);
+  const killer = by && by !== k ? by : null;
+  if (killer) killer.kills++;
+  emit({ e: 'kill', v, a: killer ? a : -1, h: how, n: killer ? killer.kills : 0 });
 }
 // ---------------- battle log ----------------
 // every pickup, shot that lands, ram and kill, with the match clock. Shown in-game and on the results screen.
@@ -894,11 +1255,12 @@ function respawn(k) {
   let bestS = SPAWNS[0], bd = -1;
   for (const s of SPAWNS) { const d = Math.min(...karts.filter(o => o !== k && o.alive).map(o => Math.hypot(o.m.position.x - s[0], o.m.position.z - s[1])), 999); if (d > bd) { bd = d; bestS = s; } }
   k.m.position.set(bestS[0], 0, bestS[1]); k.heading = Math.atan2(-bestS[0], -bestS[1]); k.m.rotation.y = k.heading;
-  k.alive = true; k.hp = 100; k.invuln = 2; k.m.visible = true; k.speed = 0; k.spin = 0;
+  k.alive = true; k.hp = 100; k.invuln = 2; k.m.visible = true; k.speed = 0; k.spin = 0; k.tp = (k.tp || 0) + 1;
   if (k.isPlayer) $('hDead').hidden = true;
 }
 const fxG = new THREE.IcosahedronGeometry(1, 0);
-function explode(pos, size = 1) {
+function explode(pos, size = 1) { emit({ e: 'boom', x: +pos.x.toFixed(1), z: +pos.z.toFixed(1), s: size }); }
+function explodeFx(pos, size = 1) {
   boom();
   for (const [c, n, s] of [[0xffd23f, 6, 1], [0xff6a13, 8, 1.4], [0xe3262f, 6, 1.1], [0x9a93b0, 6, 1.6]]) for (let i = 0; i < n; i++) {
     const m = outlined(new THREE.Mesh(fxG, toon(c, { emissive: c === 0x9a93b0 ? 0 : 0x331100 })), 1.12);
@@ -989,8 +1351,9 @@ function stepKart(k, dt) {
     else { k.weapon = k.rollItem; k.ammo = WEAPONS[k.weapon].ammo; setItemHud({ icon: WEAPONS[k.weapon].icon, name: WEAPONS[k.weapon].name }, k.ammo); logEvent(`${WEAPONS[k.weapon].icon} You picked up ${WEAPONS[k.weapon].name}${k.ammo > 1 ? ' ×' + k.ammo : ''}`, 'pick'); }
     blip(1200, 0.08);
   }
+  if (k.remote) return stepRemote(k, dt);
   if (mode === 'arena') {
-    if (!k.alive) { if ((k.respawnT -= dt) <= 0 && state === 'race') respawn(k); return; }
+    if (!k.alive) { if (!isClient() && (k.respawnT -= dt) <= 0 && state === 'race') respawn(k); return; }
     if (k.invuln > 0) { k.invuln -= dt; k.m.visible = Math.floor(k.invuln * 12) % 2 === 0 || k.invuln <= 0; }
     if (k.fireCd > 0) k.fireCd -= dt;
   }
@@ -1001,8 +1364,8 @@ function stepKart(k, dt) {
   else if (k.isPlayer) {
     if (live) {
       throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; steer = (keys.left ? 1 : 0) - (keys.right ? 1 : 0); wantDrift = keys.drift;
-      if (mode === 'race' && keys.item) { keys.item = false; useRaceItem(k); }
-      if (mode === 'arena' && (keys.item || (keys.fire && k.weapon === 'gun'))) { keys.item = false; fire(k); }
+      if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
+      if (mode === 'arena' && (keys.item || (keys.fire && k.weapon === 'gun'))) { keys.item = false; playerUse(k); }
     }
   } else if (live || (mode === 'race' && state === 'done')) {
     if (mode === 'race') {
@@ -1012,7 +1375,7 @@ function stepKart(k, dt) {
   }
   const off = mode === 'race' && Math.abs(k.side || 0) > ROAD_W / 2 + 2.6;
   let band = 1;
-  if (!k.isPlayer) band = k.aiSkill * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (karts[0].progress - k.progress) / N * 0.35)) : 1);
+  if (!k.isPlayer) band = k.aiSkill * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (ME().progress - k.progress) / N * 0.35)) : 1);
   const max = maxBase * band * (off ? 0.45 : 1) * (k.boost > 0 ? 1.35 : 1);
   if (k.spin > 0) { k.spin -= dt; throttle = 0; steer = 0; k.m.rotation.y += dt * 14; }
   if (throttle) k.speed += accel * throttle * dt * (k.speed < max ? 1 : 0);
@@ -1040,6 +1403,7 @@ function stepKart(k, dt) {
     const f = Math.pow(0.02, dt); k.knockX *= f; k.knockZ *= f;
     if (Math.abs(k.knockX) + Math.abs(k.knockZ) < 0.3) k.knockX = k.knockZ = 0;
   }
+  padCheck(k);
   k.vy -= 30 * dt; k.y = Math.max(0, k.y + k.vy * dt); if (k.y === 0) k.vy = 0;
   k.m.position.y = k.y + (off ? Math.sin(raceT * 40) * 0.12 : 0);
   if (k.spin <= 0) k.m.rotation.y = k.heading + (k.drifting ? k.driftDir * 0.38 : 0);
@@ -1053,10 +1417,11 @@ function stepKart(k, dt) {
   const lvl = k.driftT > 2.2 ? 3 : k.driftT > 1.3 ? 2 : k.driftT > 0.6 ? 1 : 0;
   u.sparks.forEach(s => { s.visible = k.drifting && lvl > 0; s.rotation.y += dt * 20; s.scale.setScalar(0.7 + Math.random() * 0.6); });
   u.sparkM.color.setHex([0x59c3ff, 0x59c3ff, 0xff6a13, 0xc86bff][lvl]);
-  u.head.position.y = 4.9 + Math.sin(raceT * 9 + k.r.spd) * 0.1;
+  u.head.position.y = 4.85 + Math.sin(raceT * 9 + k.r.spd) * 0.1;
+  u.head.rotation.z = turn * 0.18; u.head.rotation.y = turn * 0.25;
   // body lean into turns and a little squash on landing
   u.head.position.x = -turn * 0.35;
-  u.gun.visible = mode === 'arena' && !!k.weapon && k.weapon !== 'boost' && k.weapon !== 'mine';
+  showGun(k);
   // boost flames out of the exhausts
   u.exhausts.forEach(f => { f.visible = k.boost > 0; if (f.visible) { f.scale.set(1, 1, 0.8 + Math.random() * 0.9); f.material.color.setHex(Math.random() < 0.5 ? 0xffb02e : 0xff5a1f); } });
   // smoke from drifting wheels, dust when off the road, a puff of exhaust when flooring it from low speed
@@ -1066,7 +1431,7 @@ function stepKart(k, dt) {
     else if (off) { k.puffT = 0.07; puff(k, (Math.random() - 0.5) * 5, -2.6, 0xc9a76a, 1.1); }
     else if (k.boost > 0) { k.puffT = 0.08; puff(k, 0, -4.6, 0xffd9a0, 0.7); }
   }
-  if (k.hitFlash > 0) { k.hitFlash -= dt; u.head.material.color.setHex(0xff6666); } else u.head.material.color.setHex(0xffffff);
+  if (k.hitFlash > 0) { k.hitFlash -= dt; u.head.children[0].material.color.setHex(0xff7777); } else u.head.children[0].material.color.setHex(0xffffff);
 }
 function aiSteer(k) {
   const look = Math.floor(14 + Math.max(0, k.speed) * 0.35), i = (k.idx + look) % N;
@@ -1098,6 +1463,7 @@ function collisions(dt) {
     vic.knockX = (vic.knockX || 0) + nx * sgn * 26 * power; vic.knockZ = (vic.knockZ || 0) + nz * sgn * 26 * power;
     ram.knockX = (ram.knockX || 0) - nx * sgn * 8 * power; ram.knockZ = (ram.knockZ || 0) - nz * sgn * 8 * power;
     vic.speed *= 0.55; ram.speed *= 0.8; vic.vy = Math.max(vic.vy, 5 * power);
+    for (const [kk, mul] of [[vic, 26], [ram, -8]]) if (kk.remote) emit({ e: 'knock', p: karts.indexOf(kk), x: +(nx * sgn * mul * power).toFixed(2), z: +(nz * sgn * mul * power).toFixed(2), vy: kk === vic ? 5 * power : 0 });
     puff(vic, 0, 0, 0xffffff, 1.4); puff(ram, 0, 3, 0xffffff, 1);
     if (ram.isPlayer || vic.isPlayer) blip(140, 0.2, 'square', 0.25);
     if (mode === 'arena') {
@@ -1105,9 +1471,8 @@ function collisions(dt) {
       damage(vic, dmg, ram, 'ram');
       if (ram.boost > 0 && vic.alive) damage(vic, 15, ram, 'ram'); // boosted rams hit extra hard
     } else if (closing > 30) {
-      spinOut(vic, vic.isPlayer ? `💥 ${ram.label} RAMMED YOU` : '');
-      if (ram.isPlayer) { say(`💥 RAMMED ${vic.label}`, true); logEvent(`💥 You rammed ${vic.label} into a spin`, 'hit'); }
-      if (vic.isPlayer) logEvent(`💥 ${ram.label} rammed you into a spin`, 'hurt');
+      spinOut(vic, `💥 ${ram.label} RAMMED YOU`);
+      emit({ e: 'ramspin', a: karts.indexOf(ram), v: karts.indexOf(vic) });
     }
   }
   const boxes = mode === 'race' ? raceBoxes : arenaBoxes;
@@ -1121,13 +1486,14 @@ function collisions(dt) {
       const h = hazards[i];
       if (h.arm > 0) continue;
       if (h.m.position.distanceToSquared(k.m.position) < (h.kind === 'mine' ? 20 : 9)) {
-        if (h.kind === 'rug') { spinOut(k, k.isPlayer ? '🍌 GOT RUGGED!' : ''); if (!k.isPlayer && h.owner.isPlayer) { say(`🍌 RUGGED ${k.label}`, true); logEvent(`🍌 Your RUG spun out ${k.label}`, 'hit'); } if (k.isPlayer) logEvent(h.owner.isPlayer ? '🍌 You slipped on your own RUG' : `🍌 You slipped on ${h.owner.label}'s RUG`, 'hurt'); }
+        if (h.kind === 'rug') { spinOut(k, '🍌 GOT RUGGED!'); emit({ e: 'rug', a: karts.indexOf(h.owner), v: karts.indexOf(k) }); }
         else { explode(h.m.position, 0.9); damage(k, h.dmg, h.owner, 'mine'); }
         scene.remove(h.m); hazards.splice(i, 1);
       }
     }
   }
   for (const b of boxes) if (!b.m.visible && (b.respawn -= dt) <= 0) b.m.visible = true;
+  animWeapons(raceT);
   for (let i = hazards.length - 1; i >= 0; i--) { const h = hazards[i]; if (h.arm > 0) h.arm -= dt; if ((h.life -= dt) < 0) { scene.remove(h.m); hazards.splice(i, 1); } }
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const pr = projectiles[i]; pr.life -= dt;
@@ -1138,9 +1504,9 @@ function collisions(dt) {
       else { pr.idx = (pr.idx + Math.ceil(pr.speed * dt / (TRACK_LEN / N))) % N; tx = PTS[pr.idx].x; tz = PTS[pr.idx].z; }
       const dx = tx - pr.m.position.x, dz = tz - pr.m.position.z, d = Math.hypot(dx, dz) || 1;
       pr.m.position.x += dx / d * Math.min(d, pr.speed * dt); pr.m.position.z += dz / d * Math.min(d, pr.speed * dt);
-      pr.m.rotation.set(Math.PI / 2, 0, -Math.atan2(dx, dz));
+      pr.m.rotation.set(0, Math.atan2(dx, dz), 0);
       hit = karts.find(k => k !== pr.owner && k.m.position.distanceToSquared(pr.m.position) < 12);
-      if (hit) { spinOut(hit, hit.isPlayer ? '📉 GOT DUMPED ON!' : ''); if (pr.owner.isPlayer) { say(`📉 DUMPED ON ${hit.label}`, true); logEvent(`📉 Your DUMP hit ${hit.label}`, 'hit'); } if (hit.isPlayer) logEvent(`📉 ${pr.owner.label}'s DUMP hit you`, 'hurt'); done = true; }
+      if (hit) { spinOut(hit, '📉 GOT DUMPED ON!'); emit({ e: 'dumphit', a: karts.indexOf(pr.owner), v: karts.indexOf(hit) }); done = true; }
     } else {
       if (pr.kind === 'homing') {
         if (!pr.target || !pr.target.alive) pr.target = nearestEnemy({ m: pr.m, heading: Math.atan2(pr.dir.x, pr.dir.z) }, 0.2, 200, pr.owner);
@@ -1150,7 +1516,7 @@ function collisions(dt) {
         }
       }
       pr.m.position.addScaledVector(pr.dir, pr.speed * dt);
-      pr.m.rotation.set(Math.PI / 2, 0, -Math.atan2(pr.dir.x, pr.dir.z));
+      pr.m.rotation.set(0, Math.atan2(pr.dir.x, pr.dir.z), 0);
       const p = pr.m.position;
       if (blockedAt(p.x, p.z, 0.5)) done = true;
       hit = karts.find(k => k !== pr.owner && k.alive && k.m.position.distanceToSquared(p) < (pr.kind === 'bullet' ? 9 : 14));
@@ -1190,10 +1556,13 @@ function updatePuffs(dt) {
 }
 
 // ---------------- HUD ----------------
-const SUF = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th'];
-let bannerT = 0;
+const SUF = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th', 'th', 'th', 'th'];
+const ord = n => `${n}<sup>${SUF[n] || 'th'}</sup>`;
+let bannerT = 0, msgT = 0;
 function banner(text, t = 1) { const b = $('hBanner'); b.textContent = text; b.style.opacity = 1; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); bannerT = t; }
-function say(text, mine) { if (!text) return; const d = document.createElement('div'); d.textContent = text; if (mine) d.className = 'me'; $('hFeed').prepend(d); setTimeout(() => d.remove(), 2800); while ($('hFeed').children.length > 5) $('hFeed').lastChild.remove(); }
+function showMsg(html, t = 2.6) { const m = $('hMsg'); m.innerHTML = html; m.style.opacity = 1; msgT = t; }
+function say(text, mine) { if (!text) return; const d = document.createElement('div'); d.textContent = text; if (mine) d.className = 'me'; $('hFeed').prepend(d); setTimeout(() => d.remove(), 3200); while ($('hFeed').children.length > 5) $('hFeed').lastChild.remove(); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3000); }
 function setItemHud(it, ammo) {
   $('hItem').classList.toggle('roll', it === 'roll');
   $('hAmmo').hidden = !(ammo > 1); $('hAmmo').textContent = ammo || '';
@@ -1210,51 +1579,450 @@ function mmXY(x, z) {
   const s = 290 / Math.max(tb.x1 - tb.x0, tb.z1 - tb.z0); return [25 + (x - tb.x0) * s, 25 + (z - tb.z0) * s];
 }
 const hex = c => '#' + c.toString(16).padStart(6, '0');
+const standings = () => mode === 'arena' ? [...karts].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths) : [...karts].sort((a, b) => placeOf(a) - placeOf(b));
 function hud() {
-  const p = karts[0], place = placeOf(p);
-  $('hPos').innerHTML = `${place}<sup>${SUF[place] || 'th'}</sup>`;
+  const p = ME(); if (!p) return;
+  const order = standings(), place = order.indexOf(p) + 1;
+  $('hPos').innerHTML = `${ord(place)} / ${karts.length}`;
   if (mode === 'race') {
-    $('hLap').textContent = `LAP ${Math.min(LAPS, p.lap + 1)}/${LAPS}`;
-    $('hTime').textContent = fmtT(p.finished ? p.finishTime : raceT);
+    $('hLap').textContent = `${Math.min(LAPS, p.lap + 1)}/${LAPS}`;
+    $('hTime').textContent = fmtT(p.finished ? p.finishTime : raceT).slice(0, -1);
   } else {
-    $('hLap').textContent = `💥 ${p.kills}  💀 ${p.deaths}`;
     $('hTime').textContent = fmtClock(matchLen - raceT);
-    const hp = $('hHp'); hp.firstChild.style.width = p.hp + '%'; hp.classList.toggle('low', p.hp <= 30);
-    if (!p.alive) $('hDead').textContent = `SMASHED! BACK IN ${Math.max(0, p.respawnT).toFixed(1)}`;
-    const order = [...karts].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths).slice(0, 5);
-    $('hBoard').innerHTML = order.map((k, i) => `<div class="${k.isPlayer ? 'me' : ''}"><b>${i + 1}</b><span>${k.label}</span><b>${k.kills}</b></div>`).join('');
+    const hp = $('hHp'); hp.querySelector('.bar span').style.width = Math.max(0, p.hp) + '%'; hp.classList.toggle('low', p.hp <= 30);
+    if (!p.alive) $('hDead').textContent = `Back in ${Math.max(0, p.respawnT).toFixed(1)}s`;
   }
+  $('hBoard').innerHTML = order.slice(0, 8).map((k, i) => `<div class="${k === p ? 'me' : ''}"><i>${i + 1}</i><span>${escapeHtml(k.label)}${k.human && k !== p ? ' 🎮' : ''}</span><b>${mode === 'arena' ? k.kills : k.finished ? '🏁' : Math.min(LAPS, k.lap + 1)}</b></div>`).join('');
   $('hSpeed').innerHTML = `${Math.round(Math.abs(p.speed) * 1.6)}<small>KM/H</small>`;
   const lvl = p.driftT > 2.2 ? 3 : p.driftT > 1.3 ? 2 : 1;
   const dr = $('hDrift'); dr.className = 'drift l' + lvl; dr.firstChild.style.width = p.drifting ? Math.min(100, p.driftT / 2.2 * 100) + '%' : '0%';
-  if (p.rolling) $('hItemIcon').textContent = mode === 'race' ? RACE_ITEMS[(rollI++ >> 2) % 3].icon : Object.values(WEAPONS)[(rollI++ >> 2) % 5].icon;
+  if (p.rolling > 0) $('hItemIcon').textContent = mode === 'race' ? RACE_ITEMS[(rollI++ >> 2) % 3].icon : Object.values(WEAPONS)[(rollI++ >> 2) % 5].icon;
   mm.clearRect(0, 0, 340, 340); mm.lineJoin = 'round'; mm.lineCap = 'round';
   if (mode === 'race') {
-    for (const [w, c] of [[22, '#15111c'], [14, '#fff6e3']]) { mm.beginPath(); PTS.forEach((q, i) => { const [x, y] = mmXY(q.x, q.z); i ? mm.lineTo(x, y) : mm.moveTo(x, y); }); mm.closePath(); mm.lineWidth = w; mm.strokeStyle = c; mm.stroke(); }
+    for (const [w, c] of [[24, '#1f3a86'], [15, '#ffffff']]) { mm.beginPath(); PTS.forEach((q, i) => { const [x, y] = mmXY(q.x, q.z); i ? mm.lineTo(x, y) : mm.moveTo(x, y); }); mm.closePath(); mm.lineWidth = w; mm.strokeStyle = c; mm.stroke(); }
   } else {
-    mm.fillStyle = '#e9c98f'; mm.strokeStyle = '#15111c'; mm.lineWidth = 6; mm.fillRect(25, 25, 290, 290); mm.strokeRect(25, 25, 290, 290);
+    mm.fillStyle = '#e9c98f'; mm.strokeStyle = '#1f3a86'; mm.lineWidth = 8; mm.fillRect(25, 25, 290, 290); mm.strokeRect(25, 25, 290, 290);
     mm.fillStyle = '#7a4a1e';
     for (const o of obstacles) { const [x, y] = mmXY(o.x, o.z); if (o.r) { mm.beginPath(); mm.arc(x, y, o.r / (AR * 2) * 290, 0, Math.PI * 2); mm.fill(); } else { const w = o.hx * 2 / (AR * 2) * 290; mm.fillRect(x - w / 2, y - w / 2, w, w); } }
-    mm.fillStyle = '#ffd23f'; for (const b of arenaBoxes) if (b.m.visible) { const [x, y] = mmXY(b.m.position.x, b.m.position.z); mm.fillRect(x - 5, y - 5, 10, 10); }
+    mm.fillStyle = '#ffcd2e'; for (const b of arenaBoxes) if (b.m.visible) { const [x, y] = mmXY(b.m.position.x, b.m.position.z); mm.fillRect(x - 5, y - 5, 10, 10); }
   }
   for (const k of [...karts].reverse()) {
     if (!k.alive) continue;
-    const [x, y] = mmXY(k.m.position.x, k.m.position.z); mm.beginPath(); mm.arc(x, y, k.isPlayer ? 13 : 10, 0, Math.PI * 2);
-    mm.fillStyle = hex(k.r.color); mm.fill(); mm.lineWidth = 4; mm.strokeStyle = k.isPlayer ? '#ffd23f' : '#15111c'; mm.stroke();
+    const [x, y] = mmXY(k.m.position.x, k.m.position.z); mm.beginPath(); mm.arc(x, y, k === p ? 13 : 10, 0, Math.PI * 2);
+    mm.fillStyle = hex(k.r.color); mm.fill(); mm.lineWidth = 4; mm.strokeStyle = k === p ? '#ffcd2e' : k.human ? '#ffffff' : '#1f3a86'; mm.stroke();
+  }
+}
+
+// weapon on the kart's nose: launcher for rockets and homing, a spinning minigun for the gun
+function showGun(k) {
+  const u = k.m.userData, w = mode === 'arena' ? k.weapon : null;
+  u.launcher.visible = w === 'rocket' || w === 'homing';
+  u.minigun.visible = w === 'gun';
+  if (w === 'gun') { const b = u.minigun.getObjectByName('barrels'); b.rotation.z += k.firing ? 0.6 : 0.05; }
+}
+// rocket flames flicker, mine lights blink
+function animWeapons(t) {
+  for (const pr of projectiles) { const f = pr.m.getObjectByName && pr.m.getObjectByName('flame'); if (f) f.scale.set(1, 1, 0.7 + Math.random() * 0.7); }
+  for (const h of hazards) { const l = h.m.getObjectByName && h.m.getObjectByName('light'); if (l) l.visible = Math.floor(t * 4) % 2 === 0; }
+}
+
+// ---------------- events ----------------
+// Everything worth telling players (hits, kills, spins, finishes, explosions) goes through emit(). The host
+// (or a solo game) runs notify() locally and, in a room, ships the event to every player, whose browser
+// runs notify() too. notify() words things from that browser's own point of view.
+const kills = { byMe: 0, nemesis: {} }; // smash streaks and nemesis tracking for this match
+function emit(ev) { notify(ev); if (net && net.host) net.events.push(ev); }
+function notify(ev) {
+  const K = i => (i >= 0 ? karts[i] : null);
+  const who = x => x.isPlayer ? 'You' : x.label;
+  switch (ev.e) {
+    case 'boom': explodeFx(new THREE.Vector3(ev.x, 2, ev.z), ev.s); break;
+    case 'hit': {
+      const k = K(ev.v), by = K(ev.a); if (!k) break;
+      k.hitFlash = 0.15;
+      if (k.isPlayer) blip(200, 0.08, 'square', 0.12);
+      if ((k.isPlayer || by?.isPlayer) && by && by !== k) {
+        const [icon, wname] = HOW[ev.h] || ['💥', ev.h];
+        if (ev.h === 'ram') { if (by.isPlayer) logEvent(`💥 You rammed ${k.label}`, 'hit', ev.d); else logEvent(`💥 ${by.label} rammed you`, 'hurt', ev.d); }
+        else if (by.isPlayer) logEvent(`${icon} You hit ${k.label} with your ${wname}${ev.sp ? ' (splash)' : ''}`, 'hit', ev.d);
+        else logEvent(`${icon} ${by.label} hit you with a ${wname}`, 'hurt', ev.d);
+      }
+      break;
+    }
+    case 'kill': {
+      const k = K(ev.v), by = K(ev.a); if (!k) break;
+      if (isClient()) { k.alive = false; k.m.visible = false; if (by) by.kills = ev.n; }
+      const [icon, wname] = HOW[ev.h] || ['💥', ev.h];
+      say(`${by ? by.label : '💀'} ${icon} ${k.label}`, by?.isPlayer || k.isPlayer);
+      const killNo = by?.isPlayer ? ` (kill #${ev.n})` : '';
+      if (by && ev.h === 'ram') logEvent(`💥 ${who(by)} rammed ${k.isPlayer ? 'you' : k.label} into scrap${killNo}`, by.isPlayer ? 'kill' : k.isPlayer ? 'death' : '');
+      else if (by) logEvent(`${icon} ${who(by)} smashed ${k.isPlayer ? 'you' : k.label} with ${by.isPlayer ? 'your' : 'a'} ${wname}${killNo}`, by.isPlayer ? 'kill' : k.isPlayer ? 'death' : '');
+      else logEvent(`💀 ${who(k)} ${k.isPlayer ? 'blew yourself up' : 'blew up'}`, k.isPlayer ? 'death' : '');
+      if (k.isPlayer) {
+        setItemHud(null); $('hDead').hidden = false; kills.byMe = 0;
+        if (by) { kills.nemesis[ev.a] = (kills.nemesis[ev.a] || 0) + 1; showMsg(`You were ${ev.h === 'gun' ? 'mowed down' : 'smashed'} by<br><span class="who">${escapeHtml(by.label)}'s</span> ${wname}`); }
+        else showMsg('You blew yourself up');
+      }
+      if (by?.isPlayer) {
+        kills.byMe++;
+        const top = Object.entries(kills.nemesis).sort((a, b) => b[1] - a[1])[0];
+        if (top && +top[0] === ev.v && top[1] >= 2) showMsg(`You SMASHED YOUR <span class="nem">NEMESIS</span> - <span class="who">${escapeHtml(k.label)}</span>`);
+        else showMsg(`You ${ev.h === 'ram' ? 'RAMMED' : 'SMASHED'} <span class="who">${escapeHtml(k.label)}</span>`, 1.6);
+        if (kills.byMe >= 3) banner('Smash Streak', 1.4); else banner(ev.h === 'ram' ? 'RAMMED!' : 'SMASHED!', 0.9);
+        blip(1200, 0.12);
+      }
+      break;
+    }
+    case 'fin': { const k = K(ev.p); if (!k) break; if (isClient()) { k.finished = true; k.finishTime = ev.t; if (!finishOrder.includes(k)) finishOrder.push(k); } logEvent(`🏁 ${who(k)} finished ${ev.place}${SUF[ev.place] || 'th'} in ${fmtT(ev.t)}`, k.isPlayer ? 'kill' : ''); if (k.isPlayer) banner('FINISH!', 1.6); break; }
+    case 'spin': if (isClient() && ev.p === meIdx) spinOut(ME(), ev.why); break;
+    case 'boost': if (isClient() && ev.p === meIdx) ME().boost = Math.max(ME().boost, ev.t); break;
+    case 'knock': if (isClient() && ev.p === meIdx) { const k = ME(); k.knockX = (k.knockX || 0) + ev.x; k.knockZ = (k.knockZ || 0) + ev.z; k.vy = Math.max(k.vy, ev.vy); k.speed *= 0.55; } break;
+    case 'lock': { const a = K(ev.a), v = K(ev.v); if (v?.isPlayer && a && !a.isPlayer) logEvent(`🎯 ${a.label} locked a homing missile on you`, 'hurt'); if (a?.isPlayer && v) say(`🎯 LOCKED ON ${v.label}`, true); break; }
+    case 'rug': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer && !v.isPlayer) { say(`🍌 RUGGED ${v.label}`, true); logEvent(`🍌 Your RUG spun out ${v.label}`, 'hit'); } if (v.isPlayer) logEvent(a.isPlayer ? '🍌 You slipped on your own RUG' : `🍌 You slipped on ${a.label}'s RUG`, 'hurt'); break; }
+    case 'dumphit': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer) { say(`📉 DUMPED ON ${v.label}`, true); logEvent(`📉 Your DUMP hit ${v.label}`, 'hit'); } if (v.isPlayer) logEvent(`📉 ${a.label}'s DUMP hit you`, 'hurt'); break; }
+    case 'ramspin': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer) { say(`💥 RAMMED ${v.label}`, true); logEvent(`💥 You rammed ${v.label} into a spin`, 'hit'); } if (v.isPlayer) logEvent(`💥 ${a.label} rammed you into a spin`, 'hurt'); break; }
+    case 'left': { const k = K(ev.p); if (k) { say(`👋 ${k.label} left`); logEvent(`👋 ${k.label} left the room, a bot took over`); k.human = false; } break; }
+  }
+}
+
+// what the local player's ITEM / FIRE button does: act locally, or ask the host to do it
+function playerUse(k) {
+  if (!isClient()) { if (mode === 'race') useRaceItem(k); else fire(k); return; }
+  const w = mode === 'race' ? k.item?.id : k.weapon;
+  if (!w) return;
+  if (w !== 'gun') logEvent({ rocket: '🚀 You fired a rocket', mine: '💣 You dropped a mine', homing: '🎯 You launched a homing missile', boost: '⚡ You hit the nitro', pump: '🚀 You used PUMP', rug: '🍌 You dropped a RUG', dump: '📉 You fired a DUMP' }[w] || '', 'pick');
+  if (w === 'boost' || w === 'pump') k.boost = Math.max(k.boost, w === 'boost' ? 2 : 1.6); // feel the boost now, the host confirms
+  net.send({ t: 'act' });
+}
+
+// ---------------- network: rooms over WebRTC (PeerJS) ----------------
+// The host's browser owns the match. Each player drives their own kart locally and streams its pose to the host
+// (~20/s); the host runs bots, pickups, weapons, damage and scoring and streams snapshots back (~15/s).
+const ROOM_PREFIX = 'degenzkart-v1-';
+const WCODE = ['', 'rocket', 'gun', 'mine', 'homing', 'boost'], ICODE = ['', 'pump', 'rug', 'dump'], PCODE = ['rocket', 'bullet', 'homing', 'dump'];
+const PSPEED = { rocket: 150, bullet: 260, homing: 115, dump: 110 };
+const pubDriver = d => ({ id: d.id, name: d.name, coin: d.coin, img: d.img, color: d.color, accent: d.accent, spd: d.spd, acc: d.acc, hnd: d.hnd });
+const myName = () => (cfg.name || 'Player').toUpperCase().replace(/[^\w .-]/g, '').slice(0, 14) || 'PLAYER';
+function genCode() { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.random() * A.length | 0]; return s; }
+const roomUrl = code => `${location.origin}${location.pathname}?room=${code}`;
+let snapAcc = 0, meAcc = 0, pingT = 0, fpsN = 0, fpsT = 0, fps = 60;
+
+function leaveNet(silent) {
+  if (!net) return;
+  try { net.conns?.forEach(c => c.close()); net.conn?.close(); net.peer?.destroy(); } catch {}
+  net = null; $('btnInvite').hidden = true; $('hNet').textContent = '';
+  if (!silent) toast('Left the room');
+}
+function createRoom() {
+  leaveNet(true);
+  const code = genCode();
+  net = { host: true, code, conns: [], players: [{ id: 'host', name: myName(), driver: pubDriver(driverOf(cfg.driver)) }], events: [], ready: false };
+  net.send = () => {};
+  const peer = new Peer(ROOM_PREFIX + code, { debug: 0 });
+  net.peer = peer;
+  renderRoom(); show('scrRoom'); $('roomStatus').textContent = 'Opening the room…';
+  peer.on('open', () => { if (!net || net.peer !== peer) return; net.ready = true; $('roomStatus').textContent = 'Share the code. Waiting for players…'; renderRoom(); });
+  peer.on('error', err => {
+    if (!net || net.peer !== peer) return;
+    if (err.type === 'unavailable-id') { createRoom(); return; } // code clash: roll a new one
+    $('roomStatus').textContent = `Couldn't open the room (${err.type}). Check your connection and try again.`;
+  });
+  peer.on('connection', conn => {
+    conn.on('open', () => net.conns.push(conn));
+    conn.on('data', d => onHostData(conn, d));
+    conn.on('close', () => onPlayerLeft(conn));
+  });
+}
+function broadcast(obj) { if (net?.host) net.conns.forEach(c => { if (c.open) c.send(obj); }); }
+function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, bots: cfg.bots, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host' })) }; }
+function onHostData(conn, d) {
+  if (!net?.host || !d || typeof d !== 'object') return;
+  if (d.t === 'hello') {
+    if (net.players.length >= 8) { conn.send({ t: 'nope', why: 'That room is full (8 players).' }); setTimeout(() => conn.close(), 300); return; }
+    if (state !== 'title') { conn.send({ t: 'nope', why: 'That match already started. Ask the host to let you in after it ends.' }); setTimeout(() => conn.close(), 300); return; }
+    const drv = d.driver && typeof d.driver === 'object' ? d.driver : pubDriver(BUILTIN[0]);
+    drv.img = typeof drv.img === 'string' && (drv.img.startsWith('/racers/') || drv.img.startsWith('data:image/')) && drv.img.length < 200000 ? drv.img : BUILTIN[0].img;
+    net.players = net.players.filter(p => p.id !== conn.peer);
+    net.players.push({ id: conn.peer, conn, name: String(d.name || 'PLAYER').slice(0, 14).toUpperCase(), driver: drv });
+    renderRoom(); broadcast(lobbyInfo()); blip(1000, 0.08);
+    return;
+  }
+  if (d.t === 'ping') { conn.send({ t: 'pong', at: d.at }); return; }
+  const k = karts.find(x => x.remote === conn.peer);
+  if (!k) return;
+  if (d.t === 'me') k.np = d;
+  if (d.t === 'act') k.inpUse = true;
+}
+function onPlayerLeft(conn) {
+  if (!net?.host) return;
+  net.conns = net.conns.filter(c => c !== conn);
+  const p = net.players.find(x => x.id === conn.peer);
+  net.players = net.players.filter(x => x.id !== conn.peer);
+  const k = karts.find(x => x.remote === conn.peer);
+  if (k) { k.remote = null; emit({ e: 'left', p: karts.indexOf(k) }); } // a bot takes the kart over
+  else if (p) toast(`${p.name} left`);
+  renderRoom(); broadcast(lobbyInfo());
+}
+function joinRoom(code) {
+  code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  if (code.length < 5) { $('joinStatus').textContent = 'Room codes are 5 letters and numbers, like K7Q2M.'; return; }
+  leaveNet(true);
+  net = { host: false, code, players: [] };
+  const peer = new Peer({ debug: 0 }); net.peer = peer;
+  $('joinStatus').textContent = 'Connecting…'; $('btnJoinGo').disabled = true;
+  const fail = msg => { if (!net || net.peer !== peer) return; $('joinStatus').textContent = msg; $('btnJoinGo').disabled = false; leaveNet(true); };
+  const timer = setTimeout(() => fail('No answer from that room. Check the code, or ask the host to keep the room open.'), 12000);
+  peer.on('error', err => { clearTimeout(timer); fail(err.type === 'peer-unavailable' ? 'No room with that code. Check it and try again.' : `Couldn't connect (${err.type}).`); });
+  peer.on('open', () => {
+    const conn = peer.connect(ROOM_PREFIX + code, { reliable: true }); // binary serialization chunks big messages (custom avatars)
+    net.conn = conn;
+    net.send = obj => { if (conn.open) conn.send(obj); };
+    conn.on('open', () => {
+      clearTimeout(timer); $('btnJoinGo').disabled = false; $('joinStatus').textContent = 'Joining…';
+      // the very first message on a fresh channel can get lost, so say hello until the host answers
+      let tries = 0; const hello = () => { if (!net || net.conn !== conn || net.lobby || tries++ > 8) return; conn.send({ t: 'hello', name: myName(), driver: pubDriver(driverOf(cfg.driver)) }); setTimeout(hello, 1200); };
+      setTimeout(hello, 150);
+    });
+    conn.on('data', onClientData);
+    conn.on('close', () => { if (net && net.conn === conn) { leaveNet(true); quitGame('title'); toast('The host closed the room'); } });
+  });
+}
+function onClientData(d) {
+  if (!net || net.host || !d || typeof d !== 'object') return;
+  if (d.t === 'nope') { $('joinStatus').textContent = d.why; leaveNet(true); show('scrJoin'); return; }
+  if (d.t === 'lobby') { net.lobby = d; $('joinStatus').textContent = ''; if (state === 'title') { renderRoom(); show('scrRoom'); } return; }
+  if (d.t === 'start') { clientStart(d); return; }
+  if (d.t === 's') { applySnap(d); return; }
+  if (d.t === 'end') { endGame(d.order.map(i => karts[i]).filter(Boolean)); return; }
+  if (d.t === 'pong') { net.ping = Math.round(performance.now() - d.at); return; }
+  if (d.t === 'room') { quitGame('room'); return; }
+}
+
+// room lobby screen (host and guests)
+function renderRoom() {
+  if (!net) return;
+  const host = net.host, L = host ? lobbyInfo() : (net.lobby || { players: [], mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, bots: 0 });
+  $('roomCode').textContent = net.code;
+  $('roomLink').value = roomUrl(net.code);
+  $('roomTitle').textContent = host ? 'Your room' : 'Room';
+  const botN = Math.max(0, Math.min(8 - L.players.length, L.bots));
+  $('roomPlayers').innerHTML = L.players.map(p => `<div class="pl"><img src="${escapeHtml(p.driver.img)}" alt=""><b>${escapeHtml(p.name)}</b>${p.host ? '<span>HOST</span>' : ''}</div>`).join('')
+    + (botN ? `<div class="pl bot"><img src="/racers/degenz.png" alt=""><b>+ ${botN} bot${botN > 1 ? 's' : ''}</b></div>` : '');
+  const race = L.mode === 'race';
+  $('roomMapArt').className = 'art ' + L.mode; $('roomMapArt').textContent = race ? '🏁' : '💥';
+  $('roomMapName').innerHTML = race ? `Bonfire Bay<small>Race · ${L.laps} lap${L.laps > 1 ? 's' : ''}</small>` : `The Pit<small>Free for all · ${L.mins} mins</small>`;
+  $('roomMap').disabled = !host;
+  $('btnRoomStart').hidden = !host;
+  $('btnRoomStart').disabled = !net.ready;
+  if (!host) $('roomStatus').textContent = 'Waiting for the host to start…';
+}
+
+// ---------------- starting a match ----------------
+const kartLabel = (() => { let seen = {}; const f = (r, reset) => { if (reset) { seen = {}; return; } seen[r.id] = (seen[r.id] || 0) + 1; return seen[r.id] > 1 ? `${r.name} ${seen[r.id]}` : r.name; }; return f; })();
+// roster entries: { name, driver, human, peer }
+function soloRoster() {
+  const me = driverOf(cfg.driver);
+  const pool = allDrivers().filter(d => d !== me).sort(() => Math.random() - 0.5);
+  const list = [{ name: myName(), driver: pubDriver(me), human: true, peer: 'host' }];
+  kartLabel(null, true); kartLabel(me);
+  for (let i = 0; i < Math.max(cfg.bots, mode === 'race' ? 1 : 1); i++) { const d = pool.length ? pool[i % pool.length] : me; list.push({ name: kartLabel(d), driver: pubDriver(d), human: false }); }
+  return list;
+}
+function hostRoster() {
+  kartLabel(null, true);
+  const list = net.players.map(p => ({ name: p.name, driver: p.driver, human: true, peer: p.id }));
+  const used = new Set(list.map(p => p.driver.id));
+  const pool = BUILTIN.filter(d => !used.has(d.id)).concat(BUILTIN.filter(d => used.has(d.id)));
+  const bots = Math.max(0, Math.min(8 - list.length, cfg.bots));
+  for (let i = 0; i < bots; i++) { const d = pool[i % pool.length]; list.push({ name: kartLabel(d), driver: pubDriver(d), human: false }); }
+  return list;
+}
+function startGame(opts = {}) {
+  const roster = opts.roster || soloRoster();
+  mode = opts.mode || cfg.mode; LAPS = opts.laps || cfg.laps; matchLen = (opts.mins || cfg.mins) * 60;
+  meIdx = opts.me || 0;
+  karts.forEach(k => scene.remove(k.m));
+  [...hazards, ...projectiles, ...fx].forEach(h => scene.remove(h.m)); hazards.length = projectiles.length = fx.length = 0;
+  clearNetMeshes();
+  [...raceBoxes, ...arenaBoxes].forEach(b => { b.m.visible = true; b.respawn = 0; });
+  if (preview) preview.visible = false;
+  setWorld();
+  // humans start at the back of the grid in a race, spread across spawns in the arena
+  karts = roster.map((r, i) => {
+    const slot = mode === 'race' ? roster.length - 1 - i : i;
+    const k = makeKart(r.driver, slot, i === meIdx, r.name);
+    k.human = r.human;
+    if (net?.host && r.human && r.peer !== 'host') k.remote = r.peer;
+    if (isClient() && i !== meIdx) k.puppet = true;
+    return k;
+  });
+  finishOrder = []; raceT = 0; countdown = 3.999; state = 'countdown'; raceEndAt = 0;
+  kills.byMe = 0; kills.nemesis = {}; snapAcc = meAcc = 0;
+  updateCamera(0, true);
+  $('hFeed').innerHTML = ''; setItemHud(null); $('hDead').hidden = true; $('hMsg').style.opacity = 0;
+  battleLog.length = 0; $('hLogList').innerHTML = '';
+  logEvent(mode === 'arena' ? `💥 The Pit: ${karts.length} karts, ${matchLen / 60} min` : `🏁 Bonfire Bay: ${karts.length} karts, ${LAPS} lap${LAPS > 1 ? 's' : ''}`);
+  if (net) logEvent(`🎮 Room ${net.code}: ${karts.filter(k => k.human).length} player${karts.filter(k => k.human).length > 1 ? 's' : ''}`);
+  $('btnInvite').hidden = !net;
+  $('btnRestart').hidden = isClient();
+  resize(); show('hud'); $('touch').hidden = !document.body.classList.contains('has-touch');
+  initAudio();
+}
+function hostStart() {
+  if (!net?.host) return;
+  const roster = hostRoster();
+  const settings = { mode: cfg.mode, laps: cfg.laps, mins: cfg.mins };
+  startGame({ roster, ...settings, me: 0 });
+  net.conns.forEach(c => { const you = roster.findIndex(r => r.peer === c.peer); if (you >= 0 && c.open) c.send({ t: 'start', roster, ...settings, you }); });
+}
+function clientStart(d) {
+  cfg.mode = d.mode; // follow the host's map
+  startGame({ roster: d.roster, mode: d.mode, laps: d.laps, mins: d.mins, me: d.you });
+}
+// race end: solo ends when you finish; rooms end when every human has finished, or 30s after the first one does
+let raceEndAt = 0;
+function checkRaceEnd() {
+  if (isClient()) return;
+  const humans = karts.filter(k => k.human);
+  if (humans.every(k => k.finished)) { endGame(); return; }
+  if (!raceEndAt && humans.some(k => k.finished)) { raceEndAt = raceT + 30; logEvent('⏱️ 30 seconds left for everyone else to finish'); }
+}
+
+// ---------------- network: snapshots ----------------
+function snapshot() {
+  const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
+  const boxes = mode === 'race' ? raceBoxes : arenaBoxes;
+  const s = {
+    t: 's', st: state, T: r2(raceT), cd: r2(countdown),
+    k: karts.map(k => [r1(k.m.position.x), r1(k.m.position.z), r1(k.y), r2(k.heading), r1(k.speed), k.alive ? 1 : 0, Math.round(k.hp), k.kills, k.deaths, k.boost > 0 ? 1 : 0, k.drifting ? k.driftDir : 0, WCODE.indexOf(k.weapon || ''), k.ammo || 0, k.lap, k.finished ? 1 : 0, k.tp || 0, k.invuln > 0 ? 1 : 0, ICODE.indexOf(k.item?.id || ''), Math.round(k.progress), r2(k.finishTime || 0)]),
+    pr: projectiles.map(p => [PCODE.indexOf(p.kind), r1(p.m.position.x), r1(p.m.position.z), r2(p.m.rotation.y)]),
+    hz: hazards.map(h => [h.kind === 'mine' ? 1 : 0, r1(h.m.position.x), r1(h.m.position.z)]),
+    bx: boxes.map(b => b.m.visible ? 1 : 0).join(''),
+    ev: net.events.splice(0),
+  };
+  return s;
+}
+const netMeshes = { pr: [], hz: [] };
+function clearNetMeshes() { for (const a of [netMeshes.pr, netMeshes.hz]) { a.forEach(o => scene.remove(o.m)); a.length = 0; } }
+let lastCd = 0;
+function applySnap(s) {
+  if (!karts.length) return;
+  for (const ev of s.ev || []) notify(ev);
+  const prevState = state;
+  if (!state.startsWith('paused')) state = s.st === 'done' ? state : s.st;
+  raceT = s.T; countdown = s.cd;
+  if (s.st === 'countdown') { const n = Math.ceil(s.cd); if (n !== lastCd && n > 0) { banner(String(n), 0.9); blip(440, 0.2); } lastCd = n; }
+  if (prevState === 'countdown' && state === 'race') { banner(mode === 'arena' ? 'SMASH!' : 'GO!', 0.9); blip(880, 0.35); }
+  s.k.forEach((a, i) => {
+    const k = karts[i]; if (!k) return;
+    const [x, z, y, h, sp, alive, hp, kl, dth, bo, dr, wc, ammo, lap, fin, tp, inv, ic, prog, ft] = a;
+    k.hp = hp; k.kills = kl; k.deaths = dth; k.progress = prog; k.finished = !!fin; if (ft) k.finishTime = ft;
+    if (i === meIdx) {
+      const wasAlive = k.alive;
+      if (!alive && wasAlive) { k.alive = false; k.m.visible = false; }
+      if ((k.tp || 0) !== tp) { k.tp = tp; k.m.position.set(x, 0, z); k.heading = h; k.speed = 0; k.alive = true; k.m.visible = true; k.invuln = 2; k.knockX = k.knockZ = 0; $('hDead').hidden = true; }
+      const w = WCODE[wc] || null, it = ICODE[ic] || null;
+      if (mode === 'arena' && w !== k.weapon) {
+        const fresh = w && !k.weapon; k.weapon = w; k.ammo = ammo;
+        if (fresh) { k.rolling = 0.6; k.rollItem = w; setItemHud('roll'); }
+        else if (!k.rolling) setItemHud(w ? { icon: WEAPONS[w].icon, name: WEAPONS[w].name } : null, ammo);
+      } else if (mode === 'arena' && w && ammo !== k.ammo) { k.ammo = ammo; if (!k.rolling) setItemHud({ icon: WEAPONS[w].icon, name: WEAPONS[w].name }, ammo); }
+      if (mode === 'race' && (it || null) !== (k.item?.id || null)) {
+        const fresh = it && !k.item; k.item = it ? RACE_ITEMS.find(r => r.id === it) : null;
+        if (fresh) { k.rolling = 0.9; k.rollItem = k.item; k.item = null; setItemHud('roll'); } else if (!k.rolling) setItemHud(k.item);
+      }
+      if (mode === 'race' && lap > k.lap && !fin) { if (lap > 0) banner(lap === LAPS - 1 ? 'FINAL LAP!' : `LAP ${lap + 1}`, 1.4); }
+      k.lap = lap;
+    } else {
+      k.np = { x, z, y, h, sp, d: dr, b: bo };
+      k.alive = !!alive; k.lap = lap; k.weapon = WCODE[wc] || null;
+      k.m.visible = !!alive && (!inv || Math.floor(performance.now() / 80) % 2 === 0);
+    }
+  });
+  syncNetMeshes(netMeshes.pr, s.pr, a => PCODE[a[0]], (o, a) => { o.m.position.set(a[1], 2.2, a[2]); o.m.rotation.set(0, a[3], 0); o.kind = PCODE[a[0]]; });
+  syncNetMeshes(netMeshes.hz, s.hz, a => (a[0] ? 'mine' : 'rug'), (o, a) => o.m.position.set(a[1], a[0] ? 1.2 : 0.5, a[2]));
+  const boxes = mode === 'race' ? raceBoxes : arenaBoxes;
+  [...(s.bx || '')].forEach((c, i) => { if (boxes[i]) boxes[i].m.visible = c === '1'; });
+}
+function syncNetMeshes(list, data, kindOf, place) {
+  data = data || [];
+  for (let i = 0; i < data.length; i++) {
+    const kind = kindOf(data[i]);
+    if (!list[i] || list[i].kind !== kind) { if (list[i]) scene.remove(list[i].m); list[i] = { m: makeModel(kind), kind }; }
+    place(list[i], data[i]);
+  }
+  while (list.length > data.length) scene.remove(list.pop().m);
+}
+// between snapshots, fly client-side projectiles forward so they don't stutter
+function driftNetMeshes(dt) {
+  for (const o of netMeshes.pr) { const sp = PSPEED[o.kind] || 0; o.m.position.x += Math.sin(o.m.rotation.y) * sp * dt; o.m.position.z += Math.cos(o.m.rotation.y) * sp * dt; const f = o.m.getObjectByName('flame'); if (f) f.scale.z = 0.7 + Math.random() * 0.7; }
+  for (const o of netMeshes.hz) { const l = o.m.getObjectByName('light'); if (l) l.visible = Math.floor(performance.now() / 250) % 2 === 0; }
+}
+// smooth another player's kart toward the latest pose we have for it
+function followNet(k, dt) {
+  const n = k.np; if (!n) return;
+  const f = 1 - Math.exp(-dt * 14);
+  k.m.position.x += (n.x - k.m.position.x) * f; k.m.position.z += (n.z - k.m.position.z) * f;
+  k.y = n.y || 0; k.m.position.y = k.y;
+  let dh = Math.atan2(Math.sin(n.h - k.heading), Math.cos(n.h - k.heading)); k.heading += dh * f;
+  k.speed = n.sp; k.drifting = !!n.d; k.driftDir = n.d || 0; k.boost = n.b ? 0.2 : 0;
+  k.m.rotation.y = k.heading + (k.drifting ? k.driftDir * 0.38 : 0);
+  const u = k.m.userData;
+  u.wheels.forEach(w => { w.rotation.x += k.speed * dt; });
+  u.exhausts.forEach(e => { e.visible = !!n.b; if (e.visible) e.scale.set(1, 1, 0.8 + Math.random() * 0.9); });
+  u.sparks.forEach(s => { s.visible = k.drifting; });
+  u.head.position.y = 4.85 + Math.sin(raceT * 9 + k.r.spd) * 0.1;
+  showGun(k);
+  if (k.hitFlash > 0) { k.hitFlash -= dt; u.head.children[0].material.color.setHex(0xff7777); } else u.head.children[0].material.color.setHex(0xffffff);
+}
+// host side: a guest's kart follows their stream; the host still owns its health, weapons, laps and respawns
+function stepRemote(k, dt) {
+  if (mode === 'arena') {
+    if (!k.alive) { if ((k.respawnT -= dt) <= 0 && state === 'race') { respawn(k); k.np = null; } return; }
+    if (k.invuln > 0) { k.invuln -= dt; k.m.visible = Math.floor(k.invuln * 12) % 2 === 0 || k.invuln <= 0; }
+    if (k.fireCd > 0) k.fireCd -= dt;
+  }
+  followNet(k, dt);
+  if (k.np?.fh && k.weapon === 'gun') fire(k);
+  if (k.inpUse) { k.inpUse = false; if (state === 'race') { if (mode === 'race') useRaceItem(k); else fire(k); } }
+  if (mode === 'race') track(k);
+}
+function netTick(dt) {
+  if (!net) return;
+  if (net.host) {
+    if (!net.conns.length || !karts.length || state === 'title') return;
+    snapAcc += dt;
+    if (snapAcc >= 1 / 15) { snapAcc = 0; broadcast(snapshot()); }
+  } else if (karts.length && net.conn?.open) {
+    meAcc += dt;
+    const k = ME();
+    if (meAcc >= 0.05 && k) { meAcc = 0; net.send({ t: 'me', x: +k.m.position.x.toFixed(2), z: +k.m.position.z.toFixed(2), y: +k.y.toFixed(2), h: +k.heading.toFixed(3), sp: +k.speed.toFixed(1), d: k.drifting ? k.driftDir : 0, b: k.boost > 0 ? 1 : 0, fh: keys.fire ? 1 : 0 }); }
+    if ((pingT += dt) > 2) { pingT = 0; net.send({ t: 'ping', at: performance.now() }); }
   }
 }
 
 // ---------------- camera ----------------
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+let preview = null, previewId = '';
+// a slowly turning kart behind the lobby, in the colours of the selected driver
+function updatePreview() {
+  const d = driverOf(cfg.driver);
+  if (preview && previewId === d.id + myName()) return;
+  if (preview) scene.remove(preview);
+  preview = buildKart(d, myName(), true); previewId = d.id + myName();
+  const spot = mode === 'arena' ? new THREE.Vector3(40, 0, 60) : PTS[90].clone().addScaledVector(NRM[90], -2);
+  preview.position.copy(spot);
+}
 function updateCamera(dt, instant) {
-  const p = karts[0] || null;
-  if (!p || state === 'title') {
-    const t = performance.now() / 9000;
-    if (mode === 'arena') { camera.position.set(Math.cos(t) * 160, 90, Math.sin(t) * 160); camera.lookAt(0, 0, 0); return; }
-    const i = Math.floor((t % 1) * N), q = PTS[i], tg = TAN[i];
-    camera.position.set(q.x - tg.x * 40 + 30, 28, q.z - tg.z * 40 + 30); camera.lookAt(q.x + tg.x * 30, 0, q.z + tg.z * 30); return;
+  const p = state !== 'title' ? ME() : null;
+  if (!p) {
+    updatePreview(); preview.visible = true;
+    const t = performance.now() / 6000, c = preview.position;
+    preview.rotation.y = t * 2;
+    camera.position.set(c.x + 14, 6.5, c.z + 14); camera.lookAt(c.x, 3, c.z);
+    camera.fov = baseFov; camera.updateProjectionMatrix();
+    return;
   }
-  // pulled back and up so you can see karts around you (more in the arena, where threats come from all sides)
   const back = (mode === 'arena' ? camBack + 11 : camBack + 6) + Math.max(0, p.speed) * 0.04, h = mode === 'arena' ? 15 : camBack > 15 ? 11 : 9.5;
   const desired = tmp.set(p.m.position.x - Math.sin(p.heading) * back, p.m.position.y + h, p.m.position.z - Math.cos(p.heading) * back);
   camPos.lerp(desired, instant ? 1 : 1 - Math.pow(0.0015, dt));
@@ -1264,47 +2032,56 @@ function updateCamera(dt, instant) {
 }
 
 // ---------------- screens ----------------
+const SCREENS = ['scrTitle', 'scrGarage', 'scrSettings', 'scrMaps', 'scrJoin', 'scrRoom', 'scrDone', 'scrPause'];
+let screenNow = 'scrTitle', mapCtx = 'solo';
 function show(which) {
-  ['scrTitle', 'scrSetup', 'scrDone', 'scrPause'].forEach(id => $(id).hidden = id !== which);
+  screenNow = which;
+  SCREENS.forEach(id => $(id).hidden = id !== which);
+  $('lobbyCorner').hidden = which !== 'scrTitle';
   $('hud').hidden = which !== 'hud' && which !== 'scrPause';
   if (which !== 'hud') $('touch').hidden = true;
 }
-function renderBest() {
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function renderLobby() {
+  const d = driverOf(cfg.driver);
+  $('cfgName').value = cfg.name; $('meImg').src = d.img; $('meName').textContent = d.name; $('meCoin').textContent = d.coin;
   const parts = [];
-  if (best.race && best.race[3]) parts.push(`Best 3-lap race: ${fmtT(best.race[3])}`);
-  if (best.arena) parts.push(`Most arena kills: ${best.arena}`);
-  $('bestLine').textContent = parts.join(' · ');
+  if (best.race && best.race[3]) parts.push(`🏁 Best 3-lap race: ${fmtT(best.race[3])}`);
+  if (best.arena) parts.push(`💥 Most arena kills: ${best.arena}`);
+  $('bestLine').innerHTML = parts.length ? parts.join('<br>') : 'No races yet. Go smash something.';
 }
-function renderSetup() {
-  document.querySelectorAll('.mode-card').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === cfg.mode)));
-  document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== cfg.mode);
+const renderBest = renderLobby;
+function renderSettings() {
   document.querySelectorAll('.seg[data-cfg]').forEach(seg => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(String(cfg[seg.dataset.cfg]) === b.dataset.v))));
-  $('cfgName').value = cfg.name;
+}
+function renderMaps() {
+  document.querySelectorAll('#maps .map').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === cfg.mode)));
+  $('mapRaceSub').textContent = `Race · ${cfg.laps} lap${cfg.laps > 1 ? 's' : ''}`;
+  $('mapArenaSub').textContent = `Free for all · ${cfg.mins} mins`;
+}
+function renderGarage() {
   const stat = d => `<span class="stats"><span class="stat">Speed<i style="--v:${d.spd * 10}%"></i></span><span class="stat">Accel<i style="--v:${d.acc * 10}%"></i></span><span class="stat">Grip<i style="--v:${d.hnd * 10}%"></i></span></span>`;
   $('roster').innerHTML = allDrivers().map(d => `<button class="racer" type="button" data-id="${d.id}" aria-pressed="${d.id === cfg.driver}">
-    ${d.custom ? `<span class="del" role="button" aria-label="Remove ${escapeHtml(d.name)}" data-del="${d.id}">×</span>` : ''}
+    ${d.custom ? `<span class="del" role="button" aria-label="Remove ${escapeHtml(d.name)}" data-del="${d.id}">✕</span>` : ''}
     <img src="${escapeHtml(d.img)}" alt=""><b>${escapeHtml(d.name)}</b><small>${escapeHtml(d.coin)}</small>${stat(d)}</button>`).join('')
-    + `<button class="racer add" type="button" id="btnAddCoin"><span class="ph">+</span><b>ADD COIN</b><small>Paste a Starknet token address</small></button>`;
-  $('keysLine').innerHTML = cfg.mode === 'race'
-    ? '<kbd>↑</kbd> gas · <kbd>↓</kbd> brake · <kbd>←</kbd><kbd>→</kbd> steer · hold <kbd>Space</kbd> drift · <kbd>X</kbd> item'
-    : '<kbd>↑</kbd> gas · <kbd>←</kbd><kbd>→</kbd> steer · <kbd>Space</kbd> drift · <kbd>X</kbd> or click to fire · hold for minigun';
+    + `<button class="racer add" type="button" id="btnAddCoin"><span class="ph">+</span><b>Add coin</b><small>Paste a Starknet token address</small></button>`;
 }
-const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-document.querySelectorAll('.mode-card').forEach(b => b.addEventListener('click', () => { cfg.mode = b.dataset.mode; mode = cfg.mode; setWorld(); saveCfg(); renderSetup(); blip(800, 0.05); }));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => show(state === 'title' ? (net ? 'scrRoom' : 'scrTitle') : 'scrPause')));
 document.querySelectorAll('.seg[data-cfg]').forEach(seg => seg.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const key = seg.dataset.cfg, v = b.dataset.v;
-  cfg[key] = /^\d+$/.test(v) ? +v : v; saveCfg(); renderSetup();
+  cfg[key] = /^\d+$/.test(v) ? +v : v; saveCfg(); renderSettings();
   if (key === 'sound') { if (v === 'on') { initAudio(); blip(900, 0.08); } else stopAudio(); }
   if (key === 'gfx') applyGfx();
+  if (net?.host && state === 'title') { renderRoom(); broadcast(lobbyInfo()); }
 }));
 $('cfgName').addEventListener('input', e => { cfg.name = e.target.value.replace(/[^\w .-]/g, '').slice(0, 14); saveCfg(); });
 $('roster').addEventListener('click', e => {
   const del = e.target.closest('[data-del]');
-  if (del) { e.stopPropagation(); customs = customs.filter(c => c.id !== del.dataset.del); store.set('kart.coins', customs); if (cfg.driver === del.dataset.del) cfg.driver = 'degenz'; saveCfg(); renderSetup(); return; }
+  if (del) { e.stopPropagation(); customs = customs.filter(c => c.id !== del.dataset.del); store.set('kart.coins', customs); if (cfg.driver === del.dataset.del) cfg.driver = 'degenz'; saveCfg(); renderGarage(); renderLobby(); return; }
   if (e.target.closest('#btnAddCoin')) { $('addbox').hidden = false; $('addAddr').focus(); return; }
   const b = e.target.closest('.racer'); if (!b) return;
-  cfg.driver = b.dataset.id; saveCfg(); renderSetup(); blip(900, 0.06);
+  cfg.driver = b.dataset.id; saveCfg(); renderGarage(); renderLobby(); blip(900, 0.06);
 });
 $('btnAddCancel').addEventListener('click', () => { $('addbox').hidden = true; setAddNote(''); });
 $('addAddr').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnAdd').click(); });
@@ -1314,7 +2091,6 @@ function setAddNote(msg, err) { const n = $('addNote'); n.textContent = msg || '
 function normAddr(a) { const s = a.trim(); if (!/^0x[0-9a-fA-F]{1,64}$/.test(s)) return null; return '0x' + s.slice(2).toLowerCase().padStart(64, '0'); }
 const sameAddr = (a, b) => { try { return BigInt(a) === BigInt(b); } catch { return false; } };
 async function lookupToken(addr) {
-  // DexScreener first (has logos for most memecoins), GeckoTerminal as a fallback
   try {
     const j = await (await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr)).json();
     const pairs = (j.pairs || []).filter(p => p.chainId === 'starknet' && sameAddr(p.baseToken.address, addr));
@@ -1331,7 +2107,6 @@ function loadImage(src) { return new Promise((res, rej) => { const i = new Image
 function avatarData(img) {
   const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d');
   const s = Math.min(img.naturalWidth, img.naturalHeight); g.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 160, 160);
-  // average colour for the kart body
   const d = g.getImageData(0, 0, 160, 160).data; let r = 0, gr = 0, b = 0, n = 0;
   for (let i = 0; i < d.length; i += 16) { if (d[i + 3] < 128) continue; const sum = d[i] + d[i + 1] + d[i + 2]; if (sum > 700 || sum < 40) continue; r += d[i]; gr += d[i + 1]; b += d[i + 2]; n++; }
   const color = n ? (Math.round(r / n) << 16) | (Math.round(gr / n) << 8) | Math.round(b / n) : 0xff6a13;
@@ -1350,81 +2125,112 @@ $('btnAdd').addEventListener('click', async () => {
   const addr = normAddr($('addAddr').value);
   if (!addr) return setAddNote('That doesn\'t look like a Starknet address. It should start with 0x and use only 0-9 and a-f.', true);
   if (allDrivers().some(d => d.addr && sameAddr(d.addr, addr))) return setAddNote('That coin is already in your garage.', true);
-  const btn = $('btnAdd'); btn.disabled = true; btn.textContent = 'SNIFFING…'; setAddNote('Looking it up on Starknet…');
+  const btn = $('btnAdd'); btn.disabled = true; btn.textContent = 'Sniffing…'; setAddNote('Looking it up on Starknet…');
   try {
     const info = await lookupToken(addr);
     if (!info) throw new Error('Couldn\'t find that token on DexScreener or GeckoTerminal. Check the address, or try again once it has a trading pool.');
     let av;
-    if (info.image) {
-      try { av = avatarData(await loadImage('/api/avatar?url=' + encodeURIComponent(info.image))); }
-      catch { av = initialsAvatar(info.symbol); }
-    } else av = initialsAvatar(info.symbol);
-    // fun stats derived from the address, so the same coin always drives the same way
+    if (info.image) { try { av = avatarData(await loadImage('/api/avatar?url=' + encodeURIComponent(info.image))); } catch { av = initialsAvatar(info.symbol); } }
+    else av = initialsAvatar(info.symbol);
     const h = BigInt(addr); const stat = n => 5 + Number((h >> BigInt(n * 8)) % 5n);
     const d = { id: 'c_' + addr.slice(-10), addr, custom: true, name: (info.symbol || 'COIN').toUpperCase().slice(0, 12), coin: info.name || 'Starknet token', img: av.url, color: av.color, accent: 0xfff6e3, spd: stat(1), acc: stat(2), hnd: stat(3) };
     customs.push(d);
     if (!store.set('kart.coins', customs)) { customs.pop(); throw new Error('Your browser storage is full. Remove a custom coin and try again.'); }
     cfg.driver = d.id; saveCfg();
     $('addAddr').value = ''; $('addbox').hidden = true; setAddNote('');
-    renderSetup(); blip(1200, 0.1);
+    renderGarage(); renderLobby(); blip(1200, 0.1);
   } catch (err) { setAddNote(err.message || 'Something went wrong. Try again.', true); }
-  finally { btn.disabled = false; btn.textContent = 'FETCH AVATAR'; }
+  finally { btn.disabled = false; btn.textContent = 'Fetch avatar'; }
 });
 
-$('btnPlay').addEventListener('click', () => { initAudio(); renderSetup(); show('scrSetup'); });
-$('btnSetupBack').addEventListener('click', () => show('scrTitle'));
-$('btnStart').addEventListener('click', startGame);
-$('btnAgain').addEventListener('click', startGame);
-$('btnSetup2').addEventListener('click', () => quitGame('setup'));
+// lobby buttons
+$('btnPlay').addEventListener('click', () => { initAudio(); mapCtx = 'solo'; renderMaps(); show('scrMaps'); });
+$('btnCustomize').addEventListener('click', () => { renderGarage(); show('scrGarage'); });
+$('btnSettings').addEventListener('click', () => { renderSettings(); show('scrSettings'); });
+$('btnCreate').addEventListener('click', () => { initAudio(); createRoom(); });
+$('btnJoin').addEventListener('click', () => { $('joinStatus').textContent = ''; show('scrJoin'); setTimeout(() => $('joinCode').focus(), 50); });
+$('btnJoinGo').addEventListener('click', () => joinRoom($('joinCode').value));
+$('joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('joinCode').value); });
+document.querySelectorAll('#maps .map').forEach(b => b.addEventListener('click', () => {
+  cfg.mode = b.dataset.mode; mode = cfg.mode; saveCfg(); setWorld(); renderMaps();
+  if (mapCtx === 'room') { renderRoom(); broadcast(lobbyInfo()); show('scrRoom'); }
+  else startGame();
+}));
+$('roomMap').addEventListener('click', () => { if (!net?.host) return; mapCtx = 'room'; renderMaps(); show('scrMaps'); });
+$('btnRoomStart').addEventListener('click', hostStart);
+$('btnRoomLeave').addEventListener('click', () => { leaveNet(); show('scrTitle'); renderLobby(); });
+$('btnCopyLink').addEventListener('click', () => { const v = $('roomLink').value; navigator.clipboard?.writeText(v).then(() => toast('Invite link copied'), () => { $('roomLink').select(); toast('Select and copy the link'); }); });
+$('btnInvite').addEventListener('click', () => { if (!net) return; navigator.clipboard?.writeText(roomUrl(net.code)).then(() => toast(`Room ${net.code}: link copied`), () => toast(`Room code: ${net.code}`)); });
+$('btnSoundHud').addEventListener('click', () => { cfg.sound = cfg.sound === 'on' ? 'off' : 'on'; saveCfg(); if (cfg.sound === 'on') initAudio(); else stopAudio(); $('btnSoundHud').textContent = cfg.sound === 'on' ? '🔊' : '🔇'; });
+$('btnSoundHud').textContent = cfg.sound === 'on' ? '🔊' : '🔇';
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+  $('results').hidden = t.dataset.tab !== 'board'; $('resLog').hidden = t.dataset.tab !== 'log';
+}));
+$('btnAgain').addEventListener('click', () => { if (net?.host) hostStart(); else if (!net) startGame(); });
+$('btnDoneQuit').addEventListener('click', () => quitGame(net ? 'room' : 'title'));
 $('btnPause').addEventListener('click', togglePause);
-$('btnDoneQuit').addEventListener('click', () => quitGame('title'));
+$('btnResume').addEventListener('click', resume);
+$('btnRestart').addEventListener('click', () => { if (net?.host) hostStart(); else if (!net) startGame(); });
+$('btnPauseSettings').addEventListener('click', () => { renderSettings(); show('scrSettings'); });
+$('btnQuit').addEventListener('click', () => { if (net && !net.host) leaveNet(); quitGame(net?.host ? 'room' : 'title'); if (net?.host) broadcast({ t: 'room' }); });
+// rooms can't pause: the menu just opens over the running match
 function togglePause() {
-  if (state === 'race' || state === 'countdown') { state = 'paused:' + state; Object.keys(keys).forEach(k => keys[k] = false); show('scrPause'); $('btnResume').focus(); }
-  else if (state.startsWith('paused:')) resume();
+  if (state === 'race' || state === 'countdown') {
+    if (!net) { state = 'paused:' + state; Object.keys(keys).forEach(k => keys[k] = false); }
+    $('pauseNote').textContent = net ? 'The match keeps running while this menu is open.' : 'Esc or P to resume';
+    show('scrPause'); $('btnResume').focus();
+  } else if (state.startsWith('paused:') || screenNow === 'scrPause') resume();
 }
-function resume() { state = state.slice(7); show('hud'); $('touch').hidden = !document.body.classList.contains('has-touch'); }
+function resume() { if (state.startsWith('paused:')) state = state.slice(7); show('hud'); $('touch').hidden = !document.body.classList.contains('has-touch'); }
 // leave the current game and clean the world up
 function quitGame(to) {
   state = 'title';
-  karts.forEach(k => scene.remove(k.m)); karts = [];
+  karts.forEach(k => scene.remove(k.m)); karts = []; meIdx = 0;
   [...hazards, ...projectiles, ...fx].forEach(h => scene.remove(h.m)); hazards.length = projectiles.length = fx.length = 0;
+  clearNetMeshes();
   if (audio) audio.g.gain.value = 0;
-  if (to === 'setup') { renderSetup(); show('scrSetup'); } else { renderBest(); show('scrTitle'); }
+  if (to === 'room' && net) { renderRoom(); show('scrRoom'); } else { renderLobby(); show('scrTitle'); }
 }
 function toggleLog() { const open = $('hLog').classList.toggle('closed') === false; $('btnLog').setAttribute('aria-expanded', String(open)); store.set('kart.logOpen', open); }
 $('btnLog').addEventListener('click', toggleLog);
 if (store.get('kart.logOpen', true) === false) { $('hLog').classList.add('closed'); $('btnLog').setAttribute('aria-expanded', 'false'); }
-$('btnResume').addEventListener('click', resume);
-$('btnRestart').addEventListener('click', startGame);
-$('btnPauseSetup').addEventListener('click', () => quitGame('setup'));
-$('btnQuit').addEventListener('click', () => quitGame('title'));
 
-function endGame() {
-  if (state === 'done') return;
+function endGame(given) {
+  if (state === 'done' && !given) return;
   state = 'done';
-  let order, title, bestNote = '';
-  const me = karts[0];
+  const me = ME();
+  let order = given;
+  if (!order) {
+    if (mode === 'race') { const rest = karts.filter(k => !k.finished).sort((a, b) => b.progress - a.progress); order = [...finishOrder, ...rest]; }
+    else order = [...karts].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
+    if (net?.host) broadcast({ t: 'end', order: order.map(k => karts.indexOf(k)) });
+  }
+  const place = order.indexOf(me) + 1;
+  let title, bestNote = '';
   if (mode === 'race') {
-    const rest = karts.filter(k => !k.finished).sort((a, b) => b.progress - a.progress);
-    order = [...finishOrder, ...rest];
-    const place = order.indexOf(me) + 1;
-    title = place === 1 ? 'YOU WON! AWOOOO' : place <= 3 ? `${place}${SUF[place]} PLACE!` : `${place}${SUF[place] || 'th'}. RUGGED.`;
+    title = place === 1 ? 'YOU WON!' : place <= 3 ? `${place}${SUF[place]} PLACE!` : `${place}${SUF[place] || 'th'}. RUGGED.`;
     const prev = best.race[LAPS];
     if (me.finished && (!prev || me.finishTime < prev)) { best.race[LAPS] = me.finishTime; bestNote = `New personal best for ${LAPS} lap${LAPS > 1 ? 's' : ''}!`; }
     banner('FINISH!', 1.8);
   } else {
-    order = [...karts].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
-    const place = order.indexOf(me) + 1;
     title = place === 1 ? 'TOP DEGEN!' : `${place}${SUF[place] || 'th'} PLACE`;
     if (me.kills > (best.arena || 0)) { best.arena = me.kills; bestNote = `New record: ${me.kills} kills!`; }
     banner('TIME!', 1.8);
   }
-  store.set('kart.best', best); renderBest();
+  store.set('kart.best', best);
   blip(660, 0.15); setTimeout(() => blip(990, 0.3), 150);
   setTimeout(() => {
+    $('doneMap').textContent = mode === 'race' ? 'Bonfire Bay' : 'The Pit';
+    $('doneMode').innerHTML = mode === 'race' ? `Race<br>${LAPS} lap${LAPS > 1 ? 's' : ''}` : `Free for all<br>${Math.round(matchLen / 60)} mins`;
     $('doneTitle').textContent = title; $('doneBest').textContent = bestNote;
-    $('resLog').innerHTML = battleLog.length ? '<h3>📜 Battle log</h3>' + battleLog.map(e => `<div class="ev ${e.kind}"><time>${e.t}</time>${escapeHtml(e.text)}</div>`).join('') : '';
-    $('results').innerHTML = order.map((k, i) => `<div class="res ${k.isPlayer ? 'me' : ''}"><b>${i + 1}</b><img src="${escapeHtml(k.r.img)}" alt=""><span>${escapeHtml(k.label)}${k.isPlayer ? ' (you)' : ''}</span><em>${mode === 'race' ? (k.finished ? fmtT(k.finishTime) : 'DNF') : `${k.kills} kills · ${k.deaths} deaths`}</em></div>`).join('');
+    const cols = mode === 'race' ? ['⏱️', '🏁'] : ['💥', '💀'];
+    $('results').innerHTML = `<div class="lrow head"><b>#</b><span></span><span>Player</span><em>${cols[0]}</em><em>${cols[1]}</em></div>` + order.map((k, i) =>
+      `<div class="lrow ${k === me ? 'me' : ''}"><b>${i + 1}</b><img src="${escapeHtml(k.r.img)}" alt=""><span>${escapeHtml(k.label)}${k.human && k !== me ? ' 🎮' : ''}</span><em>${mode === 'race' ? (k.finished ? fmtT(k.finishTime).slice(0, -1) : 'DNF') : k.kills}</em><em>${mode === 'race' ? Math.min(LAPS, k.lap) : k.deaths}</em></div>`).join('');
+    $('resLog').innerHTML = battleLog.length ? battleLog.map(e => `<div class="ev ${e.kind}"><time>${e.t}</time>${escapeHtml(e.text)}</div>`).join('') : '<p class="status">Nothing happened. Suspicious.</p>';
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x.dataset.tab === 'board'))); $('results').hidden = false; $('resLog').hidden = true;
+    $('btnAgain').hidden = isClient(); $('doneWait').textContent = isClient() ? 'Waiting for the host to start the next match…' : '';
+    $('btnDoneQuit').textContent = net ? 'Back to room' : 'Menu';
     show('scrDone');
   }, 1800);
 }
@@ -1455,6 +2261,7 @@ document.querySelectorAll('.tbtn').forEach(b => {
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  fpsN++; if ((fpsT += dt) >= 1) { fps = Math.round(fpsN / fpsT); fpsN = 0; fpsT = 0; }
   tick(dt, now);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -1468,33 +2275,53 @@ function tick(dt, now) {
       (window.__flags || []).forEach(f => { f.rotation.y = Math.sin(now / 260 + f.userData.wave) * 0.35; });
       if (window.__crowd) window.__crowd.children.forEach(c => { if (c.userData.bounce !== undefined) c.position.y = (c.userData.y0 ??= c.position.y) + Math.max(0, Math.sin(now / 160 + c.userData.bounce)) * 0.6; });
     }
-    if (state === 'countdown') {
-      const before = Math.ceil(countdown); countdown -= dt; const n = Math.ceil(countdown);
-      if (n !== before) { if (n > 0) { banner(String(n), 0.9); blip(440, 0.2); } else { banner(mode === 'arena' ? 'SMASH!' : 'GO!', 0.9); blip(880, 0.35); state = 'race'; } }
-      if (countdown < 0.6 && countdown > 0 && keys.up && karts[0]) karts[0].startBoost = true;
-      if (mode === 'race') karts.forEach(k => track(k));
-    }
-    if (state === 'race' || state === 'done') {
-      raceT += dt;
-      if (karts[0]?.startBoost) { karts[0].boost = 1.2; karts[0].startBoost = false; say('🔥 ROCKET START', true); }
-      karts.forEach(k => stepKart(k, dt));
-      collisions(dt);
-      if (mode === 'arena' && state === 'race' && raceT >= matchLen) endGame();
+    if (isClient()) {
+      // guests: drive your own kart; everyone else follows the host's snapshots
+      if (karts.length) {
+        if (state === 'race' && ME()) { stepKart(ME(), dt); if (mode === 'arena') arenaCollide(ME()); }
+        else if (state === 'countdown' && ME() && countdown < 0.6 && keys.up) ME().startBoost = true;
+        if (state === 'race' && ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
+        karts.forEach(k => { if (k !== ME()) followNet(k, dt); });
+        // bump off other karts locally so you can't drive through them
+        const p = ME(); if (p && p.alive) for (const o of karts) { if (o === p || !o.alive) continue; const dx = p.m.position.x - o.m.position.x, dz = p.m.position.z - o.m.position.z, d = Math.hypot(dx, dz); if (d < 5.6 && d > 0.01) { p.m.position.x += dx / d * (5.6 - d); p.m.position.z += dz / d * (5.6 - d); } }
+        driftNetMeshes(dt);
+        for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; f.life -= dt; f.v.y -= 30 * dt; f.m.position.addScaledVector(f.v, dt); f.v.multiplyScalar(1 - dt * 2); f.m.scale.setScalar(Math.max(0.01, f.s * (f.life + 0.3))); if (f.life < 0) { scene.remove(f.m); fx.splice(i, 1); } }
+      }
+    } else {
+      if (state === 'countdown') {
+        const before = Math.ceil(countdown); countdown -= dt; const n = Math.ceil(countdown);
+        if (n !== before) { if (n > 0) { banner(String(n), 0.9); blip(440, 0.2); } else { banner(mode === 'arena' ? 'SMASH!' : 'GO!', 0.9); blip(880, 0.35); state = 'race'; } }
+        if (countdown < 0.6 && countdown > 0 && keys.up && ME()) ME().startBoost = true;
+        if (mode === 'race') karts.forEach(k => track(k));
+      }
+      if (state === 'race' || state === 'done') {
+        raceT += dt;
+        if (ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
+        karts.forEach(k => { k.firing = k.weapon === 'gun' && (k.isPlayer ? keys.fire : !!k.np?.fh); stepKart(k, dt); });
+        collisions(dt);
+        if (state === 'race' && mode === 'arena' && raceT >= matchLen) endGame();
+        if (state === 'race' && mode === 'race' && raceEndAt && raceT >= raceEndAt) endGame();
+      }
     }
     if (bannerT > 0 && (bannerT -= dt) <= 0) $('hBanner').style.opacity = 0;
+    if (msgT > 0 && (msgT -= dt) <= 0) $('hMsg').style.opacity = 0;
     updatePuffs(dt);
   }
+  netTick(dt);
   if (karts.length && state !== 'title') hud();
   updateCamera(dt, false);
-  const focus = karts[0] && state !== 'title' ? karts[0].m.position : camera.position;
+  const focus = ME() && state !== 'title' ? ME().m.position : (preview ? preview.position : camera.position);
   followSun(focus.x, focus.z);
-  $('speedLines').classList.toggle('on', !!(karts[0] && karts[0].boost > 0 && state === 'race'));
-  if (audio && karts[0]) { const s = Math.abs(karts[0].speed); audio.eng.frequency.value = 60 + s * 2.2 + (karts[0].boost > 0 ? 40 : 0); audio.g.gain.value = state === 'race' ? 0.04 + s / 3000 : 0; }
+  $('speedLines').classList.toggle('on', !!(ME() && ME().boost > 0 && state === 'race'));
+  $('hNet').innerHTML = net ? `FPS: ${fps}<br>${net.host ? `HOST · ${net.conns.length + 1} in room` : `PING: ${net.ping ?? '…'}`}` : '';
+  if (audio && ME() && state !== 'title') { const s = Math.abs(ME().speed); audio.eng.frequency.value = 60 + s * 2.2 + (ME().boost > 0 ? 40 : 0); audio.g.gain.value = state === 'race' ? 0.04 + s / 3000 : 0; }
 }
 // test hook: advance the simulation without rendering (used for automated playtests)
-window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; } };
+window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart };
 
-setWorld(); renderBest(); applyGfx();
+setWorld(); renderLobby(); renderSettings(); applyGfx();
+// invite links: ?room=CODE opens the join screen straight away
+{ const q = new URLSearchParams(location.search).get('room'); if (q) { show('scrJoin'); $('joinCode').value = q.toUpperCase(); setTimeout(() => joinRoom(q), 300); } }
 requestAnimationFrame(t => { last = t; frame(t); });
 })();
 </script>
