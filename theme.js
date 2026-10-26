@@ -7,8 +7,7 @@
     var b = document.getElementById('modeToggle');
     if (b) {
       var dark = mode === 'dark';
-      b.setAttribute('aria-pressed', String(dark));
-      b.textContent = dark ? 'LIGHT MODE' : 'DARK MODE';
+      b.setAttribute('aria-checked', String(dark));
       b.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
     }
     // pages lazy-load heavy assets that only one mode shows
