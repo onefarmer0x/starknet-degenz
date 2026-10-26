@@ -29,3 +29,30 @@
   .topnav .links a { font-size: 17px; padding: 6px 7px; }
   .topnav .buy { font-size: 16px; padding: 6px 10px; }
 }
+
+/* ---------- loader (light mode: comic; dark mode overrides below) ---------- */
+#loader {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: radial-gradient(60% 60% at 50% 45%, #3a2f63, #1b1531 60%, #120e22);
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+#loader.ld-out { opacity: 0; visibility: hidden; }
+html.is-loading body { overflow: hidden; }
+.ld-box { width: min(380px, 100%); display: grid; justify-items: center; gap: 14px; }
+.ld-wolf { width: 190px; height: 190px; object-fit: contain; animation: ld-bob 1.2s ease-in-out infinite; }
+.ld-title { font: 400 64px/1 "Bangers", Impact, sans-serif; letter-spacing: 0.04em; color: #ffd23f; -webkit-text-stroke: 3px #15111c; paint-order: stroke fill; text-shadow: 5px 5px 0 #15111c, 8px 8px 0 #e3262f; transform: rotate(-3deg); }
+.ld-bar { width: 100%; height: 22px; background: #fff6e3; border: 3px solid #15111c; border-radius: 999px; overflow: hidden; box-shadow: 4px 4px 0 #15111c; }
+.ld-bar span { display: block; height: 100%; width: 0; background: repeating-linear-gradient(-45deg, #ff6a13 0 12px, #ffd23f 12px 24px); transition: width 0.2s ease-out; }
+.ld-row { width: 100%; display: flex; justify-content: space-between; gap: 10px; font: 400 20px "Bangers", Impact, sans-serif; letter-spacing: 0.06em; color: #fff; }
+.ld-row b { font-weight: 400; color: #ffd23f; font-variant-numeric: tabular-nums; }
+@keyframes ld-bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
+
+html[data-mode="dark"] #loader { background: radial-gradient(55% 55% at 50% 45%, #1a0b0c, #070506 70%); }
+html[data-mode="dark"] .ld-wolf { width: 240px; height: 240px; animation: none; -webkit-mask-image: radial-gradient(closest-side, #000 60%, transparent 100%); mask-image: radial-gradient(closest-side, #000 60%, transparent 100%); }
+html[data-mode="dark"] .ld-title { font-family: "Anton", Impact, sans-serif; color: #ece4dc; -webkit-text-stroke: 0; transform: none; text-shadow: 0 0 30px rgba(255, 43, 43, 0.5), 3px 0 0 rgba(255, 43, 43, 0.55); }
+html[data-mode="dark"] .ld-bar { height: 4px; background: #1a1213; border: 0; border-radius: 0; box-shadow: none; }
+html[data-mode="dark"] .ld-bar span { background: #ff2b2b; box-shadow: 0 0 12px #ff2b2b; }
+html[data-mode="dark"] .ld-row { font: 500 12px "Archivo", Arial, sans-serif; letter-spacing: 0.3em; color: #8f8079; }
+html[data-mode="dark"] .ld-row b { color: #ece4dc; }
+@media (prefers-reduced-motion: reduce) { .ld-wolf { animation: none; } #loader { transition: none; } }
