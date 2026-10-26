@@ -5,6 +5,7 @@ const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 http.createServer((req, res) => {
   // same handler Vercel runs for /api/avatar, so local dev matches production
   if (req.url.split('?')[0] === '/api/avatar') return require('./api/avatar.js')(req, res);
+  if (req.url.split('?')[0] === '/api/scores') return require('./api/scores.js')(req, res);
   if (req.url.split('?')[0] === '/wolves/list.json') {
     // which sticker files exist, so the page doesn't probe for missing numbers
     const files = fs.readdirSync(path.join(__dirname, 'wolves')).filter(f => /^\d+\.(webm|webp|png)$/.test(f));

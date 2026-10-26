@@ -338,6 +338,13 @@ body.has-touch .item { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) 
 .tbtn { background: rgba(255,246,227,0.88); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); text-shadow: none; font: 400 20px var(--display); letter-spacing: 0.04em; }
 .tbtn.on { background: var(--yellow); }
 .tbtn.gas { background: var(--orange); color: #fff; border-color: var(--ink); }
+.world { background: rgba(21,17,28,0.35); border: 2px solid rgba(255,215,63,0.35); border-radius: 12px; padding: 8px 10px; color: #e8deff; font: 700 13px var(--ui); }
+.world h4 { margin: 0 0 6px; font: 400 18px var(--display); letter-spacing: 0.05em; color: var(--yellow); }
+.world ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.world li { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; }
+.world li b { color: var(--yellow); } .world li em { font-style: normal; color: #fff; }
+.world li.me span { color: var(--yellow); }
+.world .empty { opacity: 0.75; font-weight: 600; }
 #toast { background: var(--yellow); color: var(--ink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
 </style>
 </head>
@@ -352,6 +359,7 @@ body.has-touch .item { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) 
     <div class="me-card"><img id="meImg" alt=""><div><b id="meName">DEGENZ</b><small id="meCoin">Starknet Degenz</small></div></div>
     <button class="btn" id="btnCustomize" type="button">🔧 Customize</button>
     <div class="best" id="bestLine">No races yet. Go smash something.</div>
+    <div class="world" id="worldLobby"><h4>🏆 World records</h4><div class="empty">Loading…</div></div>
   </div>
   <div class="cta">
     <button class="btn yellow play" id="btnPlay" type="button">PLAY</button>
@@ -450,9 +458,10 @@ body.has-touch .item { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) 
     <div class="t" id="doneTitle" style="text-align:center;font:800 clamp(34px,6vw,64px)/1 var(--ui);color:var(--yellow);text-shadow:0 4px 0 #a35b00">FINISH!</div>
     <p class="status" id="doneBest"></p>
     <div>
-      <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-tab="board">Leaderboard</button><button class="tab" role="tab" aria-selected="false" data-tab="log">Battle log</button></div>
+      <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-tab="board">Leaderboard</button><button class="tab" role="tab" aria-selected="false" data-tab="log">Battle log</button><button class="tab" role="tab" aria-selected="false" data-tab="world">🏆 World</button></div>
       <div class="panel board-panel" id="results"></div>
       <div class="panel res-log" id="resLog" hidden></div>
+      <div class="panel board-panel" id="resWorld" hidden></div>
     </div>
     <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
       <button class="btn yellow" id="btnAgain" type="button">Play again</button>
@@ -2156,6 +2165,46 @@ function renderLobby() {
   if (best.race && best.race[3]) parts.push(`🏁 Best 3-lap race: ${fmtT(best.race[3])}`);
   if (best.arena) parts.push(`💥 Most arena kills: ${best.arena}`);
   $('bestLine').innerHTML = parts.length ? parts.join('<br>') : 'No races yet. Go smash something.';
+  loadWorld();
+}
+// ---------------- world high scores (shared by every player, stored server side) ----------------
+// race boards rank fastest finish per lap count, arena boards most kills per match length
+const boardId = (m = cfg.mode, laps = cfg.laps, mins = cfg.mins) => m === 'race' ? 'race' + laps : 'arena' + mins;
+const boardTitle = id => id.startsWith('race') ? `${id.slice(4)}-lap race · fastest` : `${id.slice(5)}-min arena · most kills`;
+const fmtScore = (id, s) => id.startsWith('race') ? fmtT(s).slice(0, -1) : s + ' 💥';
+const worldCache = {};
+async function fetchWorld(id) {
+  try { const r = await fetch('/api/scores?board=' + id, { cache: 'no-store' }); if (!r.ok) throw 0; worldCache[id] = (await r.json()).top; }
+  catch { worldCache[id] ||= null; }
+  return worldCache[id];
+}
+function worldRows(id, rows, n) {
+  if (!rows) return '<div class="empty">Leaderboard is offline right now.</div>';
+  if (!rows.length) return '<div class="empty">No records yet. Be the first!</div>';
+  const me = myName().toLowerCase();
+  return '<ol>' + rows.slice(0, n).map((r, i) => `<li class="${r.name.toLowerCase() === me ? 'me' : ''}"><b>${['🥇', '🥈', '🥉'][i] || i + 1}</b><span>${escapeHtml(r.name)}${r.coin ? ` <small style="opacity:.7">${escapeHtml(r.coin)}</small>` : ''}</span><em>${fmtScore(id, r.score)}</em></li>`).join('') + '</ol>';
+}
+let worldT = 0;
+function loadWorld() {
+  clearTimeout(worldT);
+  worldT = setTimeout(async () => {
+    const id = boardId(), rows = await fetchWorld(id);
+    if (boardId() !== id) return;
+    $('worldLobby').innerHTML = `<h4>🏆 World records</h4><div style="opacity:.8;font-size:12px;margin-bottom:4px">${boardTitle(id)}</div>` + worldRows(id, rows, 5);
+  }, 150);
+}
+// keep the lobby's board fresh while people sit on the title screen
+setInterval(() => { if (state === 'title' && !document.hidden) loadWorld(); }, 30000);
+async function submitWorld(id, score) {
+  const d = driverOf(cfg.driver);
+  try {
+    const r = await fetch('/api/scores', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ board: id, name: myName(), score, coin: d.coin, img: /^data:/.test(d.img) ? '' : d.img }) });
+    if (r.ok) worldCache[id] = (await r.json()).top;
+  } catch {}
+  return worldCache[id];
+}
+function renderWorldResult(id, rows) {
+  $('resWorld').innerHTML = `<div style="font:400 22px var(--display);letter-spacing:.05em;margin-bottom:8px">🏆 ${boardTitle(id)}</div>` + worldRows(id, rows, 10).replace('<ol>', '<ol class="world" style="background:none;border:0;padding:0;font-size:16px">');
 }
 const renderBest = renderLobby;
 function renderSettings() {
@@ -2180,6 +2229,7 @@ document.querySelectorAll('.seg[data-cfg]').forEach(seg => seg.addEventListener(
   cfg[key] = /^\d+$/.test(v) ? +v : v; saveCfg(); renderSettings();
   if (key === 'sound') { if (v === 'on') { initAudio(); blip(900, 0.08); } else stopAudio(); }
   if (key === 'gfx') applyGfx();
+  if (key === 'mode' || key === 'laps' || key === 'mins') loadWorld();
   if (net?.host && state === 'title') { renderRoom(); broadcast(lobbyInfo()); }
 }));
 function setName(v) { cfg.name = v.replace(/[^\w .-]/g, '').slice(0, 14); saveCfg(); syncMeToRoom(); }
@@ -2286,7 +2336,7 @@ $('btnSoundHud').addEventListener('click', () => { cfg.sound = cfg.sound === 'on
 $('btnSoundHud').textContent = cfg.sound === 'on' ? '🔊' : '🔇';
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
-  $('results').hidden = t.dataset.tab !== 'board'; $('resLog').hidden = t.dataset.tab !== 'log';
+  $('results').hidden = t.dataset.tab !== 'board'; $('resLog').hidden = t.dataset.tab !== 'log'; $('resWorld').hidden = t.dataset.tab !== 'world';
 }));
 $('btnAgain').addEventListener('click', () => { if (net?.host) hostStart(); else if (!net) startGame(); });
 $('btnDoneQuit').addEventListener('click', () => quitGame(net ? 'room' : 'title'));
@@ -2317,6 +2367,7 @@ function toggleLog() { const open = $('hLog').classList.toggle('closed') === fal
 $('btnLog').addEventListener('click', toggleLog);
 if (store.get('kart.logOpen', true) === false) { $('hLog').classList.add('closed'); $('btnLog').setAttribute('aria-expanded', 'false'); }
 
+let worldNote = '';
 function endGame(given) {
   if (state === 'done' && !given) return;
   state = 'done';
@@ -2340,16 +2391,24 @@ function endGame(given) {
     banner('TIME!', 1.8);
   }
   store.set('kart.best', best);
+  // post my result to the world board (times only count if I finished, kills only if I got some)
+  worldNote = '';
+  const wid = mode === 'race' ? 'race' + LAPS : 'arena' + Math.round(matchLen / 60);
+  const myScore = mode === 'race' ? (me.finished ? me.finishTime : null) : (me.kills > 0 ? me.kills : null);
+  (myScore != null ? submitWorld(wid, myScore) : fetchWorld(wid)).then(rows => {
+    renderWorldResult(wid, rows);
+    if (myScore != null && rows) { const pos = rows.findIndex(r => r.name.toLowerCase() === myName().toLowerCase() && Math.abs(r.score - (mode === 'race' ? Math.round(myScore * 100) / 100 : myScore)) < 0.011); if (pos >= 0) { worldNote = `🏆 #${pos + 1} in the world!`; $('doneBest').textContent = [bestNote, worldNote].filter(Boolean).join(' '); } }
+  });
   blip(660, 0.15); setTimeout(() => blip(990, 0.3), 150);
   setTimeout(() => {
     $('doneMap').textContent = mode === 'race' ? 'Bonfire Bay' : 'The Pit';
     $('doneMode').innerHTML = mode === 'race' ? `Race<br>${LAPS} lap${LAPS > 1 ? 's' : ''}` : `Free for all<br>${Math.round(matchLen / 60)} mins`;
-    $('doneTitle').textContent = title; $('doneBest').textContent = bestNote;
+    $('doneTitle').textContent = title; $('doneBest').textContent = [bestNote, worldNote].filter(Boolean).join(' ');
     const cols = mode === 'race' ? ['⏱️', '🏁'] : ['💥', '💀'];
     $('results').innerHTML = `<div class="lrow head"><b>#</b><span></span><span>Player</span><em>${cols[0]}</em><em>${cols[1]}</em></div>` + order.map((k, i) =>
       `<div class="lrow ${k === me ? 'me' : ''}"><b>${i + 1}</b><img src="${escapeHtml(k.r.img)}" alt=""><span>${escapeHtml(k.label)}${k.human && k !== me ? ' 🎮' : ''}</span><em>${mode === 'race' ? (k.finished ? fmtT(k.finishTime).slice(0, -1) : 'DNF') : k.kills}</em><em>${mode === 'race' ? Math.min(LAPS, k.lap) : k.deaths}</em></div>`).join('');
     $('resLog').innerHTML = battleLog.length ? battleLog.map(e => `<div class="ev ${e.kind}"><time>${e.t}</time>${escapeHtml(e.text)}</div>`).join('') : '<p class="status">Nothing happened. Suspicious.</p>';
-    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x.dataset.tab === 'board'))); $('results').hidden = false; $('resLog').hidden = true;
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x.dataset.tab === 'board'))); $('results').hidden = false; $('resLog').hidden = true; $('resWorld').hidden = true;
     $('btnAgain').hidden = isClient(); $('doneWait').textContent = isClient() ? 'Waiting for the host to start the next match…' : '';
     $('btnDoneQuit').textContent = net ? 'Back to room' : 'Menu';
     show('scrDone');
