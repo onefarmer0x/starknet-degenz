@@ -266,7 +266,7 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
 <body>
 <nav class="topnav" aria-label="Main">
   <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
-  <div class="links"><a href="/" aria-current="page">Home</a><a href="#stats">Stats</a><a href="#buy">How to buy</a><a href="#chart">Chart</a><a href="/bonfire">Bonfire</a><a href="https://t.me/starknet_degenz" target="_blank" rel="noopener">Telegram</a></div>
+  <div class="links"><a href="/" aria-current="page">Home</a><a href="#stats">Stats</a><a href="#buy">How to buy</a><a href="#chart">Chart</a><a href="/bonfire">Bonfire</a><a href="/race">Race</a><a href="https://t.me/starknet_degenz" target="_blank" rel="noopener">Telegram</a></div>
   <button class="mode" id="modeToggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode"><span class="mode-track"><svg class="mode-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg><svg class="mode-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg><span class="mode-knob"></span></span></button>
   <a class="buy" id="buyNav" href="#" target="_blank" rel="noopener">BUY $DEGENZ</a>
 </nav>
@@ -364,7 +364,7 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
       <div class="steps">
         <div class="card step"><h3>Get a wallet</h3><p>Install a Starknet wallet: <a href="https://bramble.fi/" target="_blank" rel="noopener">Bramble</a>, <a href="https://www.ready.co/" target="_blank" rel="noopener">Ready</a> or <a href="https://braavos.app/" target="_blank" rel="noopener">Braavos</a>.</p></div>
         <div class="card step"><h3>Load up STRK</h3><p>Buy STRK on an exchange or bridge it in, then send it to your Starknet wallet.</p></div>
-        <div class="card step"><h3>Swap for $DEGENZ</h3><p>Open <a id="buyStep" href="#" target="_blank" rel="noopener">AVNU</a> (we copy the CA for you), paste it in the token search, and swap STRK for $DEGENZ.</p></div>
+        <div class="card step"><h3>Buy $DEGENZ</h3><p>Open the <a id="buyStep" href="#" target="_blank" rel="noopener">DEGENZ launchpad page</a>, connect your wallet and swap STRK for $DEGENZ.</p></div>
         <div class="card step"><h3>Feed the fire</h3><p>Join the <a href="https://t.me/starknet_degenz" target="_blank" rel="noopener">Telegram</a>, hold with the pack, or burn a bag on the <a href="/bonfire">bonfire</a>.</p></div>
       </div>
     </div>
@@ -416,8 +416,8 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
               <div class="recv-usd" id="recvUsd">&nbsp;</div>
             </div>
             <div class="slip"><span class="k">Slippage</span><div class="seg small" data-key="slip"><button data-v="1" aria-pressed="true">1%</button><button data-v="3">3%</button><button data-v="5">5%</button><button data-v="10">10%</button></div></div>
-            <a class="btn fire swap-go" id="swapGo" href="https://app.avnu.fi/en" target="_blank" rel="noopener">SWAP ON AVNU</a>
-            <p class="swap-small">Opens AVNU with the CA copied. Paste it in the token search and confirm in your wallet.</p>
+            <a class="btn fire swap-go" id="swapGo" href="#" target="_blank" rel="noopener">BUY ON LAUNCHPAD</a>
+            <p class="swap-small">Opens the DEGENZ page on the brothereli launchpad. Quote above is from AVNU.</p>
           </div>
           <details class="card fold">
             <summary>Links &amp; data</summary>
@@ -489,19 +489,16 @@ const SEL_SUPPLY = '0x1557182e4359a1f0c6301278e8f5b35a776ab58d39892581e357578fb2
 const EKUBO_CORE = 0x00000005dd3d2f4429af886cd1a3b08289dbcea99a294197e9eb43b0e0325b4bn;
 const DEAD = 0xdeadn;
 const LABELS = new Map([[EKUBO_CORE, 'Ekubo pool']]);
-// AVNU ignores token params for unlisted tokens, so buy links open AVNU and copy the CA in the same click
-const BUY_URL = 'https://app.avnu.fi/en';
+// buy links go straight to the DEGENZ page on the brothereli launchpad
+const BUY_URL = `https://brothereli.com/launchpad/token/${TOKEN}`;
 const VOYAGER = `https://voyager.online/token/${TOKEN}`;
 const $ = id => document.getElementById(id);
 
 // static links
-['buyNav', 'buyHero', 'buyStep'].forEach(id => $(id).href = BUY_URL);
+['buyNav', 'buyHero', 'buyStep', 'swapGo'].forEach(id => $(id).href = BUY_URL);
 ['voyLink', 'voyFoot', 'fCa'].forEach(id => $(id).href = VOYAGER);
 $('caText').textContent = TOKEN;
 $('fCa').textContent = TOKEN.slice(0, 8) + '…' + TOKEN.slice(-4);
-['buyNav', 'buyHero', 'buyStep'].forEach(id => $(id).addEventListener('click', () => {
-  navigator.clipboard?.writeText(TOKEN).then(() => toast('CA copied. Paste it into AVNU\x27s token search.'), () => {});
-}));
 function toast(msg) {
   let t = $('toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
   t.textContent = msg; t.className = 'show'; clearTimeout(t._h); t._h = setTimeout(() => t.className = '', 3500);
@@ -740,7 +737,6 @@ async function quote() {
     $('recvUsd').textContent = `≈ $${(q.buyAmountInUsd || 0).toFixed(2)} · min ${min >= 1e3 ? fmt(min) : min.toPrecision(4)} at ${tv.slip}% slippage`;
   } catch { if (seq === qSeq) { $('recvAmt').textContent = '—'; $('recvUsd').textContent = 'No route right now. Try a smaller amount.'; } }
 }
-$('swapGo').addEventListener('click', () => navigator.clipboard?.writeText(TOKEN).then(() => toast('CA copied. Paste it into AVNU\'s token search.'), () => {}));
 
 buildChart(); loadCandles(); loadHeadline();
 setInterval(() => { loadHeadline(); if (tv.tf.startsWith('minute')) loadCandles(); }, 60000);
