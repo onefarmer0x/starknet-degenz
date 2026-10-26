@@ -24,12 +24,13 @@
 <meta name="twitter:title" content="DEGENZ Bonfire 🔥 Keep the fire burning">
 <meta name="twitter:description" content="Live $DEGENZ burn tracker on Starknet. Total burned, value, top burners. Feed the fire.">
 <meta name="twitter:image" content="https://starknet-degenz.vercel.app/og-bonfire.png">
+<script src="/theme.js"></script>
 <link rel="stylesheet" href="/site.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700&family=Bangers&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: cartoon campfire scene on the left, a stack of sticker cards on the right. Single dusk theme by choice. */
+/* Layout: cartoon campfire scene on the left, a stack of sticker cards on the right. Light mode; dark.css restyles it for dark mode. */
 :root {
   --sky-top: #2b2350;
   --sky-bot: #120e22;
@@ -206,11 +207,13 @@ body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45
   .you-grid { grid-template-columns: 1fr 1fr; }
 }
 </style>
+<link rel="stylesheet" href="/dark.css">
 </head>
 <body>
 <nav class="topnav" aria-label="Main">
   <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
   <div class="links"><a href="/">Home</a><a href="/#stats">Stats</a><a href="/#buy">How to buy</a><a href="/#chart">Chart</a><a href="/bonfire" aria-current="page">Bonfire</a></div>
+  <button class="mode" id="modeToggle" type="button" aria-pressed="false">DARK MODE</button>
   <a class="buy" href="https://app.avnu.fi/en" onclick="navigator.clipboard&amp;&amp;navigator.clipboard.writeText('0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100').catch(function(){})" target="_blank" rel="noopener">BUY $DEGENZ</a>
 </nav>
 <div class="app">

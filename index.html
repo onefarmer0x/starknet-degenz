@@ -25,12 +25,13 @@
 <meta name="twitter:title" content="$DEGENZ · The Starknet wolf pack">
 <meta name="twitter:description" content="Community bought, community burned. Live price, holders, chart and contract for $DEGENZ on Starknet.">
 <meta name="twitter:image" content="https://starknet-degenz.vercel.app/og.png">
+<script src="/theme.js"></script>
 <link rel="stylesheet" href="/site.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700&family=Bangers&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one long scroll of comic panels on a dusk sky. Single dusk theme by choice, shared with the bonfire page. */
+/* Layout: one long scroll of comic panels on a dusk sky. Light mode; dark.css restyles it for dark mode. */
 :root {
   --sky-top: #2b2350;
   --sky-bot: #120e22;
@@ -196,11 +197,13 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
 }
 @media (prefers-reduced-motion: reduce) { .marquee .track { animation: none; } html { scroll-behavior: auto; } }
 </style>
+<link rel="stylesheet" href="/dark.css">
 </head>
 <body>
 <nav class="topnav" aria-label="Main">
   <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
   <div class="links"><a href="/" aria-current="page">Home</a><a href="#stats">Stats</a><a href="#buy">How to buy</a><a href="#chart">Chart</a><a href="/bonfire">Bonfire</a></div>
+  <button class="mode" id="modeToggle" type="button" aria-pressed="false">DARK MODE</button>
   <a class="buy" id="buyNav" href="#" target="_blank" rel="noopener">BUY $DEGENZ</a>
 </nav>
 
@@ -217,6 +220,7 @@ footer { background: #0d0a18; color: #cfc4ea; border-top: 3px solid var(--ink); 
     </div>
     <div class="hero-art" aria-hidden="true">
       <video class="peek" src="/wolves/1.webm" autoplay loop muted playsinline></video>
+      <video class="dark-wolf" data-mode-src="/wolves/dark.webm" data-mode-src-for="dark" autoplay loop muted playsinline></video>
       <video class="chad" src="/wolves/4.webm" autoplay loop muted playsinline></video>
     </div>
   </div>
