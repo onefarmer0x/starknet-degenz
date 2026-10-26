@@ -423,6 +423,10 @@ body.has-touch .item { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) 
   <div class="panel modal-card" role="dialog" aria-labelledby="roomTitle">
     <h2 class="t" id="roomTitle">Room</h2>
     <div class="code" id="roomCode">----</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <label class="field" style="flex:1 1 220px"><span class="lbl">Your name in this room</span><input class="input" id="roomName" maxlength="14" placeholder="Wolf" autocomplete="off"></label>
+      <button class="btn" id="btnRoomDriver" type="button"><img id="roomDriverImg" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:#fff;object-fit:cover"> Change driver</button>
+    </div>
     <div class="linkrow"><input class="input" id="roomLink" readonly aria-label="Invite link"><button class="btn small yellow" id="btnCopyLink" type="button">Copy link</button></div>
     <div class="room-grid">
       <div class="panel dark plist" id="roomPlayers" aria-live="polite"></div>
@@ -1035,6 +1039,11 @@ function buildKart(r, label, mine) {
   const sparkM = new THREE.MeshBasicMaterial({ color: 0x59c3ff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending });
   const sparks = []; for (const s of [-1, 1]) { const sp = new THREE.Mesh(new THREE.OctahedronGeometry(0.6), sparkM); sp.position.set(s * 2.6, 0.6, -3); sp.visible = false; k.add(sp); sparks.push(sp); }
   const blob = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 10), KART.blob); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.08; k.add(blob);
+  // coin logo stickers: one on each side pod and a big one on the back panel
+  const logoM = new THREE.MeshBasicMaterial({ map: stickerTexture(r.img), transparent: true, polygonOffset: true, polygonOffsetFactor: -2 });
+  for (const sx of [-1, 1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), logoM); d.position.set(sx * 3.04, 1.1, -0.1); d.rotation.y = sx * Math.PI / 2; k.add(d); }
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), logoM); back.position.set(0, 1.75, -3.52); back.rotation.y = Math.PI; k.add(back);
+  for (const sx of [-1.25, 1.25]) { const wing = new THREE.Mesh(new THREE.PlaneGeometry(1.35, 1.35), logoM); wing.position.set(sx, 3.35, -3.95); wing.rotation.y = Math.PI; k.add(wing); }
   shade(k, true, false);
   k.userData = { wheels, head, sparks, sparkM, gun, launcher, minigun, tag, exhausts, blob };
   scene.add(k);
@@ -1801,6 +1810,8 @@ function onClientData(d) {
 // room lobby screen (host and guests)
 function renderRoom() {
   if (!net) return;
+  if (document.activeElement !== $('roomName')) $('roomName').value = cfg.name;
+  $('roomDriverImg').src = driverOf(cfg.driver).img;
   const host = net.host, L = host ? lobbyInfo() : (net.lobby || { players: [], mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, bots: 0 });
   $('roomCode').textContent = net.code;
   $('roomLink').value = roomUrl(net.code);
@@ -2075,13 +2086,27 @@ document.querySelectorAll('.seg[data-cfg]').forEach(seg => seg.addEventListener(
   if (key === 'gfx') applyGfx();
   if (net?.host && state === 'title') { renderRoom(); broadcast(lobbyInfo()); }
 }));
-$('cfgName').addEventListener('input', e => { cfg.name = e.target.value.replace(/[^\w .-]/g, '').slice(0, 14); saveCfg(); });
+function setName(v) { cfg.name = v.replace(/[^\w .-]/g, '').slice(0, 14); saveCfg(); syncMeToRoom(); }
+$('cfgName').addEventListener('input', e => setName(e.target.value));
+$('roomName').addEventListener('input', e => setName(e.target.value));
+$('btnRoomDriver').addEventListener('click', () => { renderGarage(); show('scrGarage'); });
+// your name or driver changed while sitting in a room: the host updates its own entry, guests re-introduce themselves
+let syncT = 0;
+function syncMeToRoom() {
+  if (!net || state !== 'title') return;
+  clearTimeout(syncT);
+  syncT = setTimeout(() => {
+    if (!net) return;
+    if (net.host) { const me = net.players.find(p => p.id === 'host'); if (me) { me.name = myName(); me.driver = pubDriver(driverOf(cfg.driver)); } renderRoom(); broadcast(lobbyInfo()); }
+    else net.send({ t: 'hello', name: myName(), driver: pubDriver(driverOf(cfg.driver)) });
+  }, 250);
+}
 $('roster').addEventListener('click', e => {
   const del = e.target.closest('[data-del]');
   if (del) { e.stopPropagation(); customs = customs.filter(c => c.id !== del.dataset.del); store.set('kart.coins', customs); if (cfg.driver === del.dataset.del) cfg.driver = 'degenz'; saveCfg(); renderGarage(); renderLobby(); return; }
   if (e.target.closest('#btnAddCoin')) { $('addbox').hidden = false; $('addAddr').focus(); return; }
   const b = e.target.closest('.racer'); if (!b) return;
-  cfg.driver = b.dataset.id; saveCfg(); renderGarage(); renderLobby(); blip(900, 0.06);
+  cfg.driver = b.dataset.id; saveCfg(); renderGarage(); renderLobby(); syncMeToRoom(); blip(900, 0.06);
 });
 $('btnAddCancel').addEventListener('click', () => { $('addbox').hidden = true; setAddNote(''); });
 $('addAddr').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnAdd').click(); });
