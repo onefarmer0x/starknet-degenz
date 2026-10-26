@@ -587,7 +587,7 @@ const camera = new THREE.PerspectiveCamera(62, 1, 0.5, 1500);
 let baseFov = 62, camBack = 15;
 function applyGfx() {
   const high = cfg.gfx !== 'low';
-  renderer.setPixelRatio(high ? Math.min(2, window.devicePixelRatio || 1) : 1);
+  renderer.setPixelRatio(high ? Math.min(1.5, window.devicePixelRatio || 1) : 1);
   renderer.shadowMap.enabled = high; sun.castShadow = high;
   scene.traverse(o => { if (o.material && !Array.isArray(o.material)) o.material.needsUpdate = true; });
   resize();
@@ -1006,7 +1006,10 @@ const KART = (() => {
   const blobTex = canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(0,0,0,0.55)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); });
   return { tub, wheel, hub, pod, bumper, torso, arm, wheelRing, flame, blob: new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }) };
 })();
-const tireM = toon(0x24212b), metalM = toon(0xd9dde4), darkM = toon(0x3a3a46);
+// tyres get a chunky tread texture wrapped round the rubber
+const treadTex = canvasTex(256, 32, (g, w, h) => { g.fillStyle = '#24212b'; g.fillRect(0, 0, w, h); g.fillStyle = '#3a3542'; for (let x = 0; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 8, 0); g.lineTo(x + 2, h); g.lineTo(x - 6, h); g.fill(); } });
+treadTex.wrapS = THREE.RepeatWrapping;
+const tireM = toon(0xffffff, { map: treadTex }), metalM = toon(0xd9dde4), darkM = toon(0x3a3a46);
 const flameM = new THREE.MeshBasicMaterial({ color: 0xffb02e, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
 function buildKart(r, label, mine) {
   const k = new THREE.Group();
@@ -1044,8 +1047,19 @@ function buildKart(r, label, mine) {
   for (const sx of [-1, 1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), logoM); d.position.set(sx * 3.04, 1.1, -0.1); d.rotation.y = sx * Math.PI / 2; k.add(d); }
   const back = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), logoM); back.position.set(0, 1.75, -3.52); back.rotation.y = Math.PI; k.add(back);
   for (const sx of [-1.25, 1.25]) { const wing = new THREE.Mesh(new THREE.PlaneGeometry(1.35, 1.35), logoM); wing.position.set(sx, 3.35, -3.95); wing.rotation.y = Math.PI; k.add(wing); }
+  // extra detail: racing stripes, front wing with end plates, roll bar, side pipes, a nose plate with the logo
+  for (const sx of [-0.55, 0.55]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 6.2), accM); s.position.set(sx, 2.23, 0.6); k.add(s); }
+  const fw = outlined(new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.22, 1.1), accM), 1.08); fw.position.set(0, 0.62, 5.25); k.add(fw);
+  for (const sx of [-2.9, 2.9]) { const ep = outlined(new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.9, 1.3), darkM), 1.1); ep.position.set(sx, 0.85, 5.25); k.add(ep); }
+  const roll = outlined(new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.17, 6, 18, Math.PI), metalM), 1.12); roll.position.set(0, 2.9, -2.45); k.add(roll);
+  for (const sx of [-1.95, 1.95]) { const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 3.2, 10), metalM); pipe.rotation.x = Math.PI / 2; pipe.position.set(sx, 0.55, -1.2); k.add(pipe); }
+  const nose = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.25), logoM); nose.position.set(0, 1.95, 3.55); nose.rotation.x = -0.75; k.add(nose);
+  // everything except wheels, sparks and the ground shadow rides on a sprung chassis that leans and pitches
+  const chassis = new THREE.Group();
+  [...k.children].forEach(c => { if (!wheels.includes(c) && c !== blob && !sparks.includes(c)) chassis.add(c); });
+  k.add(chassis);
   shade(k, true, false);
-  k.userData = { wheels, head, sparks, sparkM, gun, launcher, minigun, tag, exhausts, blob };
+  k.userData = { wheels, head, sparks, sparkM, gun, launcher, minigun, tag, exhausts, blob, chassis, steerWheel: wheelR };
   scene.add(k);
   return k;
 }
@@ -1372,7 +1386,7 @@ function stepKart(k, dt) {
   if (mode === 'race' && k.finished) { throttle = 0.4; steer = aiSteer(k); }
   else if (k.isPlayer) {
     if (live) {
-      throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; steer = (keys.left ? 1 : 0) - (keys.right ? 1 : 0); wantDrift = keys.drift;
+      throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = (keys.left ? 1 : 0) - (keys.right ? 1 : 0); k.steerS = (k.steerS || 0) + (want - (k.steerS || 0)) * Math.min(1, dt * (want ? 9 : 14)); steer = k.steerS; wantDrift = keys.drift;
       if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
       if (mode === 'arena' && (keys.item || (keys.fire && k.weapon === 'gun'))) { keys.item = false; playerUse(k); }
     }
@@ -1428,6 +1442,7 @@ function stepKart(k, dt) {
   u.sparkM.color.setHex([0x59c3ff, 0x59c3ff, 0xff6a13, 0xc86bff][lvl]);
   u.head.position.y = 4.85 + Math.sin(raceT * 9 + k.r.spd) * 0.1;
   u.head.rotation.z = turn * 0.18; u.head.rotation.y = turn * 0.25;
+  leanChassis(k, turn, dt);
   // body lean into turns and a little squash on landing
   u.head.position.x = -turn * 0.35;
   showGun(k);
@@ -1622,6 +1637,18 @@ function hud() {
   }
 }
 
+// lean into turns, squat under acceleration, dive under braking, buzz a little at speed
+function leanChassis(k, turn, dt) {
+  const u = k.m.userData; if (!u.chassis) return;
+  const acc = (k.speed - (k.lastSp ?? k.speed)) / Math.max(dt, 1e-3); k.lastSp = k.speed;
+  const ease = Math.min(1, dt * 7);
+  k.pitch = (k.pitch || 0) + (Math.max(-0.09, Math.min(0.09, -acc * 0.0022)) - (k.pitch || 0)) * ease;
+  k.roll = (k.roll || 0) + (-turn * Math.min(1, Math.abs(k.speed) / 45) * 0.13 - (k.roll || 0)) * ease;
+  u.chassis.rotation.set(k.pitch, 0, k.roll);
+  u.chassis.position.y = Math.abs(k.speed) > 5 ? Math.sin(performance.now() / 33 + k.r.spd) * 0.035 : 0;
+  if (u.steerWheel) u.steerWheel.rotation.z = -turn * 0.9;
+  u.wheels.forEach((w, i) => { if (i < 2) w.rotation.y = turn * 0.4; });
+}
 // weapon on the kart's nose: launcher for rockets and homing, a spinning minigun for the gun
 function showGun(k) {
   const u = k.m.userData, w = mode === 'arena' ? k.weapon : null;
@@ -1759,7 +1786,7 @@ function onHostData(conn, d) {
   if (d.t === 'ping') { conn.send({ t: 'pong', at: d.at }); return; }
   const k = karts.find(x => x.remote === conn.peer);
   if (!k) return;
-  if (d.t === 'me') k.np = d;
+  if (d.t === 'me') { k.np = d; pushSample(k, d); }
   if (d.t === 'act') k.inpUse = true;
 }
 function onPlayerLeft(conn) {
@@ -1945,7 +1972,7 @@ function applySnap(s) {
       if (mode === 'race' && lap > k.lap && !fin) { if (lap > 0) banner(lap === LAPS - 1 ? 'FINAL LAP!' : `LAP ${lap + 1}`, 1.4); }
       k.lap = lap;
     } else {
-      k.np = { x, z, y, h, sp, d: dr, b: bo };
+      k.np = { x, z, y, h, sp, d: dr, b: bo }; pushSample(k, k.np);
       k.alive = !!alive; k.lap = lap; k.weapon = WCODE[wc] || null;
       k.m.visible = !!alive && (!inv || Math.floor(performance.now() / 80) % 2 === 0);
     }
@@ -1970,13 +1997,33 @@ function driftNetMeshes(dt) {
   for (const o of netMeshes.hz) { const l = o.m.getObjectByName('light'); if (l) l.visible = Math.floor(performance.now() / 250) % 2 === 0; }
 }
 // smooth another player's kart toward the latest pose we have for it
+// keep the last second of poses for each networked kart and draw them ~100 ms in the past, interpolating between
+// real samples (smooth even when packets bunch up), extrapolating briefly if a packet is late
+function pushSample(k, s) { const b = (k.buf ||= []); b.push({ t: performance.now(), x: s.x, z: s.z, h: s.h, sp: s.sp, y: s.y || 0 }); if (b.length > 24) b.shift(); }
+const lerpAng = (a, b, t) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
+function bufferedPose(k) {
+  const b = k.buf; if (!b || !b.length) return k.np;
+  const rt = performance.now() - 100;
+  if (rt <= b[0].t) return b[0];
+  for (let i = b.length - 1; i > 0; i--) {
+    const a = b[i - 1], c = b[i];
+    if (rt >= a.t && rt <= c.t) { const t = (rt - a.t) / Math.max(1, c.t - a.t); return { x: a.x + (c.x - a.x) * t, z: a.z + (c.z - a.z) * t, h: lerpAng(a.h, c.h, t), sp: a.sp + (c.sp - a.sp) * t, y: a.y + (c.y - a.y) * t }; }
+  }
+  const l = b[b.length - 1], ex = Math.min(0.15, (rt - l.t) / 1000);
+  return { x: l.x + Math.sin(l.h) * l.sp * ex, z: l.z + Math.cos(l.h) * l.sp * ex, h: l.h, sp: l.sp, y: l.y };
+}
 function followNet(k, dt) {
   const n = k.np; if (!n) return;
-  const f = 1 - Math.exp(-dt * 14);
-  k.m.position.x += (n.x - k.m.position.x) * f; k.m.position.z += (n.z - k.m.position.z) * f;
-  k.y = n.y || 0; k.m.position.y = k.y;
-  let dh = Math.atan2(Math.sin(n.h - k.heading), Math.cos(n.h - k.heading)); k.heading += dh * f;
-  k.speed = n.sp; k.drifting = !!n.d; k.driftDir = n.d || 0; k.boost = n.b ? 0.2 : 0;
+  const pose = bufferedPose(k) || n;
+  // a big jump (respawn, first sample) snaps; otherwise ease the last few cm so it never pops
+  const jump = Math.hypot(pose.x - k.m.position.x, pose.z - k.m.position.z) > 25;
+  const f = jump ? 1 : 1 - Math.exp(-dt * 30);
+  k.m.position.x += (pose.x - k.m.position.x) * f; k.m.position.z += (pose.z - k.m.position.z) * f;
+  k.y = pose.y || 0; k.m.position.y = k.y;
+  const prevH = k.heading;
+  k.heading = jump ? pose.h : lerpAng(k.heading, pose.h, f);
+  leanChassis(k, Math.max(-1, Math.min(1, Math.atan2(Math.sin(k.heading - prevH), Math.cos(k.heading - prevH)) / Math.max(dt, 1e-3) / 2)), dt);
+  k.speed = pose.sp ?? n.sp; k.drifting = !!n.d; k.driftDir = n.d || 0; k.boost = n.b ? 0.2 : 0;
   k.m.rotation.y = k.heading + (k.drifting ? k.driftDir * 0.38 : 0);
   const u = k.m.userData;
   u.wheels.forEach(w => { w.rotation.x += k.speed * dt; });
@@ -1989,7 +2036,7 @@ function followNet(k, dt) {
 // host side: a guest's kart follows their stream; the host still owns its health, weapons, laps and respawns
 function stepRemote(k, dt) {
   if (mode === 'arena') {
-    if (!k.alive) { if ((k.respawnT -= dt) <= 0 && state === 'race') { respawn(k); k.np = null; } return; }
+    if (!k.alive) { if ((k.respawnT -= dt) <= 0 && state === 'race') { respawn(k); k.np = null; k.buf = []; } return; }
     if (k.invuln > 0) { k.invuln -= dt; k.m.visible = Math.floor(k.invuln * 12) % 2 === 0 || k.invuln <= 0; }
     if (k.fireCd > 0) k.fireCd -= dt;
   }
@@ -2003,17 +2050,18 @@ function netTick(dt) {
   if (net.host) {
     if (!net.conns.length || !karts.length || state === 'title') return;
     snapAcc += dt;
-    if (snapAcc >= 1 / 15) { snapAcc = 0; broadcast(snapshot()); }
+    if (snapAcc >= 1 / 20) { snapAcc = 0; broadcast(snapshot()); }
   } else if (karts.length && net.conn?.open) {
     meAcc += dt;
     const k = ME();
-    if (meAcc >= 0.05 && k) { meAcc = 0; net.send({ t: 'me', x: +k.m.position.x.toFixed(2), z: +k.m.position.z.toFixed(2), y: +k.y.toFixed(2), h: +k.heading.toFixed(3), sp: +k.speed.toFixed(1), d: k.drifting ? k.driftDir : 0, b: k.boost > 0 ? 1 : 0, fh: keys.fire ? 1 : 0 }); }
+    if (meAcc >= 1 / 30 && k) { meAcc = 0; net.send({ t: 'me', x: +k.m.position.x.toFixed(2), z: +k.m.position.z.toFixed(2), y: +k.y.toFixed(2), h: +k.heading.toFixed(3), sp: +k.speed.toFixed(1), d: k.drifting ? k.driftDir : 0, b: k.boost > 0 ? 1 : 0, fh: keys.fire ? 1 : 0 }); }
     if ((pingT += dt) > 2) { pingT = 0; net.send({ t: 'ping', at: performance.now() }); }
   }
 }
 
 // ---------------- camera ----------------
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+let camYaw = 0, camFov = 62;
 let preview = null, previewId = '';
 // a slowly turning kart behind the lobby, in the colours of the selected driver
 function updatePreview() {
@@ -2035,11 +2083,14 @@ function updateCamera(dt, instant) {
     return;
   }
   const back = (mode === 'arena' ? camBack + 11 : camBack + 6) + Math.max(0, p.speed) * 0.04, h = mode === 'arena' ? 15 : camBack > 15 ? 11 : 9.5;
-  const desired = tmp.set(p.m.position.x - Math.sin(p.heading) * back, p.m.position.y + h, p.m.position.z - Math.cos(p.heading) * back);
+  // the camera follows a smoothed heading, so drift wobble and spin-outs don't shake the view
+  camYaw += Math.atan2(Math.sin(p.heading - camYaw), Math.cos(p.heading - camYaw)) * (instant ? 1 : 1 - Math.pow(0.004, dt));
+  const desired = tmp.set(p.m.position.x - Math.sin(camYaw) * back, p.m.position.y * 0.5 + h, p.m.position.z - Math.cos(camYaw) * back);
   camPos.lerp(desired, instant ? 1 : 1 - Math.pow(0.0015, dt));
-  camLook.lerp(new THREE.Vector3(p.m.position.x + Math.sin(p.heading) * 10, p.m.position.y + 2.5, p.m.position.z + Math.cos(p.heading) * 10), instant ? 1 : 1 - Math.pow(0.0004, dt));
+  camLook.lerp(new THREE.Vector3(p.m.position.x + Math.sin(camYaw) * 10, 2.5, p.m.position.z + Math.cos(camYaw) * 10), instant ? 1 : 1 - Math.pow(0.0004, dt));
   camera.position.copy(camPos); camera.lookAt(camLook);
-  camera.fov = baseFov + (p.boost > 0 ? 10 : 0); camera.updateProjectionMatrix();
+  camFov += (baseFov + (p.boost > 0 ? 10 : 0) + Math.max(0, p.speed) * 0.04 - camFov) * (instant ? 1 : 1 - Math.pow(0.05, dt));
+  camera.fov = camFov; camera.updateProjectionMatrix();
 }
 
 // ---------------- screens ----------------
@@ -2291,6 +2342,7 @@ function frame(now) {
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
+let simAcc = 0; const STEP = 1 / 120;
 function tick(dt, now) {
   const paused = state.startsWith('paused:');
   if (!paused) {
@@ -2303,7 +2355,7 @@ function tick(dt, now) {
     if (isClient()) {
       // guests: drive your own kart; everyone else follows the host's snapshots
       if (karts.length) {
-        if (state === 'race' && ME()) { stepKart(ME(), dt); if (mode === 'arena') arenaCollide(ME()); }
+        if (state === 'race' && ME()) { simAcc += dt; let steps = 0; while (simAcc >= STEP && steps < 10) { simAcc -= STEP; steps++; stepKart(ME(), STEP); } if (steps >= 10) simAcc = 0; }
         else if (state === 'countdown' && ME() && countdown < 0.6 && keys.up) ME().startBoost = true;
         if (state === 'race' && ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
         karts.forEach(k => { if (k !== ME()) followNet(k, dt); });
@@ -2320,10 +2372,15 @@ function tick(dt, now) {
         if (mode === 'race') karts.forEach(k => track(k));
       }
       if (state === 'race' || state === 'done') {
-        raceT += dt;
-        if (ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
-        karts.forEach(k => { k.firing = k.weapon === 'gun' && (k.isPlayer ? keys.fire : !!k.np?.fh); stepKart(k, dt); });
-        collisions(dt);
+        // fixed 120 Hz physics steps: same handling at any frame rate, no tunnelling through karts on slow frames
+        simAcc += dt; let steps = 0;
+        while (simAcc >= STEP && steps < 10) {
+          simAcc -= STEP; steps++; raceT += STEP;
+          if (ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
+          karts.forEach(k => { k.firing = k.weapon === 'gun' && (k.isPlayer ? keys.fire : !!k.np?.fh); stepKart(k, STEP); });
+          collisions(STEP);
+        }
+        if (steps >= 10) simAcc = 0;
         if (state === 'race' && mode === 'arena' && raceT >= matchLen) endGame();
         if (state === 'race' && mode === 'race' && raceEndAt && raceT >= raceEndAt) endGame();
       }
