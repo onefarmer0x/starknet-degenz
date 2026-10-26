@@ -112,8 +112,8 @@ html[data-mode="dark"] #toast { background: var(--d-panel-2); color: var(--d-tex
 
 /* ======================= bonfire page ======================= */
 html[data-mode="dark"] .stage { background: #050304; }
-html[data-mode="dark"] #fire { filter: contrast(1.25) brightness(0.62); }
-html[data-mode="dark"] .stage::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(55% 65% at 50% 68%, transparent 25%, rgba(0, 0, 0, 0.88)), linear-gradient(rgba(20, 0, 0, 0.35), transparent 40%); }
+html[data-mode="dark"] #fire { filter: contrast(1.12) brightness(0.9); }
+html[data-mode="dark"] .stage::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(75% 85% at 50% 62%, transparent 45%, rgba(0, 0, 0, 0.55)), linear-gradient(rgba(20, 0, 0, 0.2), transparent 35%); }
 html[data-mode="dark"] .brand h1 { font-family: var(--d-display); color: var(--d-text); -webkit-text-stroke: 0; transform: none; letter-spacing: 0.01em; text-shadow: 0 0 30px rgba(255, 43, 43, 0.45), 2px 0 0 rgba(255, 43, 43, 0.5); }
 html[data-mode="dark"] .brand h1 span { color: var(--d-blood); }
 html[data-mode="dark"] .brand p, html[data-mode="dark"] .pill, html[data-mode="dark"] .big-total .sub, html[data-mode="dark"] .big-total .label {

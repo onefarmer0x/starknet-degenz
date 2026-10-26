@@ -1,7 +1,10 @@
 // Light / dark mode switch shared by every page. Loaded in <head> so the saved mode applies before first paint.
 (function () {
   var KEY = 'degenz.mode';
-  function saved() { try { var m = localStorage.getItem(KEY); return m === 'degen' ? 'dark' : m; } catch (e) { return null; } }
+  // Dark is the only mode for now: the light version and its toggle are hidden. Set LIGHT_ENABLED = true to bring them back.
+  var LIGHT_ENABLED = false;
+  if (!LIGHT_ENABLED) document.write('<style>#modeToggle{display:none!important}</style>');
+  function saved() { if (!LIGHT_ENABLED) return 'dark'; try { var m = localStorage.getItem(KEY); return m === 'degen' ? 'dark' : m; } catch (e) { return null; } }
   function apply(mode) {
     document.documentElement.setAttribute('data-mode', mode === 'dark' ? 'dark' : 'light');
     var b = document.getElementById('modeToggle');
