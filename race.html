@@ -282,6 +282,10 @@ body.has-touch .hud .item { display: none; }
 .maps-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; margin: 6px 0 -4px; }
 .maps-head b { font: 400 30px var(--display); letter-spacing: 0.05em; color: var(--yellow); }
 .maps-head small { font: 600 14px var(--ui); color: #cfc4ea; }
+.xpsel { margin-left: auto; font: 700 12px var(--ui); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 2px 4px; }
+.world li .lvs { font: 800 10px var(--ui); background: var(--yellow); color: var(--ink); border-radius: 5px; padding: 0 4px; margin-left: 4px; }
+.range { width: 100%; accent-color: var(--yellow); height: 28px; }
+.lbl .rv { color: var(--yellow); margin-left: 6px; }
 .touch-only { display: none; } body.has-touch .touch-only { display: grid; }
 #toast:not(.show) { visibility: hidden; transition: transform 0.3s, visibility 0s 0.3s; }
 #toast.show { transform: translate(-50%, 0); }
@@ -451,6 +455,15 @@ html #scrTitle { display: grid; grid-template-columns: 1fr; grid-template-rows: 
 .start-card .recs { display: grid; gap: 8px; }
 .start-card .hint { margin: 0; text-align: center; }
 @media (max-height: 560px) { .start-card { gap: 7px; padding: 10px 14px; } .start-card .logo { font-size: 32px; margin: 0; } .start-card .field .lbl { display: none; } .start-card .hint { display: none; } }
+/* compact map picker cards */
+html .maps { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+html .map { grid-template-rows: 84px auto; border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); }
+html .map .art { font-size: 38px; }
+html .map .chip { top: 5px; right: 5px; padding: 0 7px; font-size: 12px; border-radius: 7px; }
+html .map .tag { top: 7px; left: -32px; padding: 1px 32px; font-size: 11px; }
+html .map .name { padding: 5px 6px; font-size: 18px; }
+html .map .name small { font-size: 11px; }
+html .maps-head b { font-size: 22px; }
 </style>
 </head>
 <body>
@@ -468,13 +481,14 @@ html #scrTitle { display: grid; grid-template-columns: 1fr; grid-template-rows: 
     <div class="field"><label class="lbl" for="cfgName">Your name</label><input class="input" id="cfgName" maxlength="14" placeholder="Wolf" autocomplete="off"></div>
     <div class="lvlcard" id="lvlCard"></div>
     <button class="btn yellow play" id="btnPlay" type="button">PLAY</button>
-    <div class="row2"><button class="btn" id="btnCreate" type="button">Create</button><button class="btn" id="btnJoin" type="button">Join</button></div>
+    <div class="row2"><button class="btn" id="btnCreate" type="button">Create room</button><button class="btn" id="btnJoin" type="button">Join</button></div>
     <div class="row2"><button class="btn" id="btnArsenal" type="button">🔫 Arsenal</button><button class="btn" id="btnRecords" type="button" aria-expanded="false">🏆 Records</button></div>
     <div class="recs" id="recs" hidden>
+      <div class="world" id="xpBoard"><h4 style="display:flex;align-items:center;gap:8px">⭐ XP leaders <select class="xpsel" id="xpMap" aria-label="XP leaderboard map"></select></h4><div class="empty">Loading…</div></div>
       <div class="best" id="bestLine">No races yet. Go smash something.</div>
       <div class="world" id="worldLobby"><h4>🏆 World records</h4><div class="empty">Loading…</div></div>
     </div>
-    <p class="hint">PLAY is you vs bots. CREATE makes a room code friends can JOIN.</p>
+    <p class="hint">PLAY is you vs bots. CREATE ROOM gives you a code for up to 12 players.</p>
   </div>
 </section>
 <div class="corner" id="lobbyCorner">
@@ -509,14 +523,14 @@ html #scrTitle { display: grid; grid-template-columns: 1fr; grid-template-rows: 
     <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
     <h2 class="t" id="setTitle">Settings</h2>
     <div class="opts">
-      <div class="field"><span class="lbl">Bots</span><div class="seg" data-cfg="bots"><button data-v="0">0</button><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button></div></div>
+      <div class="field"><span class="lbl">Bots</span><div class="seg" data-cfg="bots"><button data-v="0">0</button><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button><button data-v="11">11</button></div></div>
       <div class="field"><span class="lbl">Race laps</span><div class="seg" data-cfg="laps"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
       <div class="field"><span class="lbl">Arena length</span><div class="seg" data-cfg="mins"><button data-v="2">2 min</button><button data-v="3">3 min</button><button data-v="5">5 min</button></div></div>
       <div class="field"><span class="lbl">Bot skill</span><div class="seg" data-cfg="diff"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="degen">Degen</button></div></div>
       <div class="field"><span class="lbl">Sound</span><div class="seg" data-cfg="sound"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="field"><span class="lbl">Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
-      <div class="field touch-only"><span class="lbl">Joystick steering</span><div class="seg" data-cfg="sens"><button data-v="low">Soft</button><button data-v="mid">Normal</button><button data-v="high">Sharp</button></div></div>
-      <div class="field touch-only"><span class="lbl">Top speed (phone)</span><div class="seg" data-cfg="tspd"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="full">Full send</button></div></div>
+      <div class="field touch-only"><span class="lbl">Joystick steering <b class="rv" id="sensVal">50%</b></span><input class="range" type="range" id="cfgSens" min="10" max="90" step="5" aria-label="Joystick steering sensitivity"></div>
+      <div class="field touch-only"><span class="lbl">Top speed (phone) <b class="rv" id="tspdVal">50%</b></span><input class="range" type="range" id="cfgTspd" min="10" max="90" step="5" aria-label="Phone top speed"></div>
     </div>
     <p class="hint" id="keysLine">↑ gas · ↓ brake · ← → steer · hold Space to drift · X or click to fire / use item · L battle log · Esc menu</p>
   </div>
@@ -657,7 +671,7 @@ const allDrivers = () => [...BUILTIN, ...customs];
 
 // settings, saved in this browser
 // phones start on low graphics (no shadows, 1x resolution); everyone can switch in setup
-const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sens: 'mid', tspd: 'normal', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
+const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sensPct: 50, spdPct: 50, gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
 const cfg = Object.assign({}, DEFAULT_CFG, store.get('kart.cfg', {}));
 const saveCfg = () => store.set('kart.cfg', cfg);
 const best = store.get('kart.best', { race: {}, arena: 0 });
@@ -1055,7 +1069,8 @@ function padCheck(k) {
     if (Math.abs(lx) < p.hx && Math.abs(lz) < p.hz && k.boost < 0.6) { k.boost = Math.max(k.boost, 1.1); if (k.isPlayer) { blip(900, 0.1); blip(1300, 0.12); } }
   }
 }
-const SPAWNS = [[-120, -60], [120, 60], [-60, 120], [60, -120], [-130, 30], [130, -30], [30, 130], [-30, -130]];
+const SPAWNS = [[-120, -60], [120, 60], [-60, 120], [60, -120], [-130, 30], [130, -30], [30, 130], [-30, -130], [-90, -130], [90, 130], [-130, 90], [130, -90]];
+const MAX_KARTS = 12; // rooms and solo grids top out here
 const arenaBoxes = [[-100, -100], [100, -100], [-100, 100], [100, 100], [0, -130], [0, 130], [-130, 0], [130, 0], [-30, -70], [30, 70], [70, -30], [-70, 30], [0, -40], [0, 40]].map(([x, z]) => {
   const m = new THREE.Mesh(boxG, boxMat); m.position.set(x, 2.4, z); arenaGroup.add(m); return { m, respawn: 0, baseY: 2.4 };
 });
@@ -2388,7 +2403,7 @@ function hud() {
     const hp = $('hHp'); hp.querySelector('.bar span').style.width = Math.max(0, p.hp) + '%'; hp.classList.toggle('low', p.hp <= 30);
     if (!p.alive) $('hDead').textContent = `Back in ${Math.max(0, p.respawnT).toFixed(1)}s`;
   }
-  $('hBoard').innerHTML = order.slice(0, 8).map((k, i) => `<div class="${k === p ? 'me' : ''}"><i>${i + 1}</i><span>${escapeHtml(k.label)}${k.human && k !== p ? ' 🎮' : ''}</span><b>${mode === 'arena' ? k.kills : k.finished ? '🏁' : Math.min(LAPS, k.lap + 1)}</b></div>`).join('');
+  $('hBoard').innerHTML = order.slice(0, MAX_KARTS).map((k, i) => `<div class="${k === p ? 'me' : ''}"><i>${i + 1}</i><span>${escapeHtml(k.label)}${k.human && k !== p ? ' 🎮' : ''}</span><b>${mode === 'arena' ? k.kills : k.finished ? '🏁' : Math.min(LAPS, k.lap + 1)}</b></div>`).join('');
   $('hSpeed').innerHTML = `${Math.round(Math.abs(p.speed) * 1.6)}<small>KM/H</small>`;
   const lvl = p.driftT > 2.2 ? 3 : p.driftT > 1.3 ? 2 : 1;
   const dr = $('hDrift'); dr.className = 'drift l' + lvl; dr.firstChild.style.width = p.drifting ? Math.min(100, p.driftT / 2.2 * 100) + '%' : '0%';
@@ -2548,7 +2563,7 @@ function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, map:
 function onHostData(conn, d) {
   if (!net?.host || !d || typeof d !== 'object') return;
   if (d.t === 'hello') {
-    if (net.players.length >= 8) { conn.send({ t: 'nope', why: 'That room is full (8 players).' }); setTimeout(() => conn.close(), 300); return; }
+    if (net.players.length >= MAX_KARTS) { conn.send({ t: 'nope', why: `That room is full (${MAX_KARTS} players).` }); setTimeout(() => conn.close(), 300); return; }
     if (state !== 'title') { conn.send({ t: 'nope', why: 'That match already started. Ask the host to let you in after it ends.' }); setTimeout(() => conn.close(), 300); return; }
     const drv = d.driver && typeof d.driver === 'object' ? d.driver : pubDriver(BUILTIN[0]);
     drv.img = typeof drv.img === 'string' && (drv.img.startsWith('/racers/') || drv.img.startsWith('data:image/')) && drv.img.length < 200000 ? drv.img : BUILTIN[0].img;
@@ -2617,7 +2632,7 @@ function renderRoom() {
   $('roomCode').textContent = net.code;
   $('roomLink').value = roomUrl(net.code);
   $('roomTitle').textContent = host ? 'Your room' : 'Room';
-  const botN = Math.max(0, Math.min(8 - L.players.length, L.bots));
+  const botN = Math.max(0, Math.min(MAX_KARTS - L.players.length, L.bots));
   $('roomPlayers').innerHTML = L.players.map(p => `<div class="pl"><img src="${escapeHtml(p.driver.img)}" alt=""><b>${escapeHtml(p.name)}</b><em class="lv">Lv ${p.level || 1}</em>${p.host ? '<span>HOST</span>' : ''}</div>`).join('')
     + (botN ? `<div class="pl bot"><img src="/racers/degenz.png" alt=""><b>+ ${botN} bot${botN > 1 ? 's' : ''}</b></div>` : '');
   const race = L.mode === 'race', LM = MAPS_BY[L.map] || MAPS_BY[race ? 'bonfire' : 'pit'];
@@ -2645,7 +2660,7 @@ function hostRoster() {
   const list = net.players.map(p => ({ name: p.name, driver: p.driver, human: true, peer: p.id, level: p.id === 'host' ? myLevel() : p.level || 1 }));
   const used = new Set(list.map(p => p.driver.id));
   const pool = BUILTIN.filter(d => !used.has(d.id)).concat(BUILTIN.filter(d => used.has(d.id)));
-  const bots = Math.max(0, Math.min(8 - list.length, cfg.bots));
+  const bots = Math.max(0, Math.min(MAX_KARTS - list.length, cfg.bots));
   for (let i = 0; i < bots; i++) { const d = pool[i % pool.length]; list.push({ name: kartLabel(d), driver: pubDriver(d), human: false, level: BOT_LVL[cfg.diff] || 9 }); }
   return list;
 }
@@ -2946,7 +2961,25 @@ function renderArsenal() {
     + `<h3>💥 Arena weapons</h3><div class="agrid">${UNLOCKS.filter(u => u.world === 'arena').map(card).join('')}</div>`
     + `<h3>🏁 Race items</h3><div class="agrid">${UNLOCKS.filter(u => u.world === 'race').map(card).join('')}</div>`;
 }
-$('btnRecords').addEventListener('click', () => { const r = $('recs'); r.hidden = !r.hidden; $('btnRecords').setAttribute('aria-expanded', String(!r.hidden)); if (!r.hidden) loadWorld(); });
+// phone sliders
+for (const [id, key, out] of [['cfgSens', 'sensPct', 'sensVal'], ['cfgTspd', 'spdPct', 'tspdVal']]) {
+  const el = $(id); el.value = cfg[key]; $(out).textContent = cfg[key] + '%';
+  el.addEventListener('input', () => { cfg[key] = +el.value; $(out).textContent = el.value + '%'; saveCfg(); if (key === 'spdPct' && !$('touch').hidden) keys.touchSpd = touchSpd(); });
+}
+$('btnRecords').addEventListener('click', () => { const r = $('recs'); r.hidden = !r.hidden; $('btnRecords').setAttribute('aria-expanded', String(!r.hidden)); if (!r.hidden) { loadWorld(); loadXpBoard(); } });
+// ---------------- XP leaderboard: everyone who played, overall or per map ----------------
+$('xpMap').innerHTML = '<option value="all">All maps</option>' + MAPS.map(m => `<option value="${m.id}">${m.icon} ${m.name}</option>`).join('');
+$('xpMap').addEventListener('change', loadXpBoard);
+async function loadXpBoard() {
+  const map = $('xpMap').value || 'all', box = $('xpBoard'), list = box.querySelector('.empty, ol');
+  let rows = null; try { const r = await fetch('/api/scores?xp=' + map, { cache: 'no-store' }); if (r.ok) rows = (await r.json()).top; } catch {}
+  if ($('xpMap').value !== map) return;
+  const me = myName().toLowerCase();
+  const html = !rows ? '<div class="empty">Leaderboard is offline right now.</div>' : !rows.length ? '<div class="empty">No XP earned here yet. Go get some!</div>'
+    : '<ol>' + rows.slice(0, 10).map((r, i) => `<li class="${r.name.toLowerCase() === me ? 'me' : ''}"><b>${['🥇', '🥈', '🥉'][i] || i + 1}</b><span>${escapeHtml(r.name)}${map === 'all' ? `<em class="lvs">Lv ${levelOf(r.score)}</em>` : ''}</span><em>${r.score.toLocaleString()} XP</em></li>`).join('') + '</ol>';
+  if (list) list.outerHTML = html; else box.insertAdjacentHTML('beforeend', html);
+}
+function postXp(map, gained) { fetch('/api/scores?xp=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ map, gained, name: myName(), coin: driverOf(cfg.driver).coin }) }).catch(() => {}); }
 $('btnArsenal').addEventListener('click', () => { renderArsenal(); show('scrArsenal'); });
 // XP for a finished match: showing up, placing, finishing, kills; a little extra in rooms with real people
 function matchXp(me, place) {
@@ -2981,7 +3014,7 @@ function renderSettings() {
   document.querySelectorAll('.seg[data-cfg]').forEach(seg => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(String(cfg[seg.dataset.cfg]) === b.dataset.v))));
 }
 function renderMaps() {
-  const card = m => `<button class="map" type="button" data-map="${m.id}" aria-pressed="${m.id === cfg.map}"><div class="art" style="background:${m.art}">${m.icon}<span class="chip">👤 8</span><span class="tag">${m.tag || (m.world === 'race' ? 'RACE' : 'ARENA')}</span></div><div class="name">${m.name}<small>${m.world === 'race' ? `Race · ${cfg.laps} lap${cfg.laps > 1 ? 's' : ''}` : `Free for all · ${cfg.mins} mins`}</small></div></button>`;
+  const card = m => `<button class="map" type="button" data-map="${m.id}" aria-pressed="${m.id === cfg.map}"><div class="art" style="background:${m.art}">${m.icon}<span class="chip">👤 ${MAX_KARTS}</span><span class="tag">${m.tag || (m.world === 'race' ? 'RACE' : 'ARENA')}</span></div><div class="name">${m.name}<small>${m.world === 'race' ? `Race · ${cfg.laps} lap${cfg.laps > 1 ? 's' : ''}` : `Free for all · ${cfg.mins} mins`}</small></div></button>`;
   // race tracks and arenas in their own sections
   $('maps').innerHTML = [['race', '🏁 Race', 'Fastest to the finish line'], ['arena', '💥 Arena', 'Free for all: most kills wins']].map(([w, t, s]) =>
     `<div class="maps-head"><b>${t}</b><small>${s}</small></div>` + MAPS.filter(m => m.world === w).map(card).join('')).join('');
@@ -3163,7 +3196,7 @@ function endGame(given) {
     banner('TIME!', 1.8);
   }
   store.set('kart.best', best);
-  const xpBefore = prog.xp, xpGain = matchXp(me, place); prog.xp += xpGain; store.set('kart.prog', prog);
+  const xpBefore = prog.xp, xpGain = matchXp(me, place); prog.xp += xpGain; store.set('kart.prog', prog); postXp(curMap, xpGain);
   // post my result to the world board (times only count if I finished, kills only if I got some)
   worldNote = '';
   const wid = boardOf(curMap, LAPS, Math.round(matchLen / 60));
@@ -3226,7 +3259,7 @@ function joyApply(dx, dy) {
   knob.style.transform = `translate(${dx}px, ${dy}px)`;
   const nx = dx / JR, ny = dy / JR, dead = 0.12;
   // a curve so small thumb moves give fine control, scaled by the steering setting
-  keys.ax = Math.abs(nx) < dead ? 0 : -Math.sign(nx) * Math.min(1, Math.pow((Math.abs(nx) - dead) / (1 - dead), 1.6) * (JOY_SENS[cfg.sens] || 0.8));
+  keys.ax = Math.abs(nx) < dead ? 0 : -Math.sign(nx) * Math.min(1, Math.pow((Math.abs(nx) - dead) / (1 - dead), 1.6) * joySens());
   keys.down = ny > 0.55 || brakeBtn;
   keys.up = !keys.down;
 }
@@ -3239,9 +3272,10 @@ const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax =
 ['pointerup', 'pointercancel'].forEach(t => $('joyZone').addEventListener(t, joyEnd));
 // show / hide the joystick with the touch buttons; auto-gas while racing on touch
 // joystick sensitivity and phone top speed (defaults a little gentler than full)
-const JOY_SENS = { low: 0.6, mid: 0.8, high: 1.1 }, TOUCH_SPD = { chill: 0.84, normal: 0.92, full: 1 };
+// sliders 10-90%: steering scales the joystick (90% is just under full lock); speed maps to 60-96% of top speed
+const joySens = () => (cfg.sensPct || 50) / 100 * 1.1, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
 function setTouch(on) {
-  keys.touchSpd = on ? TOUCH_SPD[cfg.tspd] || 0.92 : 1;
+  keys.touchSpd = on ? touchSpd() : 1;
   $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on;
   if (on) { joyHome(); keys.up = !brakeBtn; } else { keys.ax = 0; joyId = null; if (touchUI()) keys.up = keys.down = false; }
 }

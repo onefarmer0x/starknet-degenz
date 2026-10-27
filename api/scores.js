@@ -70,11 +70,43 @@ function send(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
+// XP leaderboards: total XP ever earned per player, overall ('all') and per map. Added to after every match.
+const XP_MAPS = ['all', 'bonfire', 'pit', 'night', 'halloween', 'chain', 'degenz'];
+async function xpTop(map) {
+  if (!RURL) return Object.values(mem['xp:' + map] || {}).sort((a, b) => b.score - a.score).slice(0, 20);
+  const key = 'kart:xp:' + map;
+  const [z] = await redis(['ZRANGE', key, 0, 19, 'REV', 'WITHSCORES']);
+  const names = [], scores = [];
+  for (let i = 0; i < z.length; i += 2) { names.push(z[i]); scores.push(+z[i + 1]); }
+  if (!names.length) return [];
+  const [meta] = await redis(['HMGET', 'kart:xp:meta', ...names]);
+  return names.map((name, i) => ({ name, score: scores[i], ...(meta[i] ? JSON.parse(meta[i]) : {}) }));
+}
+async function xpAdd(map, name, gained, coin) {
+  if (!RURL) {
+    for (const m of ['all', map]) { const b = (mem['xp:' + m] ||= {}), k = name.toLowerCase(); b[k] = { name, coin, score: (b[k]?.score || 0) + gained }; }
+    return;
+  }
+  await redis(['ZINCRBY', 'kart:xp:all', gained, name], ['ZINCRBY', 'kart:xp:' + map, gained, name], ['HSET', 'kart:xp:meta', name, JSON.stringify({ coin, at: Date.now() })]);
+}
+
 module.exports = async (req, res) => {
   try {
     // on Vercel, memory doesn't persist between requests: report offline until the Redis store is connected
     if (!RURL && process.env.VERCEL) return send(res, 503, { error: 'store not configured' });
     const url = new URL(req.url, 'http://x');
+    if (req.method === 'GET' && url.searchParams.has('xp')) {
+      const map = url.searchParams.get('xp');
+      if (!XP_MAPS.includes(map)) return send(res, 400, { error: 'bad map' });
+      return send(res, 200, { xp: map, top: await xpTop(map) });
+    }
+    if (req.method === 'POST' && url.searchParams.has('xp')) {
+      const b = await body(req), name = clean(b.name, 14), gained = +b.gained;
+      // one match never pays more than a few hundred XP
+      if (!name || !XP_MAPS.includes(b.map) || b.map === 'all' || !Number.isInteger(gained) || gained < 1 || gained > 400) return send(res, 400, { error: 'rejected' });
+      await xpAdd(b.map, name, gained, clean(b.coin, 24));
+      return send(res, 200, { ok: true });
+    }
     if (req.method === 'GET') {
       const bd = parseBoard(url.searchParams.get('board'));
       if (!bd) return send(res, 400, { error: 'bad board' });
