@@ -1974,6 +1974,7 @@ function spinOut(k, why) {
   if (k.remote) { emit({ e: 'spin', p: karts.indexOf(k), why }); return; } // their browser spins its own kart
   if (k.spin > 0) return;
   k.spin = 1.1; k.speed *= 0.25; k.boost = 0; k.drifting = false;
+  if (mode === 'race') k.noBumpUntil = performance.now() + 3000;
   if (k.isPlayer) { say(why); blip(160, 0.4, 'sawtooth', 0.2); }
 }
 
@@ -2266,7 +2267,7 @@ function stepKart(k, dt) {
   if (mode === 'race' && k.finished) { throttle = 0; brake = 0; steer = 0; wantDrift = false; k.boost = 0; k.speed = Math.max(0, k.speed - 45 * dt); } // rolls to a stop past the line
   else if (k.isPlayer) {
     if (live) {
-      throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = keys.ax ? keys.ax : (keys.left ? 1 : 0) - (keys.right ? 1 : 0); k.steerS = (k.steerS || 0) + (want - (k.steerS || 0)) * Math.min(1, dt * (want ? 9 : 14)); steer = k.steerS; wantDrift = keys.drift;
+      throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = keys.ax ? keys.ax : (keys.left ? 1 : 0) - (keys.right ? 1 : 0); k.steerS = (k.steerS || 0) + (want - (k.steerS || 0)) * Math.min(1, dt * (want ? (keys.ax ? 7 : 9) : 14)); steer = k.steerS; wantDrift = keys.drift;
       if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
       if (mode === 'arena' && (keys.item || (keys.fire && WEAPONS[k.weapon]?.auto))) { keys.item = false; playerUse(k); }
     }
@@ -2363,11 +2364,14 @@ function aiSteer(k) {
   return Math.max(-1, Math.min(1, diff * 2.2));
 }
 
+// race mode: karts pass through each other for the first 5 s after GO and for 3 s after a crash, so nobody gets stuck in a crash loop
+let bumpFreeUntil = 0;
+const canBump = (a, b) => mode !== 'race' || (performance.now() > bumpFreeUntil && !(a.noBumpUntil > performance.now()) && !(b.noBumpUntil > performance.now()));
 function collisions(dt) {
   const live = karts.filter(k => k.alive && !(mode === 'race' && k.finished));
   for (let a = 0; a < live.length; a++) for (let b = a + 1; b < live.length; b++) {
     const KA = live[a], KB = live[b], A = KA.m.position, B = KB.m.position, dx = B.x - A.x, dz = B.z - A.z, d = Math.hypot(dx, dz);
-    if (d >= 5.6 || d < 0.01) continue;
+    if (d >= 5.6 || d < 0.01 || !canBump(KA, KB)) continue;
     const nx = dx / d, nz = dz / d, push = (5.6 - d) / 2;
     A.x -= nx * push; A.z -= nz * push; B.x += nx * push; B.z += nz * push;
     resolveWorld(KA); resolveWorld(KB);
@@ -2380,6 +2384,7 @@ function collisions(dt) {
     if ((KA.ramCd?.[pairKey] || 0) > raceT) continue;
     (KA.ramCd ||= {})[pairKey] = raceT + 0.6;
     const [ram, vic] = aIn >= bIn ? [KA, KB] : [KB, KA];
+    if (mode === 'race') KA.noBumpUntil = KB.noBumpUntil = performance.now() + 3000;
     const sgn = vic === KB ? 1 : -1, power = Math.min(1.6, closing / 55);
     // bounce: the victim gets shoved away, the rammer loses some speed
     vic.knockX = (vic.knockX || 0) + nx * sgn * 26 * power; vic.knockZ = (vic.knockZ || 0) + nz * sgn * 26 * power;
@@ -2869,6 +2874,7 @@ function startGame(opts = {}) {
     return k;
   });
   finishOrder = []; raceT = 0; countdown = 3.999; state = 'countdown'; raceEndAt = 0;
+  bumpFreeUntil = performance.now() + 9000; karts.forEach(k => k.noBumpUntil = 0); // 4 s countdown + 5 s
   Object.assign(bonus, { xp: 0, combo: 0, comboT: -9, best: 0, boostT: 0, list: {} }); $('hXpBoost').hidden = true;
   showRecord(boardOf(curMap, LAPS, Math.round(matchLen / 60)));
   kills.byMe = 0; kills.nemesis = {}; snapAcc = meAcc = 0;
@@ -3531,10 +3537,13 @@ function joyHome() { const m = innerHeight <= 500 ? 64 : 90; joy.style.left = `m
 function joyApply(dx, dy) {
   const d = Math.hypot(dx, dy), s = d > JR ? JR / d : 1; dx *= s; dy *= s;
   knob.style.transform = `translate(${dx}px, ${dy}px)`;
-  const nx = dx / JR, ny = dy / JR, dead = 0.12;
-  // a curve so small thumb moves give fine control, scaled by the steering setting
-  keys.ax = Math.abs(nx) < dead ? 0 : -Math.sign(nx) * Math.min(1, Math.pow((Math.abs(nx) - dead) / (1 - dead), 1.6) * joySens());
-  keys.down = ny > 0.55 || brakeBtn;
+  const nx = dx / JR, ny = dy / JR, dead = 0.15;
+  // expo curve: the middle of the stick is gentle (no twitching on straights), the edge is always full lock
+  // (hairpins). The steering slider sets how quickly it ramps up: 10% = very soft, 90% = almost linear.
+  const t = Math.max(0, (Math.abs(nx) - dead) / (0.92 - dead));
+  keys.ax = t <= 0 ? 0 : -Math.sign(nx) * Math.pow(Math.min(1, t), joyExpo());
+  // brake only when the stick is pulled clearly down, not on a hard diagonal turn
+  keys.down = (ny > 0.72 && Math.abs(nx) < 0.55) || brakeBtn;
   keys.up = !keys.down;
 }
 $('joyZone').addEventListener('pointerdown', e => {
@@ -3546,8 +3555,8 @@ const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax =
 ['pointerup', 'pointercancel'].forEach(t => $('joyZone').addEventListener(t, joyEnd));
 // show / hide the joystick with the touch buttons; auto-gas while racing on touch
 // joystick sensitivity and phone top speed (defaults a little gentler than full)
-// sliders 10-90%: steering scales the joystick (90% is just under full lock); speed maps to 60-96% of top speed
-const joySens = () => (cfg.sensPct || 50) / 100 * 1.1, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
+// sliders 10-90%: steering sets how fast the joystick ramps to full lock (see joyApply); speed maps to 60-96% of top speed
+const joyExpo = () => 3.0 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
 function setTouch(on) {
   keys.touchSpd = on ? touchSpd() : 1;
   $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on;
@@ -3594,7 +3603,7 @@ function tick(dt, now) {
         if (state === 'race' && ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); comboFx('🔥 ROCKET START', `+${addBonus(10, 'Rocket start')} XP`); }
         karts.forEach(k => { if (k !== ME()) followNet(k, dt); });
         // bump off other karts locally so you can't drive through them
-        const p = ME(); if (p && p.alive) for (const o of karts) { if (o === p || !o.alive) continue; const dx = p.m.position.x - o.m.position.x, dz = p.m.position.z - o.m.position.z, d = Math.hypot(dx, dz); if (d < 5.6 && d > 0.01) { p.m.position.x += dx / d * (5.6 - d); p.m.position.z += dz / d * (5.6 - d); } }
+        const p = ME(); if (p && p.alive) for (const o of karts) { if (o === p || !o.alive || !canBump(p, o)) continue; const dx = p.m.position.x - o.m.position.x, dz = p.m.position.z - o.m.position.z, d = Math.hypot(dx, dz); if (d < 5.6 && d > 0.01) { p.m.position.x += dx / d * (5.6 - d); p.m.position.z += dz / d * (5.6 - d); } }
         driftNetMeshes(dt);
         stepFx(dt);
       }
