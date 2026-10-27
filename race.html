@@ -284,6 +284,7 @@ body.has-touch .hud .item { display: none; }
 .maps-head small { font: 600 14px var(--ui); color: #cfc4ea; }
 .xpsel { margin-left: auto; font: 700 12px var(--ui); background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 2px 4px; }
 .world li .lvs { font: 800 10px var(--ui); background: var(--yellow); color: var(--ink); border-radius: 5px; padding: 0 4px; margin-left: 4px; }
+.room-desc { margin: -6px 0 0; text-align: center; font: 600 14px/1.45 var(--ui); color: #e8deff; } .room-desc b { color: var(--yellow); }
 .range { width: 100%; accent-color: var(--yellow); height: 28px; }
 .lbl .rv { color: var(--yellow); margin-left: 6px; }
 .touch-only { display: none; } body.has-touch .touch-only { display: grid; }
@@ -561,6 +562,7 @@ html .maps-head b { font-size: 22px; }
   <div class="panel modal-card" role="dialog" aria-labelledby="roomTitle">
     <h2 class="t" id="roomTitle">Room</h2>
     <div class="code" id="roomCode">----</div>
+    <p class="room-desc" id="roomDesc"></p>
     <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
       <label class="field" style="flex:1 1 220px"><span class="lbl">Your name in this room</span><input class="input" id="roomName" maxlength="14" placeholder="Wolf" autocomplete="off"></label>
       <button class="btn" id="btnRoomDriver" type="button"><img id="roomDriverImg" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:#fff;object-fit:cover"> Change driver</button>
@@ -576,7 +578,7 @@ html .maps-head b { font-size: 22px; }
     </div>
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <button class="btn red" id="btnRoomLeave" type="button">Leave</button>
-      <button class="btn green" id="btnRoomStart" type="button">Start match</button>
+      <span style="display:flex;gap:10px"><button class="btn" id="btnRoomSettings" type="button">⚙️ Settings</button><button class="btn green" id="btnRoomStart" type="button">Start match</button></span>
     </div>
   </div>
 </section>
@@ -2632,6 +2634,9 @@ function renderRoom() {
   $('roomCode').textContent = net.code;
   $('roomLink').value = roomUrl(net.code);
   $('roomTitle').textContent = host ? 'Your room' : 'Room';
+  $('roomDesc').innerHTML = host
+    ? `Share the code or link with your pack: up to <b>${MAX_KARTS} players</b>. Tap the map to switch tracks, set bots, laps and match length in ⚙️ Settings, then hit <b>Start match</b>. Empty seats fill up with bots.`
+    : 'You are in! The host picks the map and starts the match. Change your name or driver while you wait. Everyone earns XP and can climb the leaderboards.';
   const botN = Math.max(0, Math.min(MAX_KARTS - L.players.length, L.bots));
   $('roomPlayers').innerHTML = L.players.map(p => `<div class="pl"><img src="${escapeHtml(p.driver.img)}" alt=""><b>${escapeHtml(p.name)}</b><em class="lv">Lv ${p.level || 1}</em>${p.host ? '<span>HOST</span>' : ''}</div>`).join('')
     + (botN ? `<div class="pl bot"><img src="/racers/degenz.png" alt=""><b>+ ${botN} bot${botN > 1 ? 's' : ''}</b></div>` : '');
@@ -2639,7 +2644,7 @@ function renderRoom() {
   $('roomMapArt').className = 'art'; $('roomMapArt').style.background = LM.art; $('roomMapArt').textContent = LM.icon;
   $('roomMapName').innerHTML = race ? `${LM.name}<small>Race · ${L.laps} lap${L.laps > 1 ? 's' : ''}</small>` : `${LM.name}<small>Free for all · ${L.mins} mins</small>`;
   $('roomMap').disabled = !host;
-  $('btnRoomStart').hidden = !host;
+  $('btnRoomStart').hidden = !host; $('btnRoomSettings').hidden = !host;
   $('btnRoomStart').disabled = !net.ready;
   if (!host) $('roomStatus').textContent = 'Waiting for the host to start…';
 }
@@ -3134,6 +3139,7 @@ $('maps').addEventListener('click', e => {
 });
 $('roomMap').addEventListener('click', () => { if (!net?.host) return; mapCtx = 'room'; renderMaps(); show('scrMaps'); });
 $('btnRoomStart').addEventListener('click', hostStart);
+$('btnRoomSettings').addEventListener('click', () => $('btnSettings').click());
 $('btnRoomLeave').addEventListener('click', () => { leaveNet(); show('scrTitle'); renderLobby(); });
 $('btnCopyLink').addEventListener('click', () => { const v = $('roomLink').value; navigator.clipboard?.writeText(v).then(() => toast('Invite link copied'), () => { $('roomLink').select(); toast('Select and copy the link'); }); });
 $('btnInvite').addEventListener('click', () => { if (!net) return; navigator.clipboard?.writeText(roomUrl(net.code)).then(() => toast(`Room ${net.code}: link copied`), () => toast(`Room code: ${net.code}`)); });
