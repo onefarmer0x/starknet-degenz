@@ -282,6 +282,7 @@ body.has-touch .hud .item { display: none; }
 .maps-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; margin: 6px 0 -4px; }
 .maps-head b { font: 400 30px var(--display); letter-spacing: 0.05em; color: var(--yellow); }
 .maps-head small { font: 600 14px var(--ui); color: #cfc4ea; }
+.touch-only { display: none; } body.has-touch .touch-only { display: grid; }
 #toast:not(.show) { visibility: hidden; transition: transform 0.3s, visibility 0s 0.3s; }
 #toast.show { transform: translate(-50%, 0); }
 
@@ -514,6 +515,8 @@ html #scrTitle { display: grid; grid-template-columns: 1fr; grid-template-rows: 
       <div class="field"><span class="lbl">Bot skill</span><div class="seg" data-cfg="diff"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="degen">Degen</button></div></div>
       <div class="field"><span class="lbl">Sound</span><div class="seg" data-cfg="sound"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="field"><span class="lbl">Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
+      <div class="field touch-only"><span class="lbl">Joystick steering</span><div class="seg" data-cfg="sens"><button data-v="low">Soft</button><button data-v="mid">Normal</button><button data-v="high">Sharp</button></div></div>
+      <div class="field touch-only"><span class="lbl">Top speed (phone)</span><div class="seg" data-cfg="tspd"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="full">Full send</button></div></div>
     </div>
     <p class="hint" id="keysLine">↑ gas · ↓ brake · ← → steer · hold Space to drift · X or click to fire / use item · L battle log · Esc menu</p>
   </div>
@@ -654,7 +657,7 @@ const allDrivers = () => [...BUILTIN, ...customs];
 
 // settings, saved in this browser
 // phones start on low graphics (no shadows, 1x resolution); everyone can switch in setup
-const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
+const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sens: 'mid', tspd: 'normal', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
 const cfg = Object.assign({}, DEFAULT_CFG, store.get('kart.cfg', {}));
 const saveCfg = () => store.set('kart.cfg', cfg);
 const best = store.get('kart.best', { race: {}, arena: 0 });
@@ -1740,7 +1743,7 @@ const prog = store.get('kart.prog', { xp: 0 });
 const xpFor = L => 50 * (L - 1) ** 2;
 const levelOf = xp => { let L = 1; while (L < MAX_LVL && xp >= xpFor(L + 1)) L++; return L; };
 const myLevel = () => levelOf(prog.xp);
-const BOT_LVL = { easy: 4, normal: 9, hard: MAX_LVL };
+const BOT_LVL = { chill: 4, normal: 9, degen: MAX_LVL };
 const UNLOCKS = [...RACE_ITEMS.map(r => ({ ...r, world: 'race' })), ...Object.entries(WEAPONS).map(([id, w]) => ({ id, ...w, world: 'arena' }))].sort((a, b) => a.lvl - b.lvl);
 const unlocksAt = L => UNLOCKS.filter(u => u.lvl === L);
 const nextUnlock = L => UNLOCKS.find(u => u.lvl > L);
@@ -2150,6 +2153,7 @@ function stepKart(k, dt) {
   }
   const off = mode === 'race' && Math.abs(k.side || 0) > ROAD_W / 2 + 2.6;
   let band = 1;
+  if (k.isPlayer) band = keys.touchSpd || 1; // phones: top speed setting
   if (!k.isPlayer) band = k.aiSkill * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (ME().progress - k.progress) / N * 0.35)) : 1);
   const max = maxBase * band * (off ? 0.45 : 1) * (k.boost > 0 ? 1.35 : 1);
   if (k.spin > 0) { k.spin -= dt; throttle = 0; steer = 0; k.m.rotation.y += dt * 14; }
@@ -3221,8 +3225,8 @@ function joyApply(dx, dy) {
   const d = Math.hypot(dx, dy), s = d > JR ? JR / d : 1; dx *= s; dy *= s;
   knob.style.transform = `translate(${dx}px, ${dy}px)`;
   const nx = dx / JR, ny = dy / JR, dead = 0.12;
-  // a little curve so small thumb moves give fine control
-  keys.ax = Math.abs(nx) < dead ? 0 : -Math.sign(nx) * Math.pow((Math.abs(nx) - dead) / (1 - dead), 1.4);
+  // a curve so small thumb moves give fine control, scaled by the steering setting
+  keys.ax = Math.abs(nx) < dead ? 0 : -Math.sign(nx) * Math.min(1, Math.pow((Math.abs(nx) - dead) / (1 - dead), 1.6) * (JOY_SENS[cfg.sens] || 0.8));
   keys.down = ny > 0.55 || brakeBtn;
   keys.up = !keys.down;
 }
@@ -3234,7 +3238,10 @@ $('joyZone').addEventListener('pointermove', e => { if (e.pointerId === joyId) {
 const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax = 0; keys.down = brakeBtn; keys.up = !brakeBtn; joyHome(); };
 ['pointerup', 'pointercancel'].forEach(t => $('joyZone').addEventListener(t, joyEnd));
 // show / hide the joystick with the touch buttons; auto-gas while racing on touch
+// joystick sensitivity and phone top speed (defaults a little gentler than full)
+const JOY_SENS = { low: 0.6, mid: 0.8, high: 1.1 }, TOUCH_SPD = { chill: 0.84, normal: 0.92, full: 1 };
 function setTouch(on) {
+  keys.touchSpd = on ? TOUCH_SPD[cfg.tspd] || 0.92 : 1;
   $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on;
   if (on) { joyHome(); keys.up = !brakeBtn; } else { keys.ax = 0; joyId = null; if (touchUI()) keys.up = keys.down = false; }
 }

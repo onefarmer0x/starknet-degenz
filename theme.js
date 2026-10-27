@@ -31,3 +31,27 @@
     });
   });
 })();
+
+// Phones: a bottom dock with the main pages and a big BUY coin in the middle (CSS shows it under 640px).
+document.addEventListener('DOMContentLoaded', function () {
+  var nav = document.querySelector('.topnav'); if (!nav || document.querySelector('.dock')) return;
+  var path = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+  var items = [['/', '🏠', 'Home'], ['/#chart', '📊', 'Chart'], null, ['/race', '🏁', 'Race'], ['/bonfire', '🔥', 'Bonfire']];
+  var dock = document.createElement('nav'); dock.className = 'dock'; dock.setAttribute('aria-label', 'Quick menu');
+  items.forEach(function (it) {
+    var a = document.createElement('a');
+    if (!it) {
+      var src = document.getElementById('buyNav') || nav.querySelector('.buy');
+      a.className = 'buyc'; a.target = '_blank'; a.rel = 'noopener'; a.href = src ? src.href : 'https://brothereli.com/launchpad';
+      a.innerHTML = '<span class="coin">BUY</span><small>$DEGENZ</small>';
+      // the page may set the real link after load: always use the top BUY button's current href
+      a.addEventListener('pointerdown', function () { if (src) a.href = src.href; a.classList.remove('flip'); void a.offsetWidth; a.classList.add('flip'); if (navigator.vibrate) navigator.vibrate(18); });
+    } else {
+      a.href = it[0]; a.innerHTML = '<span class="i">' + it[1] + '</span>' + it[2];
+      var p = it[0].split('#')[0];
+      if (p === path && !(it[0].indexOf('#') > 0)) a.className = 'on';
+    }
+    dock.appendChild(a);
+  });
+  document.body.appendChild(dock); document.body.classList.add('has-dock');
+});
