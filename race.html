@@ -309,6 +309,16 @@ body.has-touch .hud .item { display: none; }
 .roomopts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 560px) { .roomopts { grid-template-columns: 1fr; } }
 .hud #btnUnstick { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 180px); }
+.hud .pill.wr { font-size: .8em; opacity: .95; }
+.hud .pill.wr #hWrTxt small { opacity: .75; margin-left: 6px; }
+.wr-line { color: #ffd84c; font-weight: 700; }
+.hud .combo { position: absolute; left: 50%; top: 26%; transform: translateX(-50%); text-align: center; pointer-events: none; font: 400 clamp(26px, 5vw, 48px) var(--display); color: #ffd84c; -webkit-text-stroke: 2px #15111c; text-shadow: 0 4px 0 #15111c; letter-spacing: .04em; opacity: 0; }
+.hud .combo small { display: block; font-size: .5em; color: #5ff0ff; }
+.hud .combo.pop { animation: comboPop 1.1s ease-out; }
+@keyframes comboPop { 0% { opacity: 0; transform: translateX(-50%) scale(.5); } 15% { opacity: 1; transform: translateX(-50%) scale(1.15); } 30% { transform: translateX(-50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-24px); } }
+.hud .pill.xpb { position: absolute; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 120px); z-index: 3; gap: 6px; transform: translateX(-50%); background: linear-gradient(90deg, #ffd84c, #ff8a4c); color: #15111c; font-weight: 700; animation: xpbGlow 1s ease-in-out infinite alternate; }
+@keyframes xpbGlow { to { box-shadow: 0 0 18px #ffd84c; } }
+.xpbonus { margin-top: 6px; font-size: 14px; color: #ffd84c; font-weight: 700; text-align: center; }
 .hud .skip { left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 130px); transform: translateX(-50%); pointer-events: auto; z-index: 8; }
 #toast:not(.show) { visibility: hidden; transition: transform 0.3s, visibility 0s 0.3s; }
 #toast.show { transform: translate(-50%, 0); }
@@ -624,6 +634,7 @@ html .maps-head b { font-size: 22px; }
     <div class="panel end-head"><b class="t" id="doneMap">Bonfire Bay</b><span id="doneMode">Race · 3 laps</span></div>
     <div class="t" id="doneTitle" style="text-align:center;font:800 clamp(34px,6vw,64px)/1 var(--ui);color:var(--yellow);text-shadow:0 4px 0 #a35b00">FINISH!</div>
     <p class="status" id="doneBest"></p>
+    <p class="status wr-line" id="doneWr" hidden></p>
     <div class="xpbox" id="doneXp" hidden></div>
     <div>
       <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-tab="board">Leaderboard</button><button class="tab" role="tab" aria-selected="false" data-tab="log">Battle log</button><button class="tab" role="tab" aria-selected="false" data-tab="world">🏆 World</button></div>
@@ -633,7 +644,7 @@ html .maps-head b { font-size: 22px; }
     </div>
     <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
       <button class="btn yellow" id="btnAgain" type="button">Play again</button>
-      <button class="btn" id="btnShare" type="button">Share result 📣</button>
+      <button class="btn" id="btnShare" type="button">Share on 𝕏</button>
       <button class="btn" id="btnDoneQuit" type="button">Menu</button>
     </div>
     <p class="status" id="doneWait"></p>
@@ -660,6 +671,7 @@ html .maps-head b { font-size: 22px; }
     <div class="pill hp" id="hHp"><span class="ico">❤️</span><span class="bar"><span></span></span></div>
     <div class="pill" id="hLapPill"><span class="ico">🏁</span><span id="hLap">1/3</span></div>
     <div class="pill"><span class="ico">⏱️</span><span id="hTime">0:00</span></div>
+    <div class="pill wr" id="hWr" hidden><span class="ico">👑</span><span id="hWrTxt"></span></div>
   </div>
   <div class="tr">
     <button class="btn round" id="btnInvite" type="button" title="Room code" aria-label="Room code" hidden>👥</button>
@@ -668,6 +680,8 @@ html .maps-head b { font-size: 22px; }
   </div>
   <div class="net" id="hNet"></div>
   <div class="feed" id="hFeed"></div>
+  <div class="combo" id="hCombo"></div>
+  <div class="pill xpb" id="hXpBoost" hidden>⭐ XP x2 <b id="hXpBoostT"></b></div>
   <div class="speed-lines" id="speedLines" aria-hidden="true"></div>
   <div class="banner" id="hBanner"></div>
   <div class="msg" id="hMsg"></div>
@@ -2385,10 +2399,11 @@ function collisions(dt) {
   }
   const boxes = mode === 'race' ? raceBoxes : arenaBoxes;
   for (const k of live) {
-    for (const b of boxes) if (b.m.visible && b.m.position.distanceToSquared(k.m.position) < 16 + k.m.position.y ** 2) {
+    for (const b of boxes) if (b.m.visible && b.m.position.distanceToSquared(k.m.position) < 27 + k.m.position.y ** 2) {
       b.m.visible = false; b.respawn = mode === 'race' ? 3 : 5;
       if (mode === 'race') giveRaceItem(k); else giveWeapon(k);
       if (k.isPlayer) blip(1000, 0.08);
+      xpPickup(k);
     }
     for (let i = hazards.length - 1; i >= 0; i--) {
       const h = hazards[i];
@@ -2582,6 +2597,7 @@ function notify(ev) {
       const k = K(ev.v), by = K(ev.a); if (!k) break;
       k.hitFlash = 0.15;
       if (k.isPlayer) blip(200, 0.08, 'square', 0.12);
+      if (by?.isPlayer && by !== k) comboHit('hit');
       if ((k.isPlayer || by?.isPlayer) && by && by !== k) {
         const [icon, wname] = HOW[ev.h] || ['💥', ev.h];
         if (ev.h === 'ram') { if (by.isPlayer) logEvent(`💥 You rammed ${k.label}`, 'hit', ev.d); else logEvent(`💥 ${by.label} rammed you`, 'hurt', ev.d); }
@@ -2604,6 +2620,7 @@ function notify(ev) {
         if (by) { kills.nemesis[ev.a] = (kills.nemesis[ev.a] || 0) + 1; showMsg(`You were ${ev.h === 'gun' ? 'mowed down' : 'smashed'} by<br><span class="who">${escapeHtml(by.label)}'s</span> ${wname}`); }
         else showMsg('You blew yourself up');
       }
+      if (by?.isPlayer && by !== k) comboHit('kill');
       if (by?.isPlayer) {
         kills.byMe++;
         const top = Object.entries(kills.nemesis).sort((a, b) => b[1] - a[1])[0];
@@ -2621,9 +2638,9 @@ function notify(ev) {
     case 'star': { const k = karts[ev.p]; if (k) k.starT = ev.t; break; }
     case 'knock': if (isClient() && ev.p === meIdx) { const k = ME(); k.knockX = (k.knockX || 0) + ev.x; k.knockZ = (k.knockZ || 0) + ev.z; k.vy = Math.max(k.vy, ev.vy); k.speed *= 0.55; } break;
     case 'lock': { const a = K(ev.a), v = K(ev.v); if (v?.isPlayer && a && !a.isPlayer) logEvent(`🎯 ${a.label} locked a homing missile on you`, 'hurt'); if (a?.isPlayer && v) say(`🎯 LOCKED ON ${v.label}`, true); break; }
-    case 'rug': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer && !v.isPlayer) { say(`🍌 RUGGED ${v.label}`, true); logEvent(`🍌 Your RUG spun out ${v.label}`, 'hit'); } if (v.isPlayer) logEvent(a.isPlayer ? '🍌 You slipped on your own RUG' : `🍌 You slipped on ${a.label}'s RUG`, 'hurt'); break; }
-    case 'dumphit': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer) { say(`📉 DUMPED ON ${v.label}`, true); logEvent(`📉 Your DUMP hit ${v.label}`, 'hit'); } if (v.isPlayer) logEvent(`📉 ${a.label}'s DUMP hit you`, 'hurt'); break; }
-    case 'ramspin': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer) { say(`💥 RAMMED ${v.label}`, true); logEvent(`💥 You rammed ${v.label} into a spin`, 'hit'); } if (v.isPlayer) logEvent(`💥 ${a.label} rammed you into a spin`, 'hurt'); break; }
+    case 'rug': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer && !v.isPlayer) { comboHit('hit'); say(`🍌 RUGGED ${v.label}`, true); logEvent(`🍌 Your RUG spun out ${v.label}`, 'hit'); } if (v.isPlayer) logEvent(a.isPlayer ? '🍌 You slipped on your own RUG' : `🍌 You slipped on ${a.label}'s RUG`, 'hurt'); break; }
+    case 'dumphit': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer) { comboHit('hit'); say(`📉 DUMPED ON ${v.label}`, true); logEvent(`📉 Your DUMP hit ${v.label}`, 'hit'); } if (v.isPlayer) logEvent(`📉 ${a.label}'s DUMP hit you`, 'hurt'); break; }
+    case 'ramspin': { const a = K(ev.a), v = K(ev.v); if (!a || !v) break; if (a.isPlayer) { comboHit('hit'); say(`💥 RAMMED ${v.label}`, true); logEvent(`💥 You rammed ${v.label} into a spin`, 'hit'); } if (v.isPlayer) logEvent(`💥 ${a.label} rammed you into a spin`, 'hurt'); break; }
     case 'left': { const k = K(ev.p); if (k) { say(`👋 ${k.label} left`); logEvent(`👋 ${k.label} left the room, a bot took over`); k.human = false; } break; }
   }
 }
@@ -2852,6 +2869,8 @@ function startGame(opts = {}) {
     return k;
   });
   finishOrder = []; raceT = 0; countdown = 3.999; state = 'countdown'; raceEndAt = 0;
+  Object.assign(bonus, { xp: 0, combo: 0, comboT: -9, best: 0, boostT: 0, list: {} }); $('hXpBoost').hidden = true;
+  showRecord(boardOf(curMap, LAPS, Math.round(matchLen / 60)));
   kills.byMe = 0; kills.nemesis = {}; snapAcc = meAcc = 0;
   updateCamera(0, true);
   $('hFeed').innerHTML = ''; setItemHud(null); $('hDead').hidden = true; $('hMsg').style.opacity = 0;
@@ -3119,7 +3138,16 @@ async function submitWorld(id, score) {
   } catch {}
   return worldCache[id];
 }
+// world record for this map/length, shown in the HUD during every round and on the results screen
+const recordText = (id, rows, html) => { const r = rows?.[0]; if (!r) return ''; const v = /d$/.test(id) && MAPS_BY[mapOfBoard(id)]?.world === 'arena' ? `${r.score} 💥` : fmtT(r.score).slice(0, -1); return html ? `${v}<small>${escapeHtml(r.name)}</small>` : `${v} by ${r.name}`; };
+const mapOfBoard = id => { const k = id.replace(/d+$/, ''); return k === 'race' ? 'bonfire' : k === 'arena' ? 'pit' : k; };
+function showRecord(id) {
+  const put = rows => { if (boardOf(curMap, LAPS, Math.round(matchLen / 60)) !== id) return; const t = recordText(id, rows, true); $('hWrTxt').innerHTML = t; $('hWr').hidden = !t; };
+  $('hWr').hidden = true; if (worldCache[id]) put(worldCache[id]); // instant from cache, then refresh
+  fetchWorld(id).then(put);
+}
 function renderWorldResult(id, rows) {
+  const wr = recordText(id, rows, false); $('doneWr').textContent = wr ? '👑 World record: ' + wr : ''; $('doneWr').hidden = !wr;
   $('resWorld').innerHTML = `<div style="font:400 22px var(--display);letter-spacing:.05em;margin-bottom:8px">🏆 ${boardTitle(id)}</div>` + worldRows(id, rows, 10).replace('<ol>', '<ol class="world" style="background:none;border:0;padding:0;font-size:16px">');
 }
 const renderBest = renderLobby;
@@ -3185,11 +3213,34 @@ async function loadXpBoard() {
 function postXp(map, gained) { fetch('/api/scores?xp=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ map, gained, name: myName(), coin: driverOf(cfg.driver).coin }) }).catch(() => {}); }
 $('btnArsenal').addEventListener('click', () => { renderArsenal(); show('scrArsenal'); });
 // XP for a finished match: showing up, placing, finishing, kills; a little extra in rooms with real people
+// ---------- combos & XP power-ups: bonus XP on top of the match reward ----------
+// Landing hits / spins / kills within 4 s of each other chains a combo; each link is worth more (up to x6).
+// Rare ⭐ XP BOOST (doubles bonus XP for 20 s) and 💎 XP GEM (+20) drop from item boxes.
+const bonus = { xp: 0, combo: 0, comboT: -9, best: 0, boostT: 0, list: {} };
+function comboFx(big, small) { const c = $('hCombo'); c.innerHTML = big + (small ? `<small>${small}</small>` : ''); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+function addBonus(xp, why) {
+  if (state !== 'race') return 0;
+  const x2 = bonus.boostT > 0; xp = Math.round(xp * (x2 ? 2 : 1));
+  bonus.xp += xp; bonus.list[why] = (bonus.list[why] || 0) + xp; return xp;
+}
+function comboHit(kind) {
+  if (state !== 'race') return;
+  bonus.combo = raceT - bonus.comboT < 4 ? bonus.combo + 1 : 1; bonus.comboT = raceT; bonus.best = Math.max(bonus.best, bonus.combo);
+  const n = Math.min(bonus.combo, 6), got = addBonus((kind === 'kill' ? 8 : 3) * n, bonus.combo > 1 ? 'Combos' : 'Hits');
+  if (bonus.combo > 1) { comboFx(`COMBO x${bonus.combo}!`, `+${got} XP${bonus.boostT > 0 ? ' ⭐' : ''}`); blip(500 + n * 120, 0.12, 'triangle', 0.12); }
+  else comboFx('', `+${got} XP`);
+}
+function xpPickup(k) {
+  if (!k.isPlayer || Math.random() > 0.12) return; // ~1 in 8 boxes also carries XP
+  if (Math.random() < 0.5) { bonus.boostT = 20; comboFx('⭐ XP BOOST!', 'bonus XP x2 for 20s'); say('⭐ XP BOOST: x2 bonus XP', true); }
+  else { const got = addBonus(20, 'XP gems'); comboFx('💎 XP GEM', `+${got} XP`); say('💎 XP GEM', true); }
+  [880, 1100, 1320].forEach((f, i) => setTimeout(() => blip(f, 0.1, 'triangle', 0.12), i * 70));
+}
 function matchXp(me, place) {
   let xp = mode === 'race' ? 30 + (me.finished ? 20 : 0) + Math.max(0, karts.length - place) * 12 + (place === 1 ? 30 : 0)
     : 25 + me.kills * 15 + (place === 1 ? 40 : place <= 3 ? 15 : 0);
   if (net) xp = Math.round(xp * 1.25);
-  return xp;
+  return xp + bonus.xp;
 }
 // fill the bar, roll over on each level up with a pop, a jingle and the new unlock cards
 function playXp(before, gained) {
@@ -3356,50 +3407,13 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
   $('results').hidden = t.dataset.tab !== 'board'; $('resLog').hidden = t.dataset.tab !== 'log'; $('resWorld').hidden = t.dataset.tab !== 'world';
 }));
-// ---------- share card: a 1200x630 picture of how the round went ----------
+// ---------- share: post the result on X with a link back to the game ----------
 let lastResult = null;
-const loadImg = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
-async function resultCard() {
-  const { order, me, place, map, mode: md, laps, mins } = lastResult, W = 1200, H = 630;
-  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-  await document.fonts.ready;
-  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#2b2350'); bg.addColorStop(0.6, '#6a3a9a'); bg.addColorStop(1, '#ff8a4c'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  g.globalAlpha = 0.08; g.fillStyle = '#fff'; for (let x = -H; x < W; x += 60) { g.beginPath(); g.moveTo(x, H); g.lineTo(x + H, 0); g.lineTo(x + H + 24, 0); g.lineTo(x + 24, H); g.fill(); } g.globalAlpha = 1;
-  const txt = (s, x, y, size, color, font = 'Bangers', align = 'left') => { g.font = `${size}px ${font}, Impact, sans-serif`; g.textAlign = align; g.lineJoin = 'round'; g.lineWidth = size / 7; g.strokeStyle = '#15111c'; g.strokeText(s, x, y); g.fillStyle = color; g.fillText(s, x, y); };
-  txt('DEGENZ KART', 60, 92, 64, '#ffd84c');
-  txt(`${mapName(map)} · ${md === 'race' ? `${laps} lap race` : `${mins} min arena`}`, 60, 140, 32, '#fff6e3', 'Fredoka');
-  const head = md === 'race' ? (place === 1 ? 'I WON! 🏆' : `I CAME ${place}${SUF[place] || 'th'}`) : (place === 1 ? 'TOP DEGEN! 🏆' : `${place}${SUF[place] || 'th'} PLACE`);
-  txt(head, 60, 270, 108, '#fff');
-  const stat = md === 'race' ? (me.finished ? `⏱️ ${fmtT(me.finishTime).slice(0, -1)}` : 'DNF 💀') : `💥 ${me.kills} kills · 💀 ${me.deaths}`;
-  txt(stat, 60, 360, 60, '#5ff0ff');
-  txt(`out of ${order.length} karts`, 60, 410, 30, '#fff6e3', 'Fredoka');
-  // podium panel
-  g.fillStyle = 'rgba(21,17,28,.55)'; g.beginPath(); g.roundRect(700, 170, 440, 330, 28); g.fill();
-  txt('PODIUM', 920, 222, 38, '#ffd84c', 'Bangers', 'center');
-  const imgs = await Promise.all(order.slice(0, 3).map(k => loadImg(k.r.img)));
-  order.slice(0, 3).forEach((k, i) => {
-    const y = 262 + i * 76;
-    txt(['🥇', '🥈', '🥉'][i], 725, y + 38, 44, '#fff', 'sans-serif');
-    if (imgs[i]) { g.save(); g.beginPath(); g.arc(815, y + 24, 28, 0, Math.PI * 2); g.clip(); g.drawImage(imgs[i], 787, y - 4, 56, 56); g.restore(); }
-    const v = md === 'race' ? (k.finished ? fmtT(k.finishTime).slice(0, -1) : 'DNF') : `${k.kills} 💥`;
-    txt(String(k.label).slice(0, 12), 856, y + 36, 32, k === me ? '#ffd84c' : '#fff', 'Fredoka');
-    txt(v, 1115, y + 36, 28, '#5ff0ff', 'Fredoka', 'right');
-  });
-  txt('Beat me 👉 starknetdegenz.fun/race', 60, 570, 40, '#fff');
-  return new Promise(r => c.toBlob(r, 'image/png'));
-}
-$('btnShare').addEventListener('click', async () => {
+$('btnShare').addEventListener('click', () => {
   if (!lastResult) return;
-  const btn = $('btnShare'); btn.disabled = true;
-  try {
-    const blob = await resultCard(), { me, place, mode: md, order } = lastResult;
-    const text = md === 'race' ? `I finished ${place}${SUF[place] || 'th'} of ${order.length}${me.finished ? ` in ${fmtT(me.finishTime).slice(0, -1)}` : ''} on ${mapName(lastResult.map)} in Degenz Kart 🏎️🔥` : `${me.kills} kills, ${place}${SUF[place] || 'th'} place in Degenz Kart arena 💥`;
-    const url = 'https://www.starknetdegenz.fun/race', file = new File([blob], 'degenz-kart.png', { type: 'image/png' });
-    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: text + ' ' + url }); return; }
-    // desktop: save the picture, then open a post with the text so it can be attached
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'degenz-kart.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    window.open('https://x.com/intent/post?text=' + encodeURIComponent(text + ' @StarknetDegenz') + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
-  } catch (e) { /* share sheet dismissed */ } finally { btn.disabled = false; }
+  const { me, place, mode: md, order, map } = lastResult, th = place + (SUF[place] || 'th');
+  const text = md === 'race' ? `I finished ${th} of ${order.length}${me.finished ? ` in ${fmtT(me.finishTime).slice(0, -1)}` : ''} on ${mapName(map)} in Degenz Kart 🏎️🔥${bonus.best > 1 ? ` (x${bonus.best} combo)` : ''} Beat me 👇` : `${me.kills} kills, ${th} place in the Degenz Kart arena 💥${bonus.best > 1 ? ` x${bonus.best} combo!` : ''} Beat me 👇`;
+  window.open('https://x.com/intent/post?text=' + encodeURIComponent(text + ' @StarknetDegenz') + '&url=' + encodeURIComponent('https://www.starknetdegenz.fun/race'), '_blank', 'noopener');
 });
 $('btnAgain').addEventListener('click', () => { if (net?.host) hostStart(); else if (!net) startGame(); });
 $('btnDoneQuit').addEventListener('click', () => quitGame(net ? 'room' : 'title'));
@@ -3478,6 +3492,7 @@ function endGame(given) {
     $('btnDoneQuit').textContent = net ? 'Back to room' : 'Menu';
     show('scrDone');
     playXp(xpBefore, xpGain);
+    if (bonus.xp) { const d = document.createElement('div'); d.className = 'xpbonus'; d.textContent = `🎁 incl. +${bonus.xp} bonus XP: ` + Object.entries(bonus.list).map(([w, x]) => `${w} +${x}`).join(' · ') + (bonus.best > 1 ? ` · best combo x${bonus.best}` : ''); $('doneXp').appendChild(d); }
   }, 1800);
 }
 
@@ -3576,7 +3591,7 @@ function tick(dt, now) {
       if (karts.length) {
         if (state === 'race' && ME()) { simAcc += dt; let steps = 0; while (simAcc >= STEP && steps < 10) { simAcc -= STEP; steps++; stepKart(ME(), STEP); } if (steps >= 10) simAcc = 0; }
         else if (state === 'countdown' && ME() && countdown < 0.6 && keys.up) ME().startBoost = true;
-        if (state === 'race' && ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
+        if (state === 'race' && ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); comboFx('🔥 ROCKET START', `+${addBonus(10, 'Rocket start')} XP`); }
         karts.forEach(k => { if (k !== ME()) followNet(k, dt); });
         // bump off other karts locally so you can't drive through them
         const p = ME(); if (p && p.alive) for (const o of karts) { if (o === p || !o.alive) continue; const dx = p.m.position.x - o.m.position.x, dz = p.m.position.z - o.m.position.z, d = Math.hypot(dx, dz); if (d < 5.6 && d > 0.01) { p.m.position.x += dx / d * (5.6 - d); p.m.position.z += dz / d * (5.6 - d); } }
@@ -3595,7 +3610,7 @@ function tick(dt, now) {
         simAcc += dt; let steps = 0;
         while (simAcc >= STEP && steps < 10) {
           simAcc -= STEP; steps++; raceT += STEP;
-          if (ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); }
+          if (ME()?.startBoost) { ME().boost = 1.2; ME().startBoost = false; say('🔥 ROCKET START', true); comboFx('🔥 ROCKET START', `+${addBonus(10, 'Rocket start')} XP`); }
           karts.forEach(k => { k.firing = !!WEAPONS[k.weapon]?.auto && (k.isPlayer ? keys.fire : !!k.np?.fh); stepKart(k, STEP); });
           collisions(STEP);
         }
@@ -3616,9 +3631,11 @@ function tick(dt, now) {
   $('speedLines').classList.toggle('on', !!(ME() && ME().boost > 0 && state === 'race'));
   $('hNet').innerHTML = net ? `FPS: ${fps}<br>${net.host ? `HOST · ${net.conns.length + 1} in room` : `PING: ${net.ping ?? '…'}`}` : '';
   engineSound();
+  if (bonus.boostT > 0 && state === 'race') { bonus.boostT -= dt; $('hXpBoostT').textContent = Math.ceil(bonus.boostT) + 's'; }
+  $('hXpBoost').hidden = !(bonus.boostT > 0 && state === 'race');
 }
 // test hook: advance the simulation without rendering (used for automated playtests)
-window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart, explodeFx, get pts() { return PTS; }, activateMap, get curMap() { return curMap; }, headL, startGame, groundAt, giveWeapon, giveRaceItem, get prog() { return prog; }, endGame, resultCard, finishOrder };
+window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart, explodeFx, get pts() { return PTS; }, activateMap, get curMap() { return curMap; }, headL, startGame, groundAt, giveWeapon, giveRaceItem, get prog() { return prog; }, endGame, finishOrder, bonus, addBonus, comboHit };
 
 setWorld(); renderLobby(); renderSettings(); applyGfx();
 // invite links: ?room=CODE opens the join screen straight away
