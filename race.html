@@ -9,6 +9,12 @@
 <meta property="og:title" content="Degenz Kart">
 <meta property="og:description" content="Kart racing and arena battles with Starknet memecoin mascots. Create a room, share the code, smash your friends.">
 <meta property="og:image" content="https://www.starknetdegenz.fun/og-home.png">
+<meta property="og:url" content="https://www.starknetdegenz.fun/race">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@StarknetDegenz">
+<meta name="twitter:title" content="Degenz Kart">
+<meta name="twitter:description" content="Kart racing and arena battles with Starknet memecoin mascots. Create a room, share the code, smash your friends.">
+<meta name="twitter:image" content="https://www.starknetdegenz.fun/og-home.png">
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -627,6 +633,7 @@ html .maps-head b { font-size: 22px; }
     </div>
     <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
       <button class="btn yellow" id="btnAgain" type="button">Play again</button>
+      <button class="btn" id="btnShare" type="button">Share result 📣</button>
       <button class="btn" id="btnDoneQuit" type="button">Menu</button>
     </div>
     <p class="status" id="doneWait"></p>
@@ -3342,6 +3349,51 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
   $('results').hidden = t.dataset.tab !== 'board'; $('resLog').hidden = t.dataset.tab !== 'log'; $('resWorld').hidden = t.dataset.tab !== 'world';
 }));
+// ---------- share card: a 1200x630 picture of how the round went ----------
+let lastResult = null;
+const loadImg = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+async function resultCard() {
+  const { order, me, place, map, mode: md, laps, mins } = lastResult, W = 1200, H = 630;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  await document.fonts.ready;
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#2b2350'); bg.addColorStop(0.6, '#6a3a9a'); bg.addColorStop(1, '#ff8a4c'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.globalAlpha = 0.08; g.fillStyle = '#fff'; for (let x = -H; x < W; x += 60) { g.beginPath(); g.moveTo(x, H); g.lineTo(x + H, 0); g.lineTo(x + H + 24, 0); g.lineTo(x + 24, H); g.fill(); } g.globalAlpha = 1;
+  const txt = (s, x, y, size, color, font = 'Bangers', align = 'left') => { g.font = `${size}px ${font}, Impact, sans-serif`; g.textAlign = align; g.lineJoin = 'round'; g.lineWidth = size / 7; g.strokeStyle = '#15111c'; g.strokeText(s, x, y); g.fillStyle = color; g.fillText(s, x, y); };
+  txt('DEGENZ KART', 60, 92, 64, '#ffd84c');
+  txt(`${mapName(map)} · ${md === 'race' ? `${laps} lap race` : `${mins} min arena`}`, 60, 140, 32, '#fff6e3', 'Fredoka');
+  const head = md === 'race' ? (place === 1 ? 'I WON! 🏆' : `I CAME ${place}${SUF[place] || 'th'}`) : (place === 1 ? 'TOP DEGEN! 🏆' : `${place}${SUF[place] || 'th'} PLACE`);
+  txt(head, 60, 270, 108, '#fff');
+  const stat = md === 'race' ? (me.finished ? `⏱️ ${fmtT(me.finishTime).slice(0, -1)}` : 'DNF 💀') : `💥 ${me.kills} kills · 💀 ${me.deaths}`;
+  txt(stat, 60, 360, 60, '#5ff0ff');
+  txt(`out of ${order.length} karts`, 60, 410, 30, '#fff6e3', 'Fredoka');
+  // podium panel
+  g.fillStyle = 'rgba(21,17,28,.55)'; g.beginPath(); g.roundRect(700, 170, 440, 330, 28); g.fill();
+  txt('PODIUM', 920, 222, 38, '#ffd84c', 'Bangers', 'center');
+  const imgs = await Promise.all(order.slice(0, 3).map(k => loadImg(k.r.img)));
+  order.slice(0, 3).forEach((k, i) => {
+    const y = 262 + i * 76;
+    txt(['🥇', '🥈', '🥉'][i], 725, y + 38, 44, '#fff', 'sans-serif');
+    if (imgs[i]) { g.save(); g.beginPath(); g.arc(815, y + 24, 28, 0, Math.PI * 2); g.clip(); g.drawImage(imgs[i], 787, y - 4, 56, 56); g.restore(); }
+    const v = md === 'race' ? (k.finished ? fmtT(k.finishTime).slice(0, -1) : 'DNF') : `${k.kills} 💥`;
+    txt(String(k.label).slice(0, 12), 856, y + 36, 32, k === me ? '#ffd84c' : '#fff', 'Fredoka');
+    txt(v, 1115, y + 36, 28, '#5ff0ff', 'Fredoka', 'right');
+  });
+  txt('Beat me 👉 starknetdegenz.fun/race', 60, 570, 40, '#fff');
+  return new Promise(r => c.toBlob(r, 'image/png'));
+}
+$('btnShare').addEventListener('click', async () => {
+  if (!lastResult) return;
+  const btn = $('btnShare'); btn.disabled = true;
+  try {
+    const blob = await resultCard(), { me, place, mode: md, order } = lastResult;
+    const text = md === 'race' ? `I finished ${place}${SUF[place] || 'th'} of ${order.length}${me.finished ? ` in ${fmtT(me.finishTime).slice(0, -1)}` : ''} on ${mapName(lastResult.map)} in Degenz Kart 🏎️🔥` : `${me.kills} kills, ${place}${SUF[place] || 'th'} place in Degenz Kart arena 💥`;
+    const url = 'https://www.starknetdegenz.fun/race', file = new File([blob], 'degenz-kart.png', { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: text + ' ' + url }); return; }
+    // desktop: save the picture, then open a post with the text so it can be attached
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'degenz-kart.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    window.open('https://x.com/intent/post?text=' + encodeURIComponent(text + ' @StarknetDegenz') + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
+  } catch (e) { /* share sheet dismissed */ } finally { btn.disabled = false; }
+});
 $('btnAgain').addEventListener('click', () => { if (net?.host) hostStart(); else if (!net) startGame(); });
 $('btnDoneQuit').addEventListener('click', () => quitGame(net ? 'room' : 'title'));
 $('btnPause').addEventListener('click', togglePause);
@@ -3383,6 +3435,7 @@ function endGame(given) {
     if (net?.host) broadcast({ t: 'end', order: order.map(k => karts.indexOf(k)) });
   }
   const place = order.indexOf(me) + 1;
+  lastResult = { order, me, place, map: curMap, mode, laps: LAPS, mins: Math.round(matchLen / 60) };
   let title, bestNote = '';
   if (mode === 'race') {
     title = place === 1 ? 'YOU WON!' : place <= 3 ? `${place}${SUF[place]} PLACE!` : `${place}${SUF[place] || 'th'}. RUGGED.`;
@@ -3558,7 +3611,7 @@ function tick(dt, now) {
   if (audio && ME() && state !== 'title') { const s = Math.abs(ME().speed); audio.eng.frequency.value = 60 + s * 2.2 + (ME().boost > 0 ? 40 : 0); audio.g.gain.value = state === 'race' ? 0.04 + s / 3000 : 0; }
 }
 // test hook: advance the simulation without rendering (used for automated playtests)
-window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart, explodeFx, get pts() { return PTS; }, activateMap, get curMap() { return curMap; }, headL, startGame, groundAt, giveWeapon, giveRaceItem, get prog() { return prog; } };
+window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart, explodeFx, get pts() { return PTS; }, activateMap, get curMap() { return curMap; }, headL, startGame, groundAt, giveWeapon, giveRaceItem, get prog() { return prog; }, endGame, resultCard, finishOrder };
 
 setWorld(); renderLobby(); renderSettings(); applyGfx();
 // invite links: ?room=CODE opens the join screen straight away
