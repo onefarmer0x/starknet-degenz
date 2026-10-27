@@ -2262,7 +2262,7 @@ function stepKart(k, dt) {
     shieldBubble(k);
     if (k.fireCd > 0) k.fireCd -= dt;
   }
-  const maxBase = (mode === 'arena' ? 46 : 64) + r.spd * (mode === 'arena' ? 2.4 : 3.2), accel = 26 + r.acc * 3.4, turnRate = (mode === 'arena' ? 1.9 : 1.5) + r.hnd * 0.11;
+  const maxBase = (mode === 'arena' ? 46 : 64) + r.spd * (mode === 'arena' ? 2.4 : 3.2), accel = 26 + r.acc * 3.4, turnRate = (mode === 'arena' ? 2.45 : 1.5) + r.hnd * 0.11;
   let throttle = 0, brake = 0, steer = 0, wantDrift = false;
   const live = state === 'race';
   if (mode === 'race' && k.finished) { throttle = 0; brake = 0; steer = 0; wantDrift = false; k.boost = 0; k.speed = Math.max(0, k.speed - 45 * dt); } // rolls to a stop past the line
@@ -2279,7 +2279,7 @@ function stepKart(k, dt) {
         if (mode === 'race' && cfg.assist !== 'off') { const a = assistSteer(k), s = cfg.assist === 'strong' ? 0.55 : 0.35; steer = keys.ax ? steer * (1 - s) + a * s : a * (cfg.assist === 'strong' ? 1 : 0.7); }
         // auto-drift: hold a hard turn at speed and it drifts (and boosts on release) by itself; DRIFT button still works
         const hard = Math.abs(keys.ax || 0); k.hardT = hard > 0.85 ? (k.hardT || 0) + dt : 0;
-        wantDrift = keys.drift || (k.drifting ? hard > 0.35 : k.hardT > 0.3 && k.speed > maxBase * band0 * 0.6);
+        if (mode === 'race') wantDrift = keys.drift || (k.drifting ? hard > 0.35 : k.hardT > 0.3 && k.speed > maxBase * band0 * 0.6); // no auto-drift in the arena
       }
       if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
       if (mode === 'arena' && (keys.item || (keys.fire && WEAPONS[k.weapon]?.auto))) { keys.item = false; playerUse(k); }
@@ -2318,7 +2318,7 @@ function stepKart(k, dt) {
   if (k.spin <= 0) k.heading += turn * turnRate * grip * dt * Math.sign(k.speed || 1) * (k.drifting ? 1.25 : 1);
   const fwd = tmp.set(Math.sin(k.heading), 0, Math.cos(k.heading));
   k.m.position.addScaledVector(fwd, k.speed * dt);
-  if (k.drifting) k.m.position.addScaledVector(new THREE.Vector3(fwd.z, 0, -fwd.x), -k.driftDir * k.speed * 0.12 * dt);
+  if (k.drifting) k.m.position.addScaledVector(new THREE.Vector3(fwd.z, 0, -fwd.x), -k.driftDir * k.speed * (mode === 'arena' ? 0.05 : 0.12) * dt); // arena: much less sideways slide
   // knockback from rams, fading quickly
   if (k.knockX || k.knockZ) {
     k.m.position.x += k.knockX * dt; k.m.position.z += k.knockZ * dt;
