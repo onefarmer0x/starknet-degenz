@@ -68,7 +68,7 @@ html[data-mode="dark"] .hero h1 {
   font-family: var(--d-display); font-size: clamp(88px, 15vw, 210px); line-height: 0.86; letter-spacing: -0.01em; color: var(--d-text);
   -webkit-text-stroke: 0; transform: none; text-shadow: 0 0 40px rgba(255, 43, 43, 0.35), 3px 0 0 rgba(255, 43, 43, 0.55), -3px 0 0 rgba(80, 200, 255, 0.18);
 }
-html[data-mode="dark"] .hero h1 small { color: var(--d-dim); font-family: var(--d-body); font-weight: 700; font-size: 0.13em; letter-spacing: 0.45em; text-shadow: none; }
+html[data-mode="dark"] .hero h1 small { color: var(--d-dim); font-family: var(--d-body); font-weight: 700; font-size: 0.13em; letter-spacing: 0.45em; text-shadow: none; margin: clamp(22px, 3vw, 34px) 0 clamp(30px, 4vw, 48px); }
 html[data-mode="dark"] .hero .pitch { color: #c9bdb4; font-family: var(--d-body); }
 html[data-mode="dark"] .hero-art .chad, html[data-mode="dark"] .hero-art .peek { display: none; }
 .hero-art .dark-wolf { display: none; }
