@@ -15,12 +15,14 @@ async function redis(...cmds) {
   return (await r.json()).map(x => x.result);
 }
 
+// board name = map key + laps (race maps) or minutes (arena maps); 'race' / 'arena' are Bonfire Bay / The Pit
+const KIND = { race: 'race', night: 'race', halloween: 'race', chain: 'race', arena: 'arena', degenz: 'arena' };
 function parseBoard(b) {
-  const m = /^(race|arena)(\d{1,2})$/.exec(String(b || ''));
-  if (!m) return null;
-  const n = +m[2];
-  if (m[1] === 'race' ? n < 1 || n > 9 : n < 1 || n > 10) return null;
-  return { id: m[0], kind: m[1], n, low: m[1] === 'race' };
+  const m = /^([a-z]+)(\d{1,2})$/.exec(String(b || ''));
+  if (!m || !KIND[m[1]]) return null;
+  const n = +m[2], kind = KIND[m[1]];
+  if (kind === 'race' ? n < 1 || n > 9 : n < 1 || n > 10) return null;
+  return { id: m[0], kind, n, low: kind === 'race' };
 }
 // throw out scores no real driver could set
 function plausible(bd, s) {
