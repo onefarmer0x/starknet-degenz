@@ -3573,8 +3573,8 @@ const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax =
 ['pointerup', 'pointercancel'].forEach(t => $('joyZone').addEventListener(t, joyEnd));
 // show / hide the joystick with the touch buttons; auto-gas while racing on touch
 // joystick sensitivity and phone top speed (defaults a little gentler than full)
-// sliders 10-90%: steering sets how fast the joystick ramps to full lock (see joyApply); speed maps to 54-86% of top speed (50% = 70%)
-const joyExpo = () => 3.4 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.5 + 0.4 * (cfg.spdPct || 50) / 100;
+// sliders 10-90%: steering sets how fast the joystick ramps to full lock (see joyApply); speed maps to 60-96% of top speed (50% = 78%)
+const joyExpo = () => 3.4 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
 function setTouch(on) {
   keys.touchSpd = on ? touchSpd() : 1;
   $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on;
