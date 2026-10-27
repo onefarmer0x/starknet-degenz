@@ -563,6 +563,7 @@ html .maps-head b { font-size: 22px; }
       <div class="field"><span class="lbl">Bot skill</span><div class="seg" data-cfg="diff"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="degen">Degen</button></div></div>
       <div class="field"><span class="lbl">Sound</span><div class="seg" data-cfg="sound"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="field"><span class="lbl">Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
+      <div class="field touch-only"><span class="lbl">Smart steering</span><div class="seg" data-cfg="assist"><button data-v="off">Off</button><button data-v="light">Light</button><button data-v="strong">Strong</button></div></div>
       <div class="field touch-only"><span class="lbl">Joystick steering <b class="rv" id="sensVal">50%</b></span><input class="range" type="range" id="cfgSens" min="10" max="90" step="5" aria-label="Joystick steering sensitivity"></div>
       <div class="field touch-only"><span class="lbl">Top speed (phone) <b class="rv" id="tspdVal">50%</b></span><input class="range" type="range" id="cfgTspd" min="10" max="90" step="5" aria-label="Phone top speed"></div>
     </div>
@@ -725,7 +726,7 @@ const allDrivers = () => [...BUILTIN, ...customs];
 
 // settings, saved in this browser
 // phones start on low graphics (no shadows, 1x resolution); everyone can switch in setup
-const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sensPct: 50, spdPct: 50, gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
+const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sensPct: 50, spdPct: 50, assist: 'light', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
 const cfg = Object.assign({}, DEFAULT_CFG, store.get('kart.cfg', {}));
 const saveCfg = () => store.set('kart.cfg', cfg);
 const best = store.get('kart.best', { race: {}, arena: 0 });
@@ -2266,11 +2267,20 @@ function stepKart(k, dt) {
   const live = state === 'race';
   if (mode === 'race' && k.finished) { throttle = 0; brake = 0; steer = 0; wantDrift = false; k.boost = 0; k.speed = Math.max(0, k.speed - 45 * dt); } // rolls to a stop past the line
   else if (k.isPlayer) {
+    const phone = touchUI(), band0 = keys.touchSpd || 1;
     if (live) {
       throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = keys.ax ? keys.ax * (1 - 0.4 * Math.min(1, Math.abs(k.speed) / maxBase)) : (keys.left ? 1 : 0) - (keys.right ? 1 : 0), cur = k.steerS || 0;
       // phone stick: eases in gently, but flicking from left to right (or back) snaps across quickly
       const flip = keys.ax && cur * want < 0;
       k.steerS = cur + (want - cur) * Math.min(1, dt * (flip ? 22 : want ? (keys.ax ? 6 : 9) : 14)); steer = k.steerS; wantDrift = keys.drift;
+      if (phone) {
+        // smart steering (race): blend the stick with the road ahead, like mobile kart games do. Thumb centred = follow
+        // the road; steering = your input with some assist mixed in, so small thumb errors don't put you in the grass
+        if (mode === 'race' && cfg.assist !== 'off') { const a = assistSteer(k), s = cfg.assist === 'strong' ? 0.55 : 0.35; steer = keys.ax ? steer * (1 - s) + a * s : a * (cfg.assist === 'strong' ? 1 : 0.7); }
+        // auto-drift: hold a hard turn at speed and it drifts (and boosts on release) by itself; DRIFT button still works
+        const hard = Math.abs(keys.ax || 0);
+        wantDrift = keys.drift || (k.drifting ? hard > 0.25 : hard > 0.65 && k.speed > maxBase * band0 * 0.55);
+      }
       if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
       if (mode === 'arena' && (keys.item || (keys.fire && WEAPONS[k.weapon]?.auto))) { keys.item = false; playerUse(k); }
     }
@@ -2288,7 +2298,7 @@ function stepKart(k, dt) {
   let band = 1;
   if (k.isPlayer) band = keys.touchSpd || 1; // phones: top speed setting
   if (!k.isPlayer) band = k.aiSkill * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (ME().progress - k.progress) / N * 0.35)) : 1);
-  const max = maxBase * band * (off ? 0.45 : 1) * (k.boost > 0 ? 1.35 : 1);
+  const max = maxBase * band * (off ? (k.isPlayer && touchUI() ? 0.65 : 0.45) : 1) * (k.boost > 0 ? 1.35 : 1);
   if (k.spin > 0) { k.spin -= dt; throttle = 0; steer = 0; k.m.rotation.y += dt * 14; }
   if (throttle) k.speed += accel * throttle * dt * (k.speed < max ? 1 : 0);
   if (brake) k.speed -= (k.speed > 0 ? 70 : 24) * dt;
@@ -2357,6 +2367,11 @@ function stepKart(k, dt) {
     else if (k.boost > 0) { k.puffT = 0.08; puff(k, 0, -4.6, 0xffd9a0, 0.7); }
   }
   if (k.hitFlash > 0) { k.hitFlash -= dt; u.head.children[0].material.color.setHex(0xff7777); } else u.head.children[0].material.color.setHex(0xffffff);
+}
+function assistSteer(k) {
+  const i = (k.idx + Math.floor(12 + Math.max(0, k.speed) * 0.3)) % N;
+  let diff = Math.atan2(PTS[i].x - k.m.position.x, PTS[i].z - k.m.position.z) - k.heading; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+  return Math.max(-1, Math.min(1, diff * 2));
 }
 function aiSteer(k) {
   const look = Math.floor(14 + Math.max(0, k.speed) * 0.35), i = (k.idx + look) % N;
@@ -3558,8 +3573,8 @@ const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax =
 ['pointerup', 'pointercancel'].forEach(t => $('joyZone').addEventListener(t, joyEnd));
 // show / hide the joystick with the touch buttons; auto-gas while racing on touch
 // joystick sensitivity and phone top speed (defaults a little gentler than full)
-// sliders 10-90%: steering sets how fast the joystick ramps to full lock (see joyApply); speed maps to 60-96% of top speed
-const joyExpo = () => 3.4 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
+// sliders 10-90%: steering sets how fast the joystick ramps to full lock (see joyApply); speed maps to 54-86% of top speed (50% = 70%)
+const joyExpo = () => 3.4 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.5 + 0.4 * (cfg.spdPct || 50) / 100;
 function setTouch(on) {
   keys.touchSpd = on ? touchSpd() : 1;
   $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on;
