@@ -2278,8 +2278,8 @@ function stepKart(k, dt) {
         // the road; steering = your input with some assist mixed in, so small thumb errors don't put you in the grass
         if (mode === 'race' && cfg.assist !== 'off') { const a = assistSteer(k), s = cfg.assist === 'strong' ? 0.55 : 0.35; steer = keys.ax ? steer * (1 - s) + a * s : a * (cfg.assist === 'strong' ? 1 : 0.7); }
         // auto-drift: hold a hard turn at speed and it drifts (and boosts on release) by itself; DRIFT button still works
-        const hard = Math.abs(keys.ax || 0);
-        wantDrift = keys.drift || (k.drifting ? hard > 0.25 : hard > 0.65 && k.speed > maxBase * band0 * 0.55);
+        const hard = Math.abs(keys.ax || 0); k.hardT = hard > 0.85 ? (k.hardT || 0) + dt : 0;
+        wantDrift = keys.drift || (k.drifting ? hard > 0.35 : k.hardT > 0.3 && k.speed > maxBase * band0 * 0.6);
       }
       if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
       if (mode === 'arena' && (keys.item || (keys.fire && WEAPONS[k.weapon]?.auto))) { keys.item = false; playerUse(k); }
@@ -2297,7 +2297,7 @@ function stepKart(k, dt) {
   const off = mode === 'race' && Math.abs(k.side || 0) > ROAD_W / 2 + 2.6;
   let band = 1;
   if (k.isPlayer) band = keys.touchSpd || 1; // phones: top speed setting
-  if (!k.isPlayer) band = k.aiSkill * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (ME().progress - k.progress) / N * 0.35)) : 1);
+  if (!k.isPlayer) band = k.aiSkill * (!net && touchUI() ? keys.touchSpd || 1 : 1) * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (ME().progress - k.progress) / N * 0.35)) : 1);
   const max = maxBase * band * (off ? (k.isPlayer && touchUI() ? 0.65 : 0.45) : 1) * (k.boost > 0 ? 1.35 : 1);
   if (k.spin > 0) { k.spin -= dt; throttle = 0; steer = 0; k.m.rotation.y += dt * 14; }
   if (throttle) k.speed += accel * throttle * dt * (k.speed < max ? 1 : 0);
@@ -3566,7 +3566,8 @@ function joyApply(dx, dy) {
 }
 $('joyZone').addEventListener('pointerdown', e => {
   if (joyId !== null) return; e.preventDefault(); joyId = e.pointerId; try { $('joyZone').setPointerCapture(e.pointerId); } catch {}
-  joyX = e.clientX; joyY = e.clientY; joy.style.left = joyX + 'px'; joy.style.top = joyY + 'px'; joy.classList.remove('idle'); joyApply(0, 0);
+  // the stick stays put on screen; steering is measured from wherever your thumb landed, so touching down never jerks the kart
+  joyX = e.clientX; joyY = e.clientY; joy.classList.remove('idle'); joyApply(0, 0);
 });
 $('joyZone').addEventListener('pointermove', e => { if (e.pointerId === joyId) { e.preventDefault(); joyApply(e.clientX - joyX, e.clientY - joyY); } });
 const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax = 0; keys.down = brakeBtn; keys.up = !brakeBtn; joyHome(); };
