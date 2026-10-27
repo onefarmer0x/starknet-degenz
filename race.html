@@ -2540,12 +2540,17 @@ function leaveNet(silent) {
   net = null; $('btnInvite').hidden = true; $('hNet').textContent = '';
   if (!silent) toast('Left the room');
 }
+// connection servers for rooms: STUN plus TURN relays so phones on mobile data / strict wifi can still connect.
+// Fetched once at load; until it arrives we fall back to public STUN.
+let ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
+fetch('/api/ice', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d?.iceServers?.length) ICE = d.iceServers; }).catch(() => {});
+const peerOpts = () => ({ debug: 0, config: { iceServers: ICE } });
 function createRoom() {
   leaveNet(true);
   const code = genCode();
   net = { host: true, code, conns: [], players: [{ id: 'host', name: myName(), driver: pubDriver(driverOf(cfg.driver)) }], events: [], ready: false };
   net.send = () => {};
-  const peer = new Peer(ROOM_PREFIX + code, { debug: 0 });
+  const peer = new Peer(ROOM_PREFIX + code, peerOpts());
   net.peer = peer;
   renderRoom(); show('scrRoom'); $('roomStatus').textContent = 'Opening the room…';
   peer.on('open', () => { if (!net || net.peer !== peer) return; net.ready = true; $('roomStatus').textContent = 'Share the code. Waiting for players…'; renderRoom(); });
@@ -2595,10 +2600,10 @@ function joinRoom(code) {
   if (code.length < 5) { $('joinStatus').textContent = 'Room codes are 5 letters and numbers, like K7Q2M.'; return; }
   leaveNet(true);
   net = { host: false, code, players: [] };
-  const peer = new Peer({ debug: 0 }); net.peer = peer;
+  const peer = new Peer(peerOpts()); net.peer = peer;
   $('joinStatus').textContent = 'Connecting…'; $('btnJoinGo').disabled = true;
   const fail = msg => { if (!net || net.peer !== peer) return; $('joinStatus').textContent = msg; $('btnJoinGo').disabled = false; leaveNet(true); };
-  const timer = setTimeout(() => fail('No answer from that room. Check the code, or ask the host to keep the room open.'), 12000);
+  const timer = setTimeout(() => fail('No answer from that room. Check the code and that the host still has the room open. On mobile data? Try wifi.'), 20000);
   peer.on('error', err => { clearTimeout(timer); fail(err.type === 'peer-unavailable' ? 'No room with that code. Check it and try again.' : `Couldn't connect (${err.type}).`); });
   peer.on('open', () => {
     const conn = peer.connect(ROOM_PREFIX + code, { reliable: true }); // binary serialization chunks big messages (custom avatars)
@@ -2607,9 +2612,12 @@ function joinRoom(code) {
     conn.on('open', () => {
       clearTimeout(timer); $('btnJoinGo').disabled = false; $('joinStatus').textContent = 'Joining…';
       // the very first message on a fresh channel can get lost, so say hello until the host answers
-      let tries = 0; const hello = () => { if (!net || net.conn !== conn || net.lobby || tries++ > 8) return; conn.send({ t: 'hello', name: myName(), driver: pubDriver(driverOf(cfg.driver)), level: myLevel() }); setTimeout(hello, 1200); };
+      let tries = 0; const hello = () => { if (!net || net.conn !== conn || net.lobby) return; if (tries++ > 8) { fail('Connected, but the host is not answering. Ask them to reopen the room.'); return; } conn.send({ t: 'hello', name: myName(), driver: pubDriver(driverOf(cfg.driver)), level: myLevel() }); setTimeout(hello, 1200); };
       setTimeout(hello, 150);
     });
+    // a network that blocks peer-to-peer (and no relay got through) fails here instead of hanging on "Connecting…"
+    conn.on('iceStateChanged', s => { if ((s === 'failed' || s === 'closed') && !net?.lobby) { clearTimeout(timer); fail("Couldn't reach the host from this network. Try wifi, or have someone else host."); } });
+    conn.on('error', () => { if (!net?.lobby) { clearTimeout(timer); fail('Connection dropped while joining. Try again.'); } });
     conn.on('data', onClientData);
     conn.on('close', () => { if (net && net.conn === conn) { leaveNet(true); quitGame('title'); toast('The host closed the room'); } });
   });
