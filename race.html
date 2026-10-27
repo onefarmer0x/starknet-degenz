@@ -302,6 +302,7 @@ body.has-touch .hud .item { display: none; }
 .oroom.racing { opacity: 0.55; cursor: default; }
 .roomopts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 560px) { .roomopts { grid-template-columns: 1fr; } }
+.hud #btnUnstick { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 180px); }
 .hud .skip { left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 130px); transform: translateX(-50%); pointer-events: auto; z-index: 8; }
 #toast:not(.show) { visibility: hidden; transition: transform 0.3s, visibility 0s 0.3s; }
 #toast.show { transform: translate(-50%, 0); }
@@ -664,6 +665,7 @@ html .maps-head b { font-size: 22px; }
   <div class="banner" id="hBanner"></div>
   <div class="msg" id="hMsg"></div>
   <button class="btn yellow skip" id="btnSkip" type="button" hidden>Skip to results ⏭</button>
+  <button class="btn skip" id="btnUnstick" type="button" hidden>Stuck? Tap to reset 🔄</button>
   <div class="dead" id="hDead" hidden></div>
   <div class="item" id="hItem" aria-label="Item"><span id="hItemIcon"></span><small id="hItemName"></small><b id="hAmmo" hidden></b></div>
   <div class="speed" id="hSpeed">0<small>KM/H</small></div>
@@ -2104,26 +2106,63 @@ function stepFx(dt) {
   }
 }
 // push karts out of walls and obstacles
+// Hitting something: push the kart out along the surface normal (nx, nz), which leaves the sideways part of its
+// motion alone, so it slides along walls and crates. Speed is only cut once per impact, scaled by how head-on it was,
+// and the nose is nudged along the wall so you don't keep grinding into it.
+function wallHit(k, nx, nz) {
+  const fx = Math.sin(k.heading), fz = Math.cos(k.heading), into = -(fx * nx + fz * nz) * Math.sign(k.speed || 1);
+  if (into <= 0) return; // already moving away
+  if (!k.wallT) { k.speed *= 1 - 0.6 * into * into; k.bumped = 0.3; }
+  else if (into > 0.96) k.speed *= 1 - 0.3 * (into - 0.96) / 0.04; // only a near head-on push bleeds speed; glancing hits keep sliding
+  k.wallT = 2; // still touching for the next couple of steps
+  if (into < 0.99 && k.spin <= 0) { // turn the nose toward whichever way along the wall it was already heading
+    let tx = -nz, tz = nx; if (fx * tx + fz * tz < 0) { tx = -tx; tz = -tz; }
+    const want = Math.atan2(tx, tz), diff = Math.atan2(Math.sin(want - k.heading), Math.cos(want - k.heading));
+    k.heading += diff * Math.min(1, 0.08 * into);
+  }
+}
 function arenaCollide(k) {
   const p = k.m.position, R = 3;
   const lim = AR - R;
-  if (p.x < -lim) { p.x = -lim; k.speed *= 0.6; } if (p.x > lim) { p.x = lim; k.speed *= 0.6; }
-  if (p.z < -lim) { p.z = -lim; k.speed *= 0.6; } if (p.z > lim) { p.z = lim; k.speed *= 0.6; }
+  if (p.x < -lim) { p.x = -lim; wallHit(k, 1, 0); } if (p.x > lim) { p.x = lim; wallHit(k, -1, 0); }
+  if (p.z < -lim) { p.z = -lim; wallHit(k, 0, 1); } if (p.z > lim) { p.z = lim; wallHit(k, 0, -1); }
   for (const o of obstacles) {
     if (o.r) {
       const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz), min = o.r + R;
-      if (d < min && d > 0.01) { p.x = o.x + dx / d * min; p.z = o.z + dz / d * min; k.speed *= 0.7; k.bumped = 0.3; }
+      if (d < min && d > 0.01) { p.x = o.x + dx / d * min; p.z = o.z + dz / d * min; wallHit(k, dx / d, dz / d); }
     } else {
       const cx = Math.max(o.x - o.hx, Math.min(p.x, o.x + o.hx)), cz = Math.max(o.z - o.hz, Math.min(p.z, o.z + o.hz));
       const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz);
       if (d < R) {
-        if (d > 0.01) { p.x = cx + dx / d * R; p.z = cz + dz / d * R; }
-        else { p.x += Math.sign(p.x - o.x || 1) * R; }
-        k.speed *= 0.7; k.bumped = 0.3;
+        if (d > 0.01) { p.x = cx + dx / d * R; p.z = cz + dz / d * R; wallHit(k, dx / d, dz / d); }
+        else { // centre ended up inside the box: leave by the nearest face
+          const px = o.hx - Math.abs(p.x - o.x), pz = o.hz - Math.abs(p.z - o.z);
+          if (px < pz) { const s = Math.sign(p.x - o.x) || 1; p.x = o.x + s * (o.hx + R); wallHit(k, s, 0); } else { const s = Math.sign(p.z - o.z) || 1; p.z = o.z + s * (o.hz + R); wallHit(k, 0, s); }
+        }
       }
     }
   }
 }
+// ---------- ramps and bridge decks: their tall sides are walls you slide along ----------
+function surfaceCollide(k) {
+  const list = SURF[curMap]; if (!list) return;
+  const p = k.m.position, R = 1.8;
+  for (const s of list) {
+    const c = Math.cos(s.rot), sn = Math.sin(s.rot), dx = p.x - s.x, dz = p.z - s.z;
+    const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+    if (Math.abs(lx) > s.hx + R || Math.abs(lz) > s.hz + R) continue;
+    // surface height at the nearest point of the footprint; only a wall if it's taller than you can step onto
+    const cz = Math.max(-s.hz, Math.min(s.hz, lz)), top = s.h0 + (cz + s.hz) / (2 * s.hz) * (s.h1 - s.h0);
+    if (top - k.y <= 1.6) continue;
+    const ox = s.hx + R - Math.abs(lx), oz = s.hz + R - Math.abs(lz);
+    let nlx = 0, nlz = 0, nx, nz;
+    if (ox < oz) { nlx = Math.sign(lx) || 1; p.x += (nlx * ox) * c; p.z += -(nlx * ox) * sn; }
+    else { nlz = Math.sign(lz) || 1; p.x += (nlz * oz) * sn; p.z += (nlz * oz) * c; }
+    nx = nlx * c + nlz * sn; nz = -nlx * sn + nlz * c;
+    wallHit(k, nx, nz);
+  }
+}
+function resolveWorld(k) { if (mode === 'arena') arenaCollide(k); else surfaceCollide(k); }
 function blockedAt(x, z, pad = 0) {
   if (Math.abs(x) > AR - 2 || Math.abs(z) > AR - 2) return true;
   for (const o of obstacles) {
@@ -2206,6 +2245,10 @@ function stepKart(k, dt) {
   } else if (live || (mode === 'race' && state === 'done')) {
     if (mode === 'race') {
       throttle = 1; steer = aiSteer(k); wantDrift = Math.abs(steer) > 0.75 && k.speed > maxBase * 0.6;
+      // wedged against something: back out for a moment, steering the other way
+      if (live && k.spin <= 0 && Math.abs(k.speed) < 3) k.stuckT += dt; else k.stuckT = 0;
+      if (k.stuckT > 1) { k.reverseT = 0.9; k.stuckT = 0; }
+      if (k.reverseT > 0) { k.reverseT -= dt; throttle = 0; brake = 1; steer = -steer; wantDrift = false; }
       if (k.item && (k.aiItemT -= dt) < 0) { useRaceItem(k); k.aiItemT = 2 + Math.random() * 5; }
     } else ({ throttle, brake, steer } = arenaBot(k, dt));
   }
@@ -2243,8 +2286,9 @@ function stepKart(k, dt) {
   if (k.frozen > 0) { k.frozen -= dt; k.speed = Math.max(-6, Math.min(k.speed, 8)); k.boost = 0; if (Math.random() < 0.3) puff(k, (Math.random() - 0.5) * 4, 0, 0x9fe8ff, 1); }
   if (k.starT > 0) { k.starT -= dt; if (Math.random() < 0.5) puff(k, (Math.random() - 0.5) * 4, -3, [0xffd23f, 0xff4fd8, 0x5ff0ff][(Math.random() * 3) | 0], 0.9); }
   padCheck(k);
+  if (k.wallT > 0) k.wallT--;
+  surfaceCollide(k);
   let gY = groundAt(k.m.position.x, k.m.position.z);
-  if (gY - k.y > 1.6) { k.m.position.x = k.px ?? k.m.position.x; k.m.position.z = k.pz ?? k.m.position.z; k.speed *= -0.3; gY = groundAt(k.m.position.x, k.m.position.z); }
   k.px = k.m.position.x; k.pz = k.m.position.z;
   const climb = (gY - (k.lastG ?? gY)) / Math.max(dt, 1e-3); k.lastG = gY;
   // arcade gravity: lighter going up, heavier coming down, and never more than ~3.5 units of air
@@ -2298,6 +2342,7 @@ function collisions(dt) {
     if (d >= 5.6 || d < 0.01) continue;
     const nx = dx / d, nz = dz / d, push = (5.6 - d) / 2;
     A.x -= nx * push; A.z -= nz * push; B.x += nx * push; B.z += nz * push;
+    resolveWorld(KA); resolveWorld(KB);
     // how hard each kart is driving into the other along the line between them
     const aIn = Math.sin(KA.heading) * KA.speed * nx + Math.cos(KA.heading) * KA.speed * nz;
     const bIn = -(Math.sin(KB.heading) * KB.speed * nx + Math.cos(KB.heading) * KB.speed * nz);
@@ -2448,6 +2493,10 @@ function hud() {
     $('hMsg').innerHTML = `🏁 FINISHED ${ord(place)}<br><small style="font-size:.5em">waiting for ${left} more${tLeft !== null ? ` · ${tLeft}s` : ''}</small>`; $('hMsg').style.opacity = 1;
   }
   $('btnSkip').hidden = !(mode === 'race' && p.finished && state === 'race' && !net);
+  // you've been trying to drive but haven't moved for a while: offer a reset
+  const trying = state === 'race' && p.alive && !p.finished && p.spin <= 0 && (keys.up || keys.down || touchUI()) && Math.abs(p.speed) < 2.5;
+  p.stuckT2 = trying ? (p.stuckT2 || 0) + 1 / 60 : 0;
+  $('btnUnstick').hidden = p.stuckT2 < 4;
   const order = standings(), place = order.indexOf(p) + 1;
   $('hPos').innerHTML = `${ord(place)} / ${karts.length}`;
   if (mode === 'race') {
@@ -3262,6 +3311,14 @@ $('btnAdd').addEventListener('click', async () => {
 $('btnPlay').addEventListener('click', () => { initAudio(); mapCtx = 'solo'; renderMaps(); show('scrMaps'); });
 $('btnCustomize').addEventListener('click', () => { renderGarage(); show('scrGarage'); });
 $('btnSkip').addEventListener('click', () => { if (!net && state === 'race') endGame(); });
+// put a stuck player back in the middle of the road (race) or on the nearest free spawn (arena)
+$('btnUnstick').addEventListener('click', () => {
+  const k = ME(); if (!k || state !== 'race') return;
+  if (mode === 'race') { const i = k.idx, p = PTS[i]; k.m.position.set(p.x, 0, p.z); k.heading = Math.atan2(TAN[i].x, TAN[i].z); }
+  else { const [x, z] = SPAWNS.slice().sort((a, b) => Math.hypot(a[0] - k.m.position.x, a[1] - k.m.position.z) - Math.hypot(b[0] - k.m.position.x, b[1] - k.m.position.z))[0]; k.m.position.set(x, 0, z); k.heading = Math.atan2(-x, -z); }
+  k.speed = 0; k.vy = 0; k.y = groundAt(k.m.position.x, k.m.position.z); k.px = k.pz = k.lastG = undefined; k.stuckT2 = 0; k.knockX = k.knockZ = 0;
+  $('btnUnstick').hidden = true; blip(700, 0.1);
+});
 $('btnSettings').addEventListener('click', () => { renderSettings(); show('scrSettings'); });
 $('btnCreate').addEventListener('click', () => { initAudio(); createRoom(); });
 $('btnJoin').addEventListener('click', () => { $('joinStatus').textContent = ''; show('scrJoin'); joinTab('code'); });
