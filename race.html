@@ -288,6 +288,21 @@ body.has-touch .hud .item { display: none; }
 .range { width: 100%; accent-color: var(--yellow); height: 28px; }
 .lbl .rv { color: var(--yellow); margin-left: 6px; }
 .touch-only { display: none; } body.has-touch .touch-only { display: grid; }
+.openrooms { width: 100%; } .openrooms small { font: 700 12px var(--ui); opacity: 0.8; }
+.jtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.jtab { padding: 8px; border-radius: 12px; border: 3px solid var(--ink); background: #3a2f63; color: #cfc4ea; font: 400 18px var(--display); letter-spacing: 0.04em; cursor: pointer; }
+.jtab[aria-selected="true"] { background: var(--yellow); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.olist { display: grid; gap: 8px; max-height: 46vh; overflow-y: auto; }
+.oroom { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 14px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; text-align: left; }
+.oroom .ic { font-size: 30px; text-align: center; }
+.oroom b { font: 400 18px var(--display); letter-spacing: 0.04em; display: block; }
+.oroom small { font: 700 12px var(--ui); color: #5b5075; }
+.oroom .cnt { font: 400 22px var(--display); color: var(--orange); text-align: right; }
+.oroom .cnt i { display: block; font: 700 10px var(--ui); font-style: normal; color: #5b5075; }
+.oroom.racing { opacity: 0.55; cursor: default; }
+.roomopts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .roomopts { grid-template-columns: 1fr; } }
+.hud .skip { left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 130px); transform: translateX(-50%); pointer-events: auto; z-index: 8; }
 #toast:not(.show) { visibility: hidden; transition: transform 0.3s, visibility 0s 0.3s; }
 #toast.show { transform: translate(-50%, 0); }
 
@@ -483,6 +498,7 @@ html .maps-head b { font-size: 22px; }
     <div class="lvlcard" id="lvlCard"></div>
     <button class="btn yellow play" id="btnPlay" type="button">PLAY</button>
     <div class="row2"><button class="btn" id="btnCreate" type="button">Create room</button><button class="btn" id="btnJoin" type="button">Join</button></div>
+    <button class="btn openrooms" id="btnOpenRooms" type="button">🌐 Open rooms <small id="openCount"></small></button>
     <div class="row2"><button class="btn" id="btnArsenal" type="button">🔫 Arsenal</button><button class="btn" id="btnRecords" type="button" aria-expanded="false">🏆 Records</button></div>
     <div class="recs" id="recs" hidden>
       <div class="world" id="xpBoard"><h4 style="display:flex;align-items:center;gap:8px">⭐ XP leaders <select class="xpsel" id="xpMap" aria-label="XP leaderboard map"></select></h4><div class="empty">Loading…</div></div>
@@ -551,8 +567,16 @@ html .maps-head b { font-size: 22px; }
   <div class="panel modal-card" role="dialog" aria-labelledby="joinTitle" style="width:min(520px,100%)">
     <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
     <h2 class="t" id="joinTitle">Join a room</h2>
+    <div class="jtabs" role="tablist"><button class="jtab" role="tab" data-jt="open" aria-selected="true">🌐 Open rooms</button><button class="jtab" role="tab" data-jt="code" aria-selected="false">🔑 Enter code</button></div>
+    <div id="jtOpen" style="display:grid;gap:10px">
+      <button class="btn yellow" id="btnQuick" type="button">⚡ Quick match</button>
+      <p class="hint" style="margin:0;text-align:center">Humans only. Rooms start when they fill up, or when the host kicks it off.</p>
+      <div class="olist" id="openList"><p class="status">Looking for rooms…</p></div>
+    </div>
+    <div id="jtCode" hidden style="display:grid;gap:10px">
     <input class="input" id="joinCode" maxlength="9" placeholder="WOLF-7K2Q" autocomplete="off" spellcheck="false" style="text-transform:uppercase;text-align:center;font-size:32px;letter-spacing:.08em">
     <button class="btn yellow" id="btnJoinGo" type="button">Join</button>
+    </div>
     <p class="status" id="joinStatus"></p>
   </div>
 </section>
@@ -566,6 +590,10 @@ html .maps-head b { font-size: 22px; }
     <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
       <label class="field" style="flex:1 1 220px"><span class="lbl">Your name in this room</span><input class="input" id="roomName" maxlength="14" placeholder="Wolf" autocomplete="off"></label>
       <button class="btn" id="btnRoomDriver" type="button"><img id="roomDriverImg" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:#fff;object-fit:cover"> Change driver</button>
+    </div>
+    <div class="roomopts" id="roomOpts">
+      <div class="field"><span class="lbl">Visibility</span><div class="seg" id="segPub"><button data-v="1">🌐 Public</button><button data-v="0">🔒 Private</button></div></div>
+      <div class="field" id="targetField"><span class="lbl">Auto-start at</span><div class="seg" id="segTarget"><button data-v="2">2</button><button data-v="4">4</button><button data-v="6">6</button><button data-v="8">8</button><button data-v="12">12</button></div></div>
     </div>
     <div class="linkrow"><input class="input" id="roomLink" readonly aria-label="Invite link"><button class="btn small yellow" id="btnCopyLink" type="button">Copy link</button></div>
     <div class="room-grid">
@@ -635,6 +663,7 @@ html .maps-head b { font-size: 22px; }
   <div class="speed-lines" id="speedLines" aria-hidden="true"></div>
   <div class="banner" id="hBanner"></div>
   <div class="msg" id="hMsg"></div>
+  <button class="btn yellow skip" id="btnSkip" type="button" hidden>Skip to results ⏭</button>
   <div class="dead" id="hDead" hidden></div>
   <div class="item" id="hItem" aria-label="Item"><span id="hItemIcon"></span><small id="hItemName"></small><b id="hAmmo" hidden></b></div>
   <div class="speed" id="hSpeed">0<small>KM/H</small></div>
@@ -1911,6 +1940,7 @@ function freezeKart(k, t) {
 }
 function spinOut(k, why) {
   if (k.starT > 0) return; // MOON: untouchable
+  if (mode === 'race' && k.finished) return;
   if (k.remote) { emit({ e: 'spin', p: karts.indexOf(k), why }); return; } // their browser spins its own kart
   if (k.spin > 0) return;
   k.spin = 1.1; k.speed *= 0.25; k.boost = 0; k.drifting = false;
@@ -2055,6 +2085,17 @@ function explodeFx(pos, size = 1) {
   // shake the camera when it goes off near you
   const me = karts[meIdx]; if (me) { const d = Math.hypot(me.m.position.x - x, me.m.position.z - z); camShake = Math.max(camShake, size * Math.max(0, 1 - d / 70) * 1.6); }
 }
+// confetti burst: paper squares that pop up, flutter and fall
+const confG = new THREE.PlaneGeometry(0.7, 0.45), confCols = [0xffd23f, 0xff6a13, 0xe3262f, 0x5ff0ff, 0xff4fd8, 0x5fe39a, 0xffffff];
+function confetti(pos, n = 90) {
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(confG, new THREE.MeshBasicMaterial({ color: confCols[i % confCols.length], side: THREE.DoubleSide }));
+    m.position.set(pos.x + (Math.random() - 0.5) * 6, pos.y + 3, pos.z + (Math.random() - 0.5) * 6);
+    const v = new THREE.Vector3((Math.random() - 0.5) * 22, 16 + Math.random() * 18, (Math.random() - 0.5) * 22), spin = new THREE.Vector3(Math.random() * 9, Math.random() * 9, Math.random() * 9);
+    scene.add(m);
+    fx.push({ m, life: 3 + Math.random(), upd: (f, dt) => { v.y -= 22 * dt; v.multiplyScalar(1 - dt * 1.6); v.x += Math.sin(f.life * 6 + i) * dt * 8; m.position.addScaledVector(v, dt); if (m.position.y < 0.2) { m.position.y = 0.2; v.set(0, 0, 0); } else { m.rotation.x += spin.x * dt; m.rotation.y += spin.y * dt; } } });
+  }
+}
 function stepFx(dt) {
   for (let i = fx.length - 1; i >= 0; i--) {
     const f = fx[i]; f.life -= dt;
@@ -2155,7 +2196,7 @@ function stepKart(k, dt) {
   const maxBase = (mode === 'arena' ? 46 : 64) + r.spd * (mode === 'arena' ? 2.4 : 3.2), accel = 26 + r.acc * 3.4, turnRate = (mode === 'arena' ? 1.9 : 1.5) + r.hnd * 0.11;
   let throttle = 0, brake = 0, steer = 0, wantDrift = false;
   const live = state === 'race';
-  if (mode === 'race' && k.finished) { throttle = 0.4; steer = aiSteer(k); }
+  if (mode === 'race' && k.finished) { throttle = 0; brake = 0; steer = 0; wantDrift = false; k.boost = 0; k.speed = Math.max(0, k.speed - 45 * dt); } // rolls to a stop past the line
   else if (k.isPlayer) {
     if (live) {
       throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = keys.ax ? keys.ax : (keys.left ? 1 : 0) - (keys.right ? 1 : 0); k.steerS = (k.steerS || 0) + (want - (k.steerS || 0)) * Math.min(1, dt * (want ? 9 : 14)); steer = k.steerS; wantDrift = keys.drift;
@@ -2251,7 +2292,7 @@ function aiSteer(k) {
 }
 
 function collisions(dt) {
-  const live = karts.filter(k => k.alive);
+  const live = karts.filter(k => k.alive && !(mode === 'race' && k.finished));
   for (let a = 0; a < live.length; a++) for (let b = a + 1; b < live.length; b++) {
     const KA = live[a], KB = live[b], A = KA.m.position, B = KB.m.position, dx = B.x - A.x, dz = B.z - A.z, d = Math.hypot(dx, dz);
     if (d >= 5.6 || d < 0.01) continue;
@@ -2313,7 +2354,7 @@ function collisions(dt) {
       const dx = tx - pr.m.position.x, dz = tz - pr.m.position.z, d = Math.hypot(dx, dz) || 1;
       pr.m.position.x += dx / d * Math.min(d, pr.speed * dt); pr.m.position.z += dz / d * Math.min(d, pr.speed * dt);
       pr.m.rotation.set(0, Math.atan2(dx, dz), 0);
-      hit = karts.find(k => k !== pr.owner && k.m.position.distanceToSquared(pr.m.position) < 12);
+      hit = karts.find(k => k !== pr.owner && !k.finished && k.m.position.distanceToSquared(pr.m.position) < 12);
       if (hit) { spinOut(hit, '📉 GOT DUMPED ON!'); emit({ e: 'dumphit', a: karts.indexOf(pr.owner), v: karts.indexOf(hit) }); done = true; }
     } else {
       if (pr.kind === 'homing') {
@@ -2393,8 +2434,20 @@ function mmXY(x, z) {
 }
 const hex = c => '#' + c.toString(16).padStart(6, '0');
 const standings = () => mode === 'arena' ? [...karts].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths) : [...karts].sort((a, b) => placeOf(a) - placeOf(b));
+// see-through kart once it's over the line, so it reads as "out of the race"
+function ghostKart(k) {
+  k.ghost = true;
+  k.m.traverse(o => { if (o.isMesh && o.material && !o.userData.ghostMat) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.35; o.material.depthWrite = false; o.userData.ghostMat = true; o.castShadow = false; } });
+}
 function hud() {
   const p = ME(); if (!p) return;
+  if (mode === 'race') for (const k of karts) if (k.finished && !k.ghost) ghostKart(k);
+  if (mode === 'race' && p.finished && state === 'race') {
+    const left = karts.filter(k => !k.finished).length, place = finishOrder.indexOf(p) + 1;
+    const end = raceEndAt || raceEndShow, tLeft = end ? Math.max(0, Math.ceil(end - raceT)) : null;
+    $('hMsg').innerHTML = `🏁 FINISHED ${ord(place)}<br><small style="font-size:.5em">waiting for ${left} more${tLeft !== null ? ` · ${tLeft}s` : ''}</small>`; $('hMsg').style.opacity = 1;
+  }
+  $('btnSkip').hidden = !(mode === 'race' && p.finished && state === 'race' && !net);
   const order = standings(), place = order.indexOf(p) + 1;
   $('hPos').innerHTML = `${ord(place)} / ${karts.length}`;
   if (mode === 'race') {
@@ -2498,7 +2551,7 @@ function notify(ev) {
       }
       break;
     }
-    case 'fin': { const k = K(ev.p); if (!k) break; if (isClient()) { k.finished = true; k.finishTime = ev.t; if (!finishOrder.includes(k)) finishOrder.push(k); } logEvent(`🏁 ${who(k)} finished ${ev.place}${SUF[ev.place] || 'th'} in ${fmtT(ev.t)}`, k.isPlayer ? 'kill' : ''); if (k.isPlayer) banner('FINISH!', 1.6); break; }
+    case 'fin': { const k = K(ev.p); if (!k) break; if (isClient()) { k.finished = true; k.finishTime = ev.t; if (!finishOrder.includes(k)) finishOrder.push(k); } logEvent(`🏁 ${who(k)} finished ${ev.place}${SUF[ev.place] || 'th'} in ${fmtT(ev.t)}`, k.isPlayer ? 'kill' : ''); if (k.isPlayer) { banner(ev.place === 1 ? '🏆 1ST!' : `${ev.place}${SUF[ev.place] || 'TH'} PLACE!`, 2.2); confetti(k.m.position, ev.place === 1 ? 140 : 70); [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.18, 'triangle', 0.14), i * 110)); } break; }
     case 'spin': if (isClient() && ev.p === meIdx) spinOut(ME(), ev.why); break;
     case 'boost': if (isClient() && ev.p === meIdx) ME().boost = Math.max(ME().boost, ev.t); break;
     case 'freeze': { const k = karts[ev.p]; if (k) { k.frozen = Math.max(k.frozen || 0, ev.t); if (k.isPlayer) { say('❄️ FROZEN!'); blip(1600, 0.3, 'triangle', 0.1); } } break; }
@@ -2536,6 +2589,7 @@ let snapAcc = 0, meAcc = 0, pingT = 0, fpsN = 0, fpsT = 0, fps = 60;
 
 function leaveNet(silent) {
   if (!net) return;
+  unlistRoom();
   try { net.conns?.forEach(c => c.close()); net.conn?.close(); net.peer?.destroy(); } catch {}
   net = null; $('btnInvite').hidden = true; $('hNet').textContent = '';
   if (!silent) toast('Left the room');
@@ -2545,18 +2599,18 @@ function leaveNet(silent) {
 let ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
 fetch('/api/ice', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d?.iceServers?.length) ICE = d.iceServers; }).catch(() => {});
 const peerOpts = () => ({ debug: 0, config: { iceServers: ICE } });
-function createRoom() {
+function createRoom(pub = false) {
   leaveNet(true);
   const code = genCode();
-  net = { host: true, code, conns: [], players: [{ id: 'host', name: myName(), driver: pubDriver(driverOf(cfg.driver)) }], events: [], ready: false };
+  net = { host: true, code, conns: [], players: [{ id: 'host', name: myName(), driver: pubDriver(driverOf(cfg.driver)) }], events: [], ready: false, pub, target: cfg.target || 4, autoAt: 0 };
   net.send = () => {};
   const peer = new Peer(ROOM_PREFIX + code, peerOpts());
   net.peer = peer;
   renderRoom(); show('scrRoom'); $('roomStatus').textContent = 'Opening the room…';
-  peer.on('open', () => { if (!net || net.peer !== peer) return; net.ready = true; $('roomStatus').textContent = 'Share the code. Waiting for players…'; renderRoom(); });
+  peer.on('open', () => { if (!net || net.peer !== peer) return; net.ready = true; $('roomStatus').textContent = 'Share the code. Waiting for players…'; renderRoom(); listRoom(); });
   peer.on('error', err => {
     if (!net || net.peer !== peer) return;
-    if (err.type === 'unavailable-id') { createRoom(); return; } // code clash: roll a new one
+    if (err.type === 'unavailable-id') { createRoom(net.pub); return; } // code clash: roll a new one
     $('roomStatus').textContent = `Couldn't open the room (${err.type}). Check your connection and try again.`;
   });
   peer.on('connection', conn => {
@@ -2565,8 +2619,37 @@ function createRoom() {
     conn.on('close', () => onPlayerLeft(conn));
   });
 }
+// ---------------- open rooms: public listing, auto-start ----------------
+const AUTO_START = 10; // seconds of countdown once a public room is full
+function roomPost(body) { return fetch('/api/rooms', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), keepalive: true }).catch(() => {}); }
+function listRoom() {
+  if (!net?.host || !net.ready) return;
+  if (!net.pub) return;
+  roomPost({ code: net.code, host: myName(), map: cfg.map, mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, players: net.players.length, target: net.target, status: state === 'title' ? 'waiting' : 'racing' });
+}
+function unlistRoom(n = net) { if (n?.host && n.pub) roomPost({ code: n.code, close: true }); }
+setInterval(listRoom, 5000);
+addEventListener('pagehide', () => unlistRoom());
+// public rooms with enough humans start themselves after a short countdown
+function checkAutoStart() {
+  if (!net?.host || !net.pub || state !== 'title') return;
+  const full = net.players.length >= net.target;
+  if (full && !net.autoAt) { net.autoAt = Date.now() + AUTO_START * 1000; blip(880, 0.15); }
+  if (!full && net.autoAt) net.autoAt = 0;
+}
+setInterval(() => {
+  if (!net) return;
+  checkAutoStart();
+  const at = net.host ? net.autoAt : net.lobby?.autoAt ? Date.now() + net.lobby.autoIn * 1000 - (Date.now() - net.lobby.got) : 0;
+  if (state !== 'title' || screenNow !== 'scrRoom') return;
+  if (at) {
+    const s = Math.max(0, Math.ceil((at - Date.now()) / 1000));
+    $('roomStatus').innerHTML = `<b style="color:var(--yellow);font-size:1.3em">Starting in ${s}…</b>`;
+    if (net.host && s <= 0) { net.autoAt = 0; hostStart(); }
+  } else if (net.host && net.pub && net.ready) $('roomStatus').textContent = `Waiting for players: ${net.players.length} / ${net.target}. You can start once 2 are in.`;
+}, 250);
 function broadcast(obj) { if (net?.host) net.conns.forEach(c => { if (c.open) c.send(obj); }); }
-function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins, bots: cfg.bots, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host', level: p.id === 'host' ? myLevel() : p.level || 1 })) }; }
+function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins, bots: net.pub ? 0 : cfg.bots, pub: !!net.pub, target: net.target, autoIn: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0, autoAt: !!net.autoAt, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host', level: p.id === 'host' ? myLevel() : p.level || 1 })) }; }
 function onHostData(conn, d) {
   if (!net?.host || !d || typeof d !== 'object') return;
   if (d.t === 'hello') {
@@ -2576,7 +2659,7 @@ function onHostData(conn, d) {
     drv.img = typeof drv.img === 'string' && (drv.img.startsWith('/racers/') || drv.img.startsWith('data:image/')) && drv.img.length < 200000 ? drv.img : BUILTIN[0].img;
     net.players = net.players.filter(p => p.id !== conn.peer);
     net.players.push({ id: conn.peer, conn, name: String(d.name || 'PLAYER').slice(0, 14).toUpperCase(), driver: drv, level: Math.max(1, Math.min(MAX_LVL, d.level | 0 || 1)) });
-    renderRoom(); broadcast(lobbyInfo()); blip(1000, 0.08);
+    checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); blip(1000, 0.08);
     return;
   }
   if (d.t === 'ping') { conn.send({ t: 'pong', at: d.at }); return; }
@@ -2625,7 +2708,7 @@ function joinRoom(code) {
 function onClientData(d) {
   if (!net || net.host || !d || typeof d !== 'object') return;
   if (d.t === 'nope') { $('joinStatus').textContent = d.why; leaveNet(true); show('scrJoin'); return; }
-  if (d.t === 'lobby') { net.lobby = d; $('joinStatus').textContent = ''; if (state === 'title') { renderRoom(); show('scrRoom'); } return; }
+  if (d.t === 'lobby') { d.got = Date.now(); net.lobby = d; $('joinStatus').textContent = ''; if (state === 'title') { renderRoom(); show('scrRoom'); } return; }
   if (d.t === 'start') { clientStart(d); return; }
   if (d.t === 's') { applySnap(d); return; }
   if (d.t === 'end') { endGame(d.order.map(i => karts[i]).filter(Boolean)); return; }
@@ -2641,8 +2724,17 @@ function renderRoom() {
   const host = net.host, L = host ? lobbyInfo() : (net.lobby || { players: [], mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, bots: 0 });
   $('roomCode').textContent = net.code;
   $('roomLink').value = roomUrl(net.code);
-  $('roomTitle').textContent = host ? 'Your room' : 'Room';
-  $('roomDesc').innerHTML = host
+  $('roomTitle').textContent = host ? (net.pub ? 'Your open room' : 'Your room') : (L.pub ? 'Open room' : 'Room');
+  $('roomOpts').hidden = !host;
+  if (host) {
+    $('segPub').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === '1') === !!net.pub)));
+    $('segTarget').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === net.target)));
+    $('targetField').hidden = !net.pub;
+  }
+  $('roomDesc').innerHTML = host && net.pub
+    ? `Your room is listed under <b>Open rooms</b> for anyone to join. Humans only, no bots. It starts by itself at <b>${net.target} players</b>, or hit <b>Start match</b> once 2 are in.`
+    : !host && L.pub ? `Open room: humans only. It starts automatically at <b>${L.target} players</b> (${L.players.length} in now), or when the host starts it.`
+    : host
     ? `Share the code or link with your pack: up to <b>${MAX_KARTS} players</b>. Tap the map to switch tracks, set bots, laps and match length in ⚙️ Settings, then hit <b>Start match</b>. Empty seats fill up with bots.`
     : 'You are in! The host picks the map and starts the match. Change your name or driver while you wait. Everyone earns XP and can climb the leaderboards.';
   const botN = Math.max(0, Math.min(MAX_KARTS - L.players.length, L.bots));
@@ -2653,7 +2745,7 @@ function renderRoom() {
   $('roomMapName').innerHTML = race ? `${LM.name}<small>Race · ${L.laps} lap${L.laps > 1 ? 's' : ''}</small>` : `${LM.name}<small>Free for all · ${L.mins} mins</small>`;
   $('roomMap').disabled = !host;
   $('btnRoomStart').hidden = !host; $('btnRoomSettings').hidden = !host;
-  $('btnRoomStart').disabled = !net.ready;
+  $('btnRoomStart').disabled = !net.ready || (net.pub && net.players.length < 2);
   if (!host) $('roomStatus').textContent = 'Waiting for the host to start…';
 }
 
@@ -2673,7 +2765,7 @@ function hostRoster() {
   const list = net.players.map(p => ({ name: p.name, driver: p.driver, human: true, peer: p.id, level: p.id === 'host' ? myLevel() : p.level || 1 }));
   const used = new Set(list.map(p => p.driver.id));
   const pool = BUILTIN.filter(d => !used.has(d.id)).concat(BUILTIN.filter(d => used.has(d.id)));
-  const bots = Math.max(0, Math.min(MAX_KARTS - list.length, cfg.bots));
+  const bots = net.pub ? 0 : Math.max(0, Math.min(MAX_KARTS - list.length, cfg.bots));
   for (let i = 0; i < bots; i++) { const d = pool[i % pool.length]; list.push({ name: kartLabel(d), driver: pubDriver(d), human: false, level: BOT_LVL[cfg.diff] || 9 }); }
   return list;
 }
@@ -2720,12 +2812,12 @@ function clientStart(d) {
   startGame({ roster: d.roster, mode: d.mode, map: d.map || (d.mode === 'arena' ? 'pit' : 'bonfire'), laps: d.laps, mins: d.mins, me: d.you });
 }
 // race end: solo ends when you finish; rooms end when every human has finished, or 30s after the first one does
-let raceEndAt = 0;
+let raceEndAt = 0, raceEndShow = 0; // raceEndShow: the host's deadline as seen by guests
 function checkRaceEnd() {
   if (isClient()) return;
   const humans = karts.filter(k => k.human);
-  if (humans.every(k => k.finished)) { endGame(); return; }
-  if (!raceEndAt && humans.some(k => k.finished)) { raceEndAt = raceT + 30; logEvent('⏱️ 30 seconds left for everyone else to finish'); }
+  if (karts.every(k => k.finished)) { endGame(); return; }
+  if (!raceEndAt && humans.some(k => k.finished)) { const w = net ? 30 : 15; raceEndAt = raceT + w; logEvent(`⏱️ ${w} seconds left for everyone else to finish`); }
 }
 
 // ---------------- network: snapshots ----------------
@@ -2733,7 +2825,7 @@ function snapshot() {
   const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
   const boxes = mode === 'race' ? raceBoxes : arenaBoxes;
   const s = {
-    t: 's', st: state, T: r2(raceT), cd: r2(countdown),
+    t: 's', st: state, T: r2(raceT), cd: r2(countdown), re: raceEndAt ? r1(raceEndAt) : 0,
     k: karts.map(k => [r1(k.m.position.x), r1(k.m.position.z), r1(k.y), r2(k.heading), r1(k.speed), k.alive ? 1 : 0, Math.round(k.hp), k.kills, k.deaths, k.boost > 0 ? 1 : 0, k.drifting ? k.driftDir : 0, WCODE.indexOf(k.weapon || ''), k.ammo || 0, k.lap, k.finished ? 1 : 0, k.tp || 0, k.invuln > 0 ? 1 : 0, ICODE.indexOf(k.item?.id || ''), Math.round(k.progress), r2(k.finishTime || 0)]),
     pr: projectiles.map(p => [PCODE.indexOf(p.kind), r1(p.m.position.x), r1(p.m.position.z), r2(p.m.rotation.y)]),
     hz: hazards.map(h => [h.kind === 'mine' ? 1 : 0, r1(h.m.position.x), r1(h.m.position.z)]),
@@ -2750,7 +2842,7 @@ function applySnap(s) {
   for (const ev of s.ev || []) notify(ev);
   const prevState = state;
   if (!state.startsWith('paused')) state = s.st === 'done' ? state : s.st;
-  raceT = s.T; countdown = s.cd;
+  raceT = s.T; countdown = s.cd; raceEndShow = s.re || 0;
   if (s.st === 'countdown') { const n = Math.ceil(s.cd); if (n !== lastCd && n > 0) { banner(String(n), 0.9); blip(440, 0.2); } lastCd = n; }
   if (prevState === 'countdown' && state === 'race') { banner(mode === 'arena' ? 'SMASH!' : 'GO!', 0.9); blip(880, 0.35); }
   s.k.forEach((a, i) => {
@@ -2884,6 +2976,14 @@ function updateCamera(dt, instant) {
     camera.fov = baseFov; camera.updateProjectionMatrix();
     return;
   }
+  if (mode === 'race' && p.finished && state === 'race') {
+    const a = camYaw + performance.now() / 4000, P = p.m.position;
+    camPos.lerp(tmp.set(P.x - Math.sin(a) * 17, P.y + 7.5, P.z - Math.cos(a) * 17), instant ? 1 : 1 - Math.pow(0.02, dt));
+    camLook.lerp(new THREE.Vector3(P.x, P.y + 2.5, P.z), 1 - Math.pow(0.01, dt));
+    camera.position.copy(camPos); camera.lookAt(camLook);
+    camFov += (baseFov - camFov) * (1 - Math.pow(0.05, dt)); camera.fov = camFov; camera.updateProjectionMatrix();
+    return;
+  }
   const back = (mode === 'arena' ? camBack + 11 : camBack + 6) + Math.max(0, p.speed) * 0.04, h = mode === 'arena' ? 15 : camBack > 15 ? 11 : 9.5;
   // the camera follows a smoothed heading, so drift wobble and spin-outs don't shake the view
   camYaw += Math.atan2(Math.sin(p.heading - camYaw), Math.cos(p.heading - camYaw)) * (instant ? 1 : 1 - Math.pow(0.004, dt));
@@ -2979,6 +3079,33 @@ for (const [id, key, out] of [['cfgSens', 'sensPct', 'sensVal'], ['cfgTspd', 'sp
   const el = $(id); el.value = cfg[key]; $(out).textContent = cfg[key] + '%';
   el.addEventListener('input', () => { cfg[key] = +el.value; $(out).textContent = el.value + '%'; saveCfg(); if (key === 'spdPct' && !$('touch').hidden) keys.touchSpd = touchSpd(); });
 }
+// public / private and auto-start target (host, on the room screen)
+$('segPub').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !net?.host) return; const pub = b.dataset.v === '1'; if (!pub) unlistRoom(); net.pub = pub; net.autoAt = 0; checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); });
+$('segTarget').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !net?.host) return; net.target = cfg.target = +b.dataset.v; saveCfg(); net.autoAt = 0; checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); });
+// join screen tabs
+function joinTab(t) { document.querySelectorAll('.jtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.jt === t))); $('jtOpen').hidden = t !== 'open'; $('jtCode').hidden = t !== 'code'; if (t === 'open') loadOpenRooms(); else setTimeout(() => $('joinCode').focus(), 50); }
+document.querySelectorAll('.jtab').forEach(b => b.addEventListener('click', () => joinTab(b.dataset.jt)));
+async function fetchRooms() { try { const r = await fetch('/api/rooms', { cache: 'no-store' }); if (r.ok) return (await r.json()).rooms; } catch {} return null; }
+async function loadOpenRooms() {
+  const rooms = await fetchRooms();
+  if (screenNow !== 'scrJoin' || $('jtOpen').hidden) return;
+  if (!rooms) { $('openList').innerHTML = '<p class="status">Room list is offline right now. Use a code instead.</p>'; return; }
+  if (!rooms.length) { $('openList').innerHTML = '<p class="status">No open rooms yet. Hit Quick match to open one and others will find you.</p>'; return; }
+  $('openList').innerHTML = rooms.map(r => { const m = MAPS_BY[r.map] || MAPS_BY.bonfire, racing = r.status !== 'waiting', full = r.players >= MAX_KARTS;
+    return `<button class="oroom ${racing || full ? 'racing' : ''}" type="button" data-code="${r.code}" ${racing || full ? 'disabled' : ''}><span class="ic">${m.icon}</span><span><b>${escapeHtml(m.name)}</b><small>Host ${escapeHtml(r.host)} · ${m.world === 'race' ? r.laps + ' laps' : r.mins + ' min'}${racing ? ' · racing now' : ''}</small></span><span class="cnt">${r.players}/${r.target}<i>players</i></span></button>`; }).join('');
+}
+$('openList').addEventListener('click', e => { const b = e.target.closest('.oroom'); if (b && !b.disabled) joinRoom(b.dataset.code); });
+setInterval(() => { if (screenNow === 'scrJoin' && !$('jtOpen').hidden && !net) loadOpenRooms(); }, 4000);
+// how many rooms are waiting, on the start card
+async function openCount() { const rooms = await fetchRooms(); const n = rooms ? rooms.filter(r => r.status === 'waiting').length : 0; $('openCount').textContent = n ? `· ${n} waiting` : ''; }
+setInterval(() => { if (screenNow === 'scrTitle' && !document.hidden) openCount(); }, 10000); openCount();
+// quick match: the fullest room that's still waiting, otherwise open a public one
+$('btnQuick').addEventListener('click', async () => {
+  $('joinStatus').textContent = 'Finding a room…';
+  const rooms = (await fetchRooms() || []).filter(r => r.status === 'waiting' && r.players < Math.min(r.target, MAX_KARTS)).sort((a, b) => b.players - a.players);
+  if (rooms.length) joinRoom(rooms[0].code); else { $('joinStatus').textContent = ''; createRoom(true); }
+});
+$('btnOpenRooms').addEventListener('click', () => { initAudio(); $('joinStatus').textContent = ''; show('scrJoin'); joinTab('open'); });
 $('btnRecords').addEventListener('click', () => { const r = $('recs'); r.hidden = !r.hidden; $('btnRecords').setAttribute('aria-expanded', String(!r.hidden)); if (!r.hidden) { loadWorld(); loadXpBoard(); } });
 // ---------------- XP leaderboard: everyone who played, overall or per map ----------------
 $('xpMap').innerHTML = '<option value="all">All maps</option>' + MAPS.map(m => `<option value="${m.id}">${m.icon} ${m.name}</option>`).join('');
@@ -3134,9 +3261,10 @@ $('btnAdd').addEventListener('click', async () => {
 // lobby buttons
 $('btnPlay').addEventListener('click', () => { initAudio(); mapCtx = 'solo'; renderMaps(); show('scrMaps'); });
 $('btnCustomize').addEventListener('click', () => { renderGarage(); show('scrGarage'); });
+$('btnSkip').addEventListener('click', () => { if (!net && state === 'race') endGame(); });
 $('btnSettings').addEventListener('click', () => { renderSettings(); show('scrSettings'); });
 $('btnCreate').addEventListener('click', () => { initAudio(); createRoom(); });
-$('btnJoin').addEventListener('click', () => { $('joinStatus').textContent = ''; show('scrJoin'); setTimeout(() => $('joinCode').focus(), 50); });
+$('btnJoin').addEventListener('click', () => { $('joinStatus').textContent = ''; show('scrJoin'); joinTab('code'); });
 $('btnJoinGo').addEventListener('click', () => joinRoom($('joinCode').value));
 $('joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('joinCode').value); });
 $('maps').addEventListener('click', e => {
