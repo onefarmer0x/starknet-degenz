@@ -730,12 +730,19 @@ function initAudio() {
     audio = { ctx, eng, g };
   } catch {}
 }
+// engine hum: only audible while you're actually racing; muted on every other screen/state
+function engineSound() {
+  if (!audio) return;
+  const p = ME(), on = state === 'race' && p && p.alive && !p.finished && !document.hidden, s = p ? Math.abs(p.speed) : 0;
+  if (p) audio.eng.frequency.value = 60 + s * 2.2 + (p.boost > 0 ? 40 : 0);
+  audio.g.gain.setTargetAtTime(on ? 0.04 + s / 3000 : 0, audio.ctx.currentTime, 0.03);
+}
 function stopAudio() { if (audio) { audio.ctx.close(); audio = null; } }
 function blip(freq = 600, dur = 0.12, type = 'square', vol = 0.15) {
   if (!audio) return;
   const o = audio.ctx.createOscillator(), g = audio.ctx.createGain();
-  o.type = type; o.frequency.value = freq; g.gain.value = vol;
-  g.gain.exponentialRampToValueAtTime(0.001, audio.ctx.currentTime + dur);
+  const t = audio.ctx.currentTime; o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(g).connect(audio.ctx.destination); o.start(); o.stop(audio.ctx.currentTime + dur);
 }
 function boom() { if (!audio) return; blip(90, 0.5, 'sawtooth', 0.3); blip(60, 0.7, 'square', 0.2); }
@@ -3426,7 +3433,7 @@ if (store.get('kart.logOpen', true) === false) { $('hLog').classList.add('closed
 let worldNote = '';
 function endGame(given) {
   if (state === 'done' && !given) return;
-  state = 'done';
+  state = 'done'; engineSound();
   const me = ME();
   let order = given;
   if (!order) {
@@ -3549,7 +3556,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fpsN++; if ((fpsT += dt) >= 1) { fps = Math.round(fpsN / fpsT); fpsN = 0; fpsT = 0; }
-  tick(dt, now);
+  try { tick(dt, now); } catch (e) { console.error(e); if (audio) audio.g.gain.value = 0; }
   const ma = MAP_ANIM[curMap]; if (ma) for (const f of ma) f(now / 1000, dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -3608,7 +3615,7 @@ function tick(dt, now) {
   followSun(focus.x, focus.z);
   $('speedLines').classList.toggle('on', !!(ME() && ME().boost > 0 && state === 'race'));
   $('hNet').innerHTML = net ? `FPS: ${fps}<br>${net.host ? `HOST · ${net.conns.length + 1} in room` : `PING: ${net.ping ?? '…'}`}` : '';
-  if (audio && ME() && state !== 'title') { const s = Math.abs(ME().speed); audio.eng.frequency.value = 60 + s * 2.2 + (ME().boost > 0 ? 40 : 0); audio.g.gain.value = state === 'race' ? 0.04 + s / 3000 : 0; }
+  engineSound();
 }
 // test hook: advance the simulation without rendering (used for automated playtests)
 window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += dt) tick(dt, performance.now()); renderer.render(scene, camera); }, keys, cfg, steer: k => aiSteer(k), arenaBot: (k, dt) => arenaBot(k, dt), get karts() { return karts; }, get state() { return state; }, get mode() { return mode; }, get net() { return net; }, get meIdx() { return meIdx; }, createRoom, joinRoom, hostStart, explodeFx, get pts() { return PTS; }, activateMap, get curMap() { return curMap; }, headL, startGame, groundAt, giveWeapon, giveRaceItem, get prog() { return prog; }, endGame, resultCard, finishOrder };
