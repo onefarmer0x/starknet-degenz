@@ -226,12 +226,6 @@ body.has-touch .item { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) 
 
 /* mobile: floating joystick on the left half, action buttons on the right */
 .joyzone { position: fixed; left: 0; top: 0; bottom: 0; width: 50%; z-index: 6; touch-action: none; pointer-events: auto; }
-.joyzone.right { left: auto; right: 0; z-index: 5; } /* under the FIRE / DRIFT buttons, so those still win */
-/* split sticks: left stick is gas / brake only, right stick steers; FIRE + DRIFT sit up on the right edge */
-body.split .touch.v2 { inset: 0 0 auto auto; top: 50%; transform: translateY(-50%); right: max(10px, env(safe-area-inset-right, 0px)); }
-body.split .touch.v2 .grp { flex-direction: column; align-items: center; gap: 10px; }
-body.split .touch.v2 .tbtn[data-k="brake"] { display: none; }
-body.split .touch.v2 .tbtn.fire { width: 80px; height: 80px; }
 .joy { position: fixed; width: 132px; height: 132px; margin: -66px 0 0 -66px; border-radius: 50%; z-index: 7; pointer-events: none;
   background: radial-gradient(circle, rgba(255,246,227,0.10) 40%, rgba(255,246,227,0.22)); border: 3px solid rgba(255,246,227,0.55); box-shadow: 0 0 0 3px rgba(21,17,28,0.35); transition: opacity 0.15s; }
 .joy.idle { opacity: 0.55; }
@@ -569,7 +563,6 @@ html .maps-head b { font-size: 22px; }
       <div class="field"><span class="lbl">Bot skill</span><div class="seg" data-cfg="diff"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="degen">Degen</button></div></div>
       <div class="field"><span class="lbl">Sound</span><div class="seg" data-cfg="sound"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="field"><span class="lbl">Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
-      <div class="field touch-only"><span class="lbl">Phone controls</span><div class="seg" data-cfg="ctrl"><button data-v="split">Split sticks</button><button data-v="one">One stick</button></div></div>
       <div class="field touch-only"><span class="lbl">Joystick steering <b class="rv" id="sensVal">50%</b></span><input class="range" type="range" id="cfgSens" min="10" max="90" step="5" aria-label="Joystick steering sensitivity"></div>
       <div class="field touch-only"><span class="lbl">Top speed (phone) <b class="rv" id="tspdVal">50%</b></span><input class="range" type="range" id="cfgTspd" min="10" max="90" step="5" aria-label="Phone top speed"></div>
     </div>
@@ -703,8 +696,6 @@ html .maps-head b { font-size: 22px; }
 </div>
 
 <div class="joyzone" id="joyZone" hidden></div>
-<div class="joyzone right" id="joyZoneR" hidden></div>
-<div class="joy idle steer" id="joyR" hidden><span class="arr" style="left:8px;top:50%;transform:translateY(-50%)">◀</span><span class="arr" style="right:8px;top:50%;transform:translateY(-50%)">▶</span><span class="arr" style="left:50%;bottom:4px;transform:translateX(-50%);font-size:11px">TAP = FIRE</span><div class="knob"></div></div>
 <div class="joy idle" id="joy" hidden><span class="arr" style="left:8px;top:50%;transform:translateY(-50%)">◀</span><span class="arr" style="right:8px;top:50%;transform:translateY(-50%)">▶</span><span class="arr" style="left:50%;bottom:4px;transform:translateX(-50%);font-size:11px">BRAKE</span><div class="knob"></div></div>
 <div class="touch v2" id="touch" hidden>
   <div class="grp"><button class="tbtn small" data-k="drift" aria-label="Drift">DRIFT</button><button class="tbtn fire" data-k="item" id="tItem" aria-label="Fire / use item">FIRE</button><button class="tbtn small" data-k="brake" aria-label="Brake">BRAKE</button></div>
@@ -734,7 +725,7 @@ const allDrivers = () => [...BUILTIN, ...customs];
 
 // settings, saved in this browser
 // phones start on low graphics (no shadows, 1x resolution); everyone can switch in setup
-const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sensPct: 50, spdPct: 50, ctrl: 'split', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
+const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sensPct: 50, spdPct: 50, gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
 const cfg = Object.assign({}, DEFAULT_CFG, store.get('kart.cfg', {}));
 const saveCfg = () => store.set('kart.cfg', cfg);
 const best = store.get('kart.best', { race: {}, arena: 0 });
@@ -2276,7 +2267,10 @@ function stepKart(k, dt) {
   if (mode === 'race' && k.finished) { throttle = 0; brake = 0; steer = 0; wantDrift = false; k.boost = 0; k.speed = Math.max(0, k.speed - 45 * dt); } // rolls to a stop past the line
   else if (k.isPlayer) {
     if (live) {
-      throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = keys.ax ? keys.ax * (1 - 0.35 * Math.min(1, Math.abs(k.speed) / maxBase)) : (keys.left ? 1 : 0) - (keys.right ? 1 : 0); k.steerS = (k.steerS || 0) + (want - (k.steerS || 0)) * Math.min(1, dt * (want ? (keys.ax ? 7 : 9) : 14)); steer = k.steerS; wantDrift = keys.drift;
+      throttle = keys.up ? 1 : 0; brake = keys.down ? 1 : 0; const want = keys.ax ? keys.ax * (1 - 0.4 * Math.min(1, Math.abs(k.speed) / maxBase)) : (keys.left ? 1 : 0) - (keys.right ? 1 : 0), cur = k.steerS || 0;
+      // phone stick: eases in gently, but flicking from left to right (or back) snaps across quickly
+      const flip = keys.ax && cur * want < 0;
+      k.steerS = cur + (want - cur) * Math.min(1, dt * (flip ? 22 : want ? (keys.ax ? 6 : 9) : 14)); steer = k.steerS; wantDrift = keys.drift;
       if (mode === 'race' && keys.item) { keys.item = false; playerUse(k); }
       if (mode === 'arena' && (keys.item || (keys.fire && WEAPONS[k.weapon]?.auto))) { keys.item = false; playerUse(k); }
     }
@@ -3543,20 +3537,14 @@ const touchUI = () => document.body.classList.contains('has-touch');
 const joy = $('joy'), knob = joy.querySelector('.knob'), JR = 52;
 let joyId = null, joyX = 0, joyY = 0, brakeBtn = false;
 function joyHome() { const m = innerHeight <= 500 ? 64 : 90; joy.style.left = `max(${m}px, calc(env(safe-area-inset-left, 0px) + ${m}px))`; joy.style.top = `calc(100% - max(${m}px, calc(env(safe-area-inset-bottom, 0px) + ${m}px)))`; joy.classList.add('idle'); knob.style.transform = ''; }
-// expo curve: the middle of the stick is gentle (no twitching on straights), the edge is always full lock
-// (hairpins). The steering slider sets how quickly it ramps up: 10% = very soft, 90% = almost linear.
-const steerCurve = nx => { const t = Math.max(0, (Math.abs(nx) - 0.15) / (0.92 - 0.15)); return t <= 0 ? 0 : -Math.sign(nx) * Math.pow(Math.min(1, t), joyExpo()); };
-const splitCtl = () => cfg.ctrl !== 'one';
 function joyApply(dx, dy) {
   const d = Math.hypot(dx, dy), s = d > JR ? JR / d : 1; dx *= s; dy *= s;
-  const nx = dx / JR, ny = dy / JR;
-  if (splitCtl()) { // left stick: push up = gas, pull down = brake / reverse, centre = coast
-    knob.style.transform = `translate(0px, ${dy}px)`;
-    keys.down = ny > 0.35 || brakeBtn; keys.up = !keys.down && ny < -0.25;
-    return;
-  }
   knob.style.transform = `translate(${dx}px, ${dy}px)`;
-  keys.ax = steerCurve(nx);
+  const nx = dx / JR, ny = dy / JR, dead = 0.15;
+  // expo curve: the middle of the stick is gentle (no twitching on straights), the edge is always full lock
+  // (hairpins). The steering slider sets how quickly it ramps up: 10% = very soft, 90% = almost linear.
+  const t = Math.max(0, (Math.abs(nx) - dead) / (0.92 - dead));
+  keys.ax = t <= 0 ? 0 : -Math.sign(nx) * Math.pow(Math.min(1, t), joyExpo());
   // brake only when the stick is pulled clearly down, not on a hard diagonal turn
   keys.down = (ny > 0.72 && Math.abs(nx) < 0.55) || brakeBtn;
   keys.up = !keys.down;
@@ -3566,40 +3554,16 @@ $('joyZone').addEventListener('pointerdown', e => {
   joyX = e.clientX; joyY = e.clientY; joy.style.left = joyX + 'px'; joy.style.top = joyY + 'px'; joy.classList.remove('idle'); joyApply(0, 0);
 });
 $('joyZone').addEventListener('pointermove', e => { if (e.pointerId === joyId) { e.preventDefault(); joyApply(e.clientX - joyX, e.clientY - joyY); } });
-const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; if (!splitCtl()) keys.ax = 0; keys.down = brakeBtn; keys.up = !brakeBtn && !splitCtl(); joyHome(); };
+const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; keys.ax = 0; keys.down = brakeBtn; keys.up = !brakeBtn; joyHome(); };
 ['pointerup', 'pointercancel'].forEach(t => $('joyZone').addEventListener(t, joyEnd));
-// split sticks, right thumb: drag sideways to steer; a quick tap (no drag) fires / uses your item
-const joyR = $('joyR'), knobR = joyR.querySelector('.knob');
-let steerId = null, steerX = 0, steerY = 0, steerT = 0, steerMoved = false;
-function joyRHome() { const m = innerHeight <= 500 ? 64 : 90; joyR.style.left = `calc(100% - max(${m + 110}px, calc(env(safe-area-inset-right, 0px) + ${m + 110}px)))`; joyR.style.top = `calc(100% - max(${m}px, calc(env(safe-area-inset-bottom, 0px) + ${m}px)))`; joyR.classList.add('idle'); knobR.style.transform = ''; }
-$('joyZoneR').addEventListener('pointerdown', e => {
-  if (steerId !== null) return; e.preventDefault(); steerId = e.pointerId; try { $('joyZoneR').setPointerCapture(e.pointerId); } catch {}
-  steerX = e.clientX; steerY = e.clientY; steerT = performance.now(); steerMoved = false;
-  joyR.style.left = steerX + 'px'; joyR.style.top = steerY + 'px'; joyR.classList.remove('idle'); keys.ax = 0;
-});
-$('joyZoneR').addEventListener('pointermove', e => {
-  if (e.pointerId !== steerId) return; e.preventDefault();
-  const dx = Math.max(-JR, Math.min(JR, e.clientX - steerX));
-  if (Math.abs(e.clientX - steerX) > 10 || Math.abs(e.clientY - steerY) > 10) steerMoved = true;
-  knobR.style.transform = `translate(${dx}px, 0px)`; keys.ax = steerCurve(dx / JR);
-});
-const steerEnd = e => {
-  if (e.pointerId !== steerId) return; steerId = null; keys.ax = 0; joyRHome();
-  if (!steerMoved && performance.now() - steerT < 250) { keys.item = true; keys.fire = true; setTimeout(() => { keys.fire = false; }, 120); }
-};
-['pointerup', 'pointercancel'].forEach(t => $('joyZoneR').addEventListener(t, steerEnd));
 // show / hide the joystick with the touch buttons; auto-gas while racing on touch
 // joystick sensitivity and phone top speed (defaults a little gentler than full)
 // sliders 10-90%: steering sets how fast the joystick ramps to full lock (see joyApply); speed maps to 60-96% of top speed
-const joyExpo = () => 3.0 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
+const joyExpo = () => 3.4 - 1.8 * (cfg.sensPct || 50) / 100, touchSpd = () => 0.55 + 0.45 * (cfg.spdPct || 50) / 100;
 function setTouch(on) {
   keys.touchSpd = on ? touchSpd() : 1;
-  const split = on && splitCtl(); document.body.classList.toggle('split', split);
-  $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on; $('joyZoneR').hidden = !split; joyR.hidden = !split;
-  joy.querySelectorAll('.arr:not(.gas)').forEach((a, i) => { a.textContent = split ? ['', '', '▼ BRAKE'][i] : ['◀', '▶', 'BRAKE'][i]; });
-  if (split && !joy.querySelector('.gas')) { const g = document.createElement('span'); g.className = 'arr gas'; g.style.cssText = 'left:50%;top:4px;transform:translateX(-50%);font-size:11px'; g.textContent = '▲ GAS'; joy.appendChild(g); }
-  joy.querySelector('.gas')?.toggleAttribute('hidden', !split);
-  if (on) { joyHome(); joyRHome(); keys.up = !brakeBtn && !split; } else { keys.ax = 0; joyId = steerId = null; if (touchUI()) keys.up = keys.down = false; }
+  $('touch').hidden = !on; $('joyZone').hidden = !on; joy.hidden = !on;
+  if (on) { joyHome(); keys.up = !brakeBtn; } else { keys.ax = 0; joyId = null; if (touchUI()) keys.up = keys.down = false; }
 }
 document.querySelectorAll('.tbtn').forEach(b => {
   const k = b.dataset.k, map = { gas: 'up', left: 'left', right: 'right', drift: 'drift' };
