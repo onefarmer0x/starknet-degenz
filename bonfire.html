@@ -405,7 +405,11 @@ async function loadPrice() {
     const j = await (await fetch('https://api.dexscreener.com/latest/dex/tokens/' + TOKEN)).json();
     const pairs = (j.pairs || []).filter(p => p.chainId === 'starknet' && BigInt(p.baseToken.address) === BigInt(TOKEN));
     pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
-    if (pairs[0]) S.price = +pairs[0].priceUsd || 0;
+    if (pairs[0]) { S.price = +pairs[0].priceUsd || 0; return; }
+  } catch {}
+  try { // DexScreener dropped the pair: GeckoTerminal pool price through our cached proxy (api/gt.js)
+    const g = await (await fetch('/api/gt?u=' + encodeURIComponent('networks/starknet-alpha/tokens/' + TOKEN))).json();
+    S.price = +g.data.attributes.price_usd || S.price || 0;
   } catch {}
 }
 

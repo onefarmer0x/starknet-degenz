@@ -536,10 +536,24 @@ async function rpc(method, params) {
 
 let supply = 0, burned = 0, pool = 0;
 
-async function market() {
+// DexScreener first; it sometimes drops quiet pools, so fall back to the GeckoTerminal pool in the same shape
+async function marketPair() {
   try {
     const j = await (await fetch('https://api.dexscreener.com/latest/dex/tokens/' + TOKEN)).json();
     const p = (j.pairs || []).filter(p => p.chainId === 'starknet').sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+    if (p) return p;
+  } catch {}
+  const a = (await (await fetch(gt())).json()).data.attributes, [b, q] = a.name.split(' / ');
+  return {
+    priceUsd: a.base_token_price_usd, priceChange: { h24: +a.price_change_percentage?.h24 || 0 }, marketCap: +a.market_cap_usd || null, fdv: +a.fdv_usd,
+    liquidity: { usd: +a.reserve_in_usd }, dexId: 'ekubo', baseToken: { symbol: b }, quoteToken: { symbol: (q || '').split(' ')[0] },
+    volume: { h24: +a.volume_usd?.h24 || 0 }, txns: { h24: { buys: a.transactions?.h24?.buys ?? 0, sells: a.transactions?.h24?.sells ?? 0 } },
+    url: `https://www.geckoterminal.com/starknet-alpha/pools/${POOL}`,
+  };
+}
+async function market() {
+  try {
+    const p = await marketPair();
     if (!p) return;
     const price = +p.priceUsd, chg = p.priceChange?.h24 ?? 0;
     $('tPrice').textContent = usd(price); $('sPrice').textContent = usd(price);
@@ -604,7 +618,8 @@ async function chain() {
 // Candles from GeckoTerminal (the Ekubo DEGENZ/STRK pool), quotes from AVNU. Market cap = price x total supply,
 // matching DexScreener's figure in the stats above.
 const POOL = '0x00f62c6ca1e0d016e4eec99dea7dfbadc9d688eaed35d296855b96dc67ba23a9';
-const GT = `https://api.geckoterminal.com/api/v2/networks/starknet-alpha/pools/${POOL}`;
+// GeckoTerminal goes through our cached proxy (api/gt.js): direct browser calls got rate-limited
+const gt = (suffix = '') => '/api/gt?u=' + encodeURIComponent(`networks/starknet-alpha/pools/${POOL}${suffix}`);
 const TOTAL = 1e9;
 const tv = { tf: 'hour:1', metric: 'mcap', ccy: 'usd', style: 'candles', slip: 1, side: 'buy', rows: [], chart: null, main: null, vol: null };
 
@@ -660,7 +675,7 @@ function showOhlc(r) {
 async function loadCandles() {
   const [unit, agg] = tv.tf.split(':');
   try {
-    const j = await (await fetch(`${GT}/ohlcv/${unit}?aggregate=${agg}&limit=1000&currency=${tv.ccy}`)).json();
+    const j = await (await fetch(gt(`/ohlcv/${unit}?aggregate=${agg}&limit=1000&currency=${tv.ccy}`))).json();
     const k = tv.metric === 'mcap' ? TOTAL : 1;
     const seen = new Set();
     tv.rows = j.data.attributes.ohlcv_list
@@ -677,8 +692,8 @@ async function loadCandles() {
 async function loadHeadline() {
   try {
     const [pool, days] = await Promise.all([
-      fetch(GT).then(r => r.json()),
-      fetch(`${GT}/ohlcv/day?aggregate=1&limit=1000&currency=usd`).then(r => r.json()),
+      fetch(gt()).then(r => r.json()),
+      fetch(gt('/ohlcv/day?aggregate=1&limit=1000&currency=usd')).then(r => r.json()),
     ]);
     const a = pool.data.attributes, price = +a.base_token_price_usd, mc = price * TOTAL, chg = +a.price_change_percentage.h24;
     const ath = Math.max(mc, ...days.data.attributes.ohlcv_list.map(r => r[2] * TOTAL));
