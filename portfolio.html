@@ -135,6 +135,31 @@ tr.tr-det td { text-align: left; padding: 0 10px 14px; background: rgba(255, 255
 .gate h2 { font: 400 clamp(26px, 4vw, 36px) "Anton", Impact, sans-serif; text-transform: uppercase; margin: 0 0 8px; }
 .gate p { color: var(--pf-dim); max-width: 48ch; margin: 0 auto 18px; }
 html .gate .btn { background: var(--pf-ember); color: #150b05; border: 0; }
+/* link icons: on the row (desktop), in the expanded panel (phones) */
+.ico-links { display: inline-flex; gap: 4px; flex-wrap: nowrap; justify-content: flex-end; }
+.ico-links a, .ico-links button { width: 27px; height: 27px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid var(--pf-line); background: var(--pf-panel2); color: var(--pf-text); font-size: 14px; text-decoration: none; cursor: pointer; padding: 0; line-height: 1; }
+.ico-links a:hover, .ico-links button:hover { border-color: var(--pf-ember); }
+.ico-links .swap { background: var(--pf-ember); border-color: var(--pf-ember); color: #150b05; font-weight: 700; }
+.ico-links .x { font-weight: 700; font-size: 13px; }
+td.lk { white-space: nowrap; width: 1%; }
+#pTokens { overflow-x: auto; } /* a long row of link icons scrolls inside the card, not the page */
+tr.tr-sub td { padding-top: 6px; padding-bottom: 6px; font-size: 13px; color: var(--pf-dim); border-bottom-style: dashed; }
+tr.tr-sub td:first-child { padding-left: 52px; }
+tr.tr-sub b { color: var(--pf-text); font-weight: 600; }
+.seg-toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--pf-dim); font-size: 13px; cursor: pointer; user-select: none; }
+.seg-toggle input { accent-color: var(--pf-ember); width: 16px; height: 16px; }
+.only-sm { display: none; }
+@media (max-width: 1050px) and (min-width: 721px) { th.pool-col, td.pool-col { display: none; } } /* make room for the link icons */
+@media (min-width: 721px) { tr.tr-det { display: none; } tr.tr-tok { cursor: default; } .chev { display: none; } }
+@media (max-width: 720px) {
+  .only-sm { display: revert; }
+  tr.tr-det td { text-align: center; }
+  .det { justify-items: center; text-align: center; }
+  .det .ca { justify-content: center; }
+  .det .ico-links { justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .det .ico-links a, .det .ico-links button { width: 42px; height: 42px; font-size: 18px; border-radius: 12px; }
+  tr.tr-sub td:first-child { padding-left: 14px; }
+}
 </style>
 </head>
 <body>
@@ -187,7 +212,7 @@ html .gate .btn { background: var(--pf-ember); color: #150b05; border: 0; }
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-tab="tokens">Tokens</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="nfts">NFTs</button>
-      <span class="grow"></span><span class="upd" id="upd"></span>
+      <span class="grow"></span><label class="seg-toggle" id="perWalletBox" hidden><input type="checkbox" id="perWallet"> Per wallet</label><span class="upd" id="upd"></span>
       <button class="btn ghost" id="refresh" type="button">↻ Refresh</button>
     </div>
     <div class="card" id="pTokens"></div>
@@ -213,7 +238,8 @@ html .gate .btn { background: var(--pf-ember); color: #150b05; border: 0; }
   let me = null, pendingAddr = null; // signed-in wallet; a ?address= link waiting for sign-in
   try { ['pf.state', 'pf.wallets', 'pf.sync'].forEach(k => localStorage.removeItem(k)); } catch {} // older versions kept the list in the browser
   const data = {}; // address -> api result | { loading } | { error }
-  const open = new Set(), info = {}; // expanded token rows; token socials (address -> info | 'loading')
+  const open = new Set(), info = {}; // expanded token rows (phones); token socials (address -> info | 'loading')
+  let perWallet = false; // multi-wallet views: show how much of each token every wallet holds
   const nameOf = w => w.label || short(w.a);
   const bundleOf = id => st.bundles.find(b => b.id === id);
   const viewAddrs = () => view === 'all' ? st.wallets.map(w => w.a) : view.startsWith('b:') ? (bundleOf(view.slice(2))?.wallets || []) : [view.slice(2)];
@@ -262,43 +288,69 @@ html .gate .btn { background: var(--pf-ember); color: #150b05; border: 0; }
     const toks = new Map(), nfts = [];
     let nftNote = '', nftKnown = false;
     for (const d of list) {
-      for (const t of d.tokens) { const c = toks.get(t.address); if (c) { c.balance += t.balance; c.value = c.value != null && t.value != null ? c.value + t.value : c.value ?? t.value; } else toks.set(t.address, { ...t }); }
+      for (const t of d.tokens) {
+        const c = toks.get(t.address), part = { a: d.address, balance: t.balance, value: t.value };
+        if (c) { c.balance += t.balance; c.value = c.value != null && t.value != null ? c.value + t.value : c.value ?? t.value; c.by.push(part); } else toks.set(t.address, { ...t, by: [part] });
+      }
       if (d.nfts) { nftKnown = true; nfts.push(...d.nfts); } else nftNote = d.nftNote;
     }
     const tokens = [...toks.values()].sort((a, b) => b.counted - a.counted || (b.value || 0) - (a.value || 0));
     return { addrs, tokens, nfts: nftKnown ? nfts : null, nftNote, loading: addrs.some(a => data[a]?.loading), delayed: list.some(d => d.pricesDelayed), at: Math.min(...list.map(d => d.at)) };
   }
 
-  function row(t) {
-    const logo = t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=ph>${esc(t.symbol.slice(0, 3))}</span>'">` : `<span class="ph">${esc((t.symbol || '?').slice(0, 3))}</span>`;
-    const ch = t.pool?.change24;
-    return `<tr class="tr-tok${open.has(t.address) ? ' open' : ''}" data-tok="${t.address}" tabindex="0" aria-expanded="${open.has(t.address)}"><td><div class="tok">${logo}<div><b>${esc(t.symbol)}${t.verified ? '<span class="ver" title="Verified on AVNU">✔</span>' : ''}<span class="chev">▶</span></b><small>${esc(t.name)}</small></div></div></td>
-      <td>${amt(t.balance)}</td><td class="hide-sm">${price(t.price)}${ch != null ? `<br><small class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</small>` : ''}</td>
-      <td class="val">${usd(t.value)}</td>
-      <td class="hide-sm">${t.pool ? `<a href="${esc(t.pool.url)}" target="_blank" rel="noopener" title="Liquidity ${usd(t.pool.liq)}">${esc(t.pool.name)}</a><br><small class="dim">liq ${usd(t.pool.liq)}</small>` : '<span class="dim">no pool</span>'}</td></tr>${open.has(t.address) ? detail(t) : ''}`;
-  }
   const ETH = '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7';
-  function detail(t) {
-    const a = t.address, i = info[a], s = i && i !== 'loading' ? i : {};
+  // every outside link for a token as small icon buttons (socials appear once they've loaded)
+  function links(t) {
+    const a = t.address, s = info[a] && info[a] !== 'loading' ? info[a] : {};
     const tw = s.twitter && `https://x.com/${encodeURIComponent(s.twitter.replace(/^@/, ''))}`, tg = s.telegram && (/^https?:/.test(s.telegram) ? s.telegram : `https://t.me/${encodeURIComponent(s.telegram.replace(/^@/, ''))}`);
     const site = /^https?:\/\//.test(s.website || '') ? s.website : '', dc = /^https?:\/\//.test(s.discord || '') ? s.discord : '';
-    return `<tr class="tr-det"><td colspan="5"><div class="det">
-      <div class="ca">CA <code>${a}</code><button class="mini" type="button" data-copy="${a}">Copy</button></div>
-      <div class="tlinks">
-        <a class="swap" href="https://app.avnu.fi/en?tokenFrom=${a}&tokenTo=${a === ETH ? '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8' : ETH}" target="_blank" rel="noopener">⇄ Trade on AVNU</a>
-        ${t.pool ? `<a href="${esc(t.pool.url)}" target="_blank" rel="noopener">🦎 GeckoTerminal</a>` : ''}
-        <a href="https://dexscreener.com/starknet/${a}" target="_blank" rel="noopener">📈 DexScreener</a>
-        <a href="https://voyager.online/token/${a}" target="_blank" rel="noopener">🔎 Voyager</a>
-        ${tw ? `<a href="${esc(tw)}" target="_blank" rel="noopener">𝕏 @${esc(s.twitter.replace(/^@/, ''))}</a>` : ''}
-        ${tg ? `<a href="${esc(tg)}" target="_blank" rel="noopener">✈️ Telegram</a>` : ''}
-        ${site ? `<a href="${esc(site)}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
-        ${dc ? `<a href="${esc(dc)}" target="_blank" rel="noopener">💬 Discord</a>` : ''}
-        ${i === 'loading' ? '<span class="dim" style="font-size:12px;align-self:center"><span class="loading"></span>socials…</span>' : ''}
-      </div>
+    const L = (href, ic, title, cls = '') => `<a class="${cls}" href="${esc(href)}" target="_blank" rel="noopener" title="${title}" aria-label="${title}">${ic}</a>`;
+    return `<span class="ico-links">${[
+      L(`https://app.avnu.fi/en?tokenFrom=${a}&tokenTo=${a === ETH ? '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8' : ETH}`, '⇄', 'Trade on AVNU', 'swap'),
+      t.pool ? L(t.pool.url, '🦎', 'Chart on GeckoTerminal') : '',
+      L(`https://dexscreener.com/starknet/${a}`, '📈', 'Chart on DexScreener'),
+      tw ? L(tw, '𝕏', 'X / Twitter', 'x') : '', tg ? L(tg, '✈️', 'Telegram') : '', site ? L(site, '🌐', 'Website') : '', dc ? L(dc, '💬', 'Discord') : '',
+      L(`https://voyager.online/token/${a}`, '🔎', 'View on Voyager'),
+      `<button type="button" data-copy="${a}" title="Copy contract address" aria-label="Copy contract address">📋</button>`,
+    ].join('')}</span>`;
+  }
+  function row(t) {
+    const logo = t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=ph>${esc(t.symbol.slice(0, 3))}</span>'">` : `<span class="ph">${esc((t.symbol || '?').slice(0, 3))}</span>`;
+    const ch = t.pool?.change24, isOpen = open.has(t.address);
+    wantInfo(t);
+    const subs = perWallet && t.by?.length && viewAddrs().length > 1 ? t.by.slice().sort((x, y) => (y.value || 0) - (x.value || 0)).map(p => { const w = st.wallets.find(x => x.a === p.a); return `<tr class="tr-sub"><td>↳ <b>${esc(w ? nameOf(w) : short(p.a))}</b></td><td>${amt(p.balance)}</td><td class="hide-sm"></td><td>${usd(p.value)}</td><td class="hide-sm pool-col"></td><td class="hide-sm"></td></tr>`; }).join('') : '';
+    return `<tr class="tr-tok${isOpen ? ' open' : ''}" data-tok="${t.address}" tabindex="0" aria-expanded="${isOpen}"><td><div class="tok">${logo}<div><b>${esc(t.symbol)}${t.verified ? '<span class="ver" title="Verified on AVNU">✔</span>' : ''}<span class="chev">▶</span></b><small>${esc(t.name)}</small></div></div></td>
+      <td>${amt(t.balance)}</td><td class="hide-sm">${price(t.price)}${ch != null ? `<br><small class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</small>` : ''}</td>
+      <td class="val">${usd(t.value)}</td>
+      <td class="hide-sm pool-col">${t.pool ? `${esc(t.pool.name)}<br><small class="dim">liq ${usd(t.pool.liq)}</small>` : '<span class="dim">no pool</span>'}</td>
+      <td class="hide-sm lk">${links(t)}</td></tr>${subs}${isOpen ? detail(t) : ''}`;
+  }
+  // phones only: the row expands into a centred panel with the contract address and the same links, bigger
+  function detail(t) {
+    const s = info[t.address] && info[t.address] !== 'loading' ? info[t.address] : {};
+    return `<tr class="tr-det"><td colspan="6"><div class="det">
+      <div class="ca"><code>${short(t.address)}</code></div>
+      ${links(t)}
+      ${info[t.address] === 'loading' ? '<span class="dim" style="font-size:12px"><span class="loading"></span>loading socials…</span>' : ''}
       ${s.description ? `<div class="desc">${esc(s.description)}</div>` : ''}
     </div></td></tr>`;
   }
-  const table = rows => `<table><thead><tr><th>Token</th><th>Balance</th><th class="hide-sm">Price</th><th>Value</th><th class="hide-sm">Main pool</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table>`;
+  // socials load in the background, two at a time, for priced tokens (and any token you open)
+  const infoQ = [], infoFail = {}; // address -> when it last failed (wait a minute before retrying)
+  let infoBusy = 0;
+  function wantInfo(t, force) {
+    if (info[t.address] || (!t.counted && !force) || infoQ.includes(t.address) || Date.now() - (infoFail[t.address] || 0) < 60e3) return;
+    infoQ.push(t.address); pumpInfo();
+  }
+  function pumpInfo() {
+    while (infoBusy < 2 && infoQ.length) {
+      const a = infoQ.shift(); info[a] = 'loading'; infoBusy++;
+      fetch('/api/portfolio?info=' + a).then(r => r.ok ? r.json() : null).catch(() => null)
+        .then(d => { if (d) info[a] = d; else { delete info[a]; infoFail[a] = Date.now(); } infoBusy--; renderSoon(); pumpInfo(); });
+    }
+  }
+  let renderT = 0; const renderSoon = () => { clearTimeout(renderT); renderT = setTimeout(render, 120); };
+  const table = rows => `<table><thead><tr><th>Token</th><th>Balance</th><th class="hide-sm">Price</th><th>Value</th><th class="hide-sm pool-col">Main pool</th><th class="hide-sm">Links</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table>`;
 
   function render() {
     if (view.startsWith('b:') && !bundleOf(view.slice(2))) view = 'all';
@@ -314,6 +366,7 @@ html .gate .btn { background: var(--pf-ember); color: #150b05; border: 0; }
     $('sTotalSub').innerHTML = c.loading ? '<span class="loading"></span>Scanning…' : errs.length ? `⚠ ${errs.length} wallet${errs.length > 1 ? 's' : ''} failed to load` : c.delayed ? '⏳ Some prices are delayed (busy price feed), refresh in a minute' : c.addrs.length > 1 ? `across ${c.addrs.length} wallets${view.startsWith('b:') ? ' in ' + esc(bundleOf(view.slice(2)).name) : ''}` : '';
     $('sTokens').textContent = real.length; $('sTokSub').textContent = rest.length ? `+${rest.length} unpriced / spam` : '';
     $('sNfts').textContent = c.nfts ? c.nfts.reduce((s, n) => s + (n.count || 1), 0) : '–'; $('sNftSub').textContent = c.nfts ? `${c.nfts.length} collections` : 'not connected';
+    $('perWalletBox').hidden = c.addrs.length < 2; $('perWallet').checked = perWallet;
     $('upd').textContent = isFinite(c.at) ? 'updated ' + new Date(c.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
     $('pTokens').hidden = tab !== 'tokens'; $('pNfts').hidden = tab !== 'nfts';
@@ -386,16 +439,16 @@ html .gate .btn { background: var(--pf-ember); color: #150b05; border: 0; }
     st.bundles.push(b); view = 'b:' + b.id; save(); render();
   } }));
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; render(); }));
+  $('perWallet').addEventListener('change', e => { perWallet = e.target.checked; render(); });
+  const phone = () => matchMedia('(max-width: 720px)').matches;
   const toggleTok = a => {
-    if (open.has(a)) open.delete(a); else {
-      open.add(a);
-      if (!info[a]) { info[a] = 'loading'; fetch('/api/portfolio?info=' + a).then(r => r.ok ? r.json() : null).catch(() => null).then(d => { if (d) info[a] = d; else delete info[a]; render(); }); /* failed: try again next time it is opened */ }
-    }
+    if (!phone()) return; // desktop: everything is already on the row
+    if (open.has(a)) open.delete(a); else { open.add(a); const t = combined().tokens.find(x => x.address === a); if (t) wantInfo(t, true); }
     render();
   };
   $('pTokens').addEventListener('click', e => {
     const cp = e.target.closest('[data-copy]');
-    if (cp) { navigator.clipboard?.writeText(cp.dataset.copy); cp.textContent = 'Copied ✓'; setTimeout(() => { cp.textContent = 'Copy'; }, 1200); return; }
+    if (cp) { navigator.clipboard?.writeText(cp.dataset.copy); cp.textContent = '✓'; setTimeout(() => { cp.textContent = '📋'; }, 1200); return; }
     if (e.target.closest('a')) return;
     const tr = e.target.closest('tr.tr-tok'); if (tr) toggleTok(tr.dataset.tok);
   });
