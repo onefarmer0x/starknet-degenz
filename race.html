@@ -498,6 +498,9 @@ html .map .name { padding: 5px 6px; font-size: 18px; }
 html .map .name small { font-size: 11px; }
 html .maps-head b { font-size: 22px; }
 </style>
+<!-- Vercel Web Analytics (enable it in the Vercel dashboard); dzTrack() sends custom events -->
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; window.dzTrack = (name, data) => { try { window.va('event', { name, data }); } catch {} };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -2703,6 +2706,7 @@ let ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:34
 fetch('/api/ice', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d?.iceServers?.length) ICE = d.iceServers; }).catch(() => {});
 const peerOpts = () => ({ debug: 0, config: { iceServers: ICE } });
 function createRoom(pub = false) {
+  window.dzTrack?.('Room created', { public: pub ? 'yes' : 'no' });
   leaveNet(true);
   const code = genCode();
   net = { host: true, code, conns: [], players: [{ id: 'host', name: myName(), driver: pubDriver(driverOf(cfg.driver)) }], events: [], ready: false, pub, target: cfg.target || 4, autoAt: 0 };
@@ -2782,6 +2786,7 @@ function onPlayerLeft(conn) {
   renderRoom(); broadcast(lobbyInfo());
 }
 function joinRoom(code) {
+  window.dzTrack?.('Room joined', {});
   code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
   if (code.length < 5) { $('joinStatus').textContent = 'Room codes are 5 letters and numbers, like K7Q2M.'; return; }
   leaveNet(true);
@@ -2873,6 +2878,7 @@ function hostRoster() {
   return list;
 }
 function startGame(opts = {}) {
+  window.dzTrack?.('Round started', { mode: MAPS_BY[opts.map || cfg.map]?.world || cfg.mode, map: opts.map || cfg.map, online: net ? 'yes' : 'no', phone: touchUI() ? 'yes' : 'no' });
   const roster = opts.roster || soloRoster();
   curMap = MAPS_BY[opts.map] ? opts.map : cfg.map; mode = MAPS_BY[curMap].world; LAPS = opts.laps || cfg.laps; matchLen = (opts.mins || cfg.mins) * 60;
   meIdx = opts.me || 0;
@@ -3435,6 +3441,7 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 let lastResult = null;
 $('btnShare').addEventListener('click', () => {
   if (!lastResult) return;
+  window.dzTrack?.('Share on X', { mode: lastResult.mode, place: lastResult.place });
   const { me, place, mode: md, order, map } = lastResult, th = place + (SUF[place] || 'th');
   const text = md === 'race' ? `I finished ${th} of ${order.length}${me.finished ? ` in ${fmtT(me.finishTime).slice(0, -1)}` : ''} on ${mapName(map)} in Degenz Kart 🏎️🔥${bonus.best > 1 ? ` (x${bonus.best} combo)` : ''} Beat me 👇` : `${me.kills} kills, ${th} place in the Degenz Kart arena 💥${bonus.best > 1 ? ` x${bonus.best} combo!` : ''} Beat me 👇`;
   window.open('https://x.com/intent/post?text=' + encodeURIComponent(text + ' @StarknetDegenz') + '&url=' + encodeURIComponent('https://www.starknetdegenz.fun/race'), '_blank', 'noopener');
@@ -3481,6 +3488,7 @@ function endGame(given) {
   }
   const place = order.indexOf(me) + 1;
   lastResult = { order, me, place, map: curMap, mode, laps: LAPS, mins: Math.round(matchLen / 60) };
+  window.dzTrack?.('Round finished', { mode, map: curMap, place, karts: order.length, online: net ? 'yes' : 'no', combo: bonus.best || 0 });
   let title, bestNote = '';
   if (mode === 'race') {
     title = place === 1 ? 'YOU WON!' : place <= 3 ? `${place}${SUF[place]} PLACE!` : `${place}${SUF[place] || 'th'}. RUGGED.`;

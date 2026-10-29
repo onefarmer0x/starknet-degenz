@@ -161,6 +161,9 @@ tr.tr-sub b { color: var(--pf-text); font-weight: 600; }
   tr.tr-sub td:first-child { padding-left: 14px; }
 }
 </style>
+<!-- Vercel Web Analytics (enable it in the Vercel dashboard); dzTrack() sends custom events -->
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; window.dzTrack = (name, data) => { try { window.va('event', { name, data }); } catch {} };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <nav class="topnav" aria-label="Main">
@@ -409,7 +412,7 @@ tr.tr-sub b { color: var(--pf-text); font-weight: 600; }
     let pick = $('addBundle').value;
     if (pick === '+new') { const b = { id: Math.random().toString(36).slice(2, 10), name: ($('addBundleName').value.trim() || 'Bundle ' + (st.bundles.length + 1)).slice(0, 24), wallets: [a] }; st.bundles.push(b); pick = b.id; }
     else if (pick) bundleOf(pick)?.wallets.push(a);
-    save();
+    save(); window.dzTrack?.('Wallet added', { bundle: pick ? 'yes' : 'no', wallets: st.wallets.length });
     $('addr').value = $('label').value = $('addBundleName').value = ''; $('addBundleName').hidden = true; view = 'w:' + a; load(a);
     $('addBundle').value = pick; // keep that bundle picked for the next wallet
   });
@@ -436,10 +439,12 @@ tr.tr-sub b { color: var(--pf-text); font-weight: 600; }
   $('wallets').addEventListener('keydown', chipKey); $('bundles').addEventListener('keydown', chipKey);
   $('newBundle').addEventListener('click', () => dialog({ title: 'New bundle', name: '', pick: view.startsWith('w:') ? [view.slice(2)] : [], okText: 'Create', onOk: (n, picked) => {
     const b = { id: Math.random().toString(36).slice(2, 10), name: (n || 'Bundle ' + (st.bundles.length + 1)).slice(0, 24), wallets: picked };
-    st.bundles.push(b); view = 'b:' + b.id; save(); render();
+    st.bundles.push(b); view = 'b:' + b.id; save(); render(); window.dzTrack?.('Bundle created', { wallets: picked.length });
   } }));
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; render(); }));
   $('perWallet').addEventListener('change', e => { perWallet = e.target.checked; render(); });
+  // which outside links people use from a token (trade, charts, socials)
+  $('pTokens').addEventListener('click', e => { const a = e.target.closest('.ico-links a'); if (a) window.dzTrack?.('Token link', { link: a.title, token: a.closest('tr')?.dataset.tok ? (combined().tokens.find(t => t.address === a.closest('tr').dataset.tok)?.symbol || '') : '' }); });
   const phone = () => matchMedia('(max-width: 720px)').matches;
   const toggleTok = a => {
     if (!phone()) return; // desktop: everything is already on the row

@@ -141,6 +141,7 @@
       const r = await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: addr, signature: sig.map(x => typeof x === 'bigint' ? '0x' + x.toString(16) : String(x)), nonce: n.nonce }) });
       const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Sign-in failed.');
       me = j.address; state = j.state; if (dlg.open) dlg.close(); render(); emit();
+      window.dzTrack?.('Sign in', { wallet: w.name || w.kind, page: location.pathname });
     } catch (e) {
       if (!dlg.open) dlg.showModal();
       err.textContent = /reject|cancel|abort|denied|declin/i.test(e?.message || '') || e?.code === 4001 ? 'Cancelled in the wallet.' : (e?.message || 'Sign-in failed.');

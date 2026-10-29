@@ -32,6 +32,12 @@
   });
 })();
 
+// analytics: every BUY $DEGENZ click, with the page it came from
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('a.buy, a.buyc, #buyNav, a[href*="launchpad/token"]');
+  if (a && window.dzTrack) window.dzTrack('Buy click', { page: location.pathname, spot: a.classList.contains('buyc') ? 'dock' : a.closest('.topnav') ? 'top bar' : 'page' });
+}, true);
+
 // Phones: a bottom dock with the main pages and a big BUY coin in the middle (CSS shows it under 640px).
 document.addEventListener('DOMContentLoaded', function () {
   var nav = document.querySelector('.topnav'); if (!nav || document.querySelector('.dock')) return;

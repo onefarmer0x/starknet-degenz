@@ -224,6 +224,9 @@ body { margin: 0; background: var(--sky-bot); color: var(--ink); font: 15px/1.45
 }
 </style>
 <link rel="stylesheet" href="/dark.css">
+<!-- Vercel Web Analytics (enable it in the Vercel dashboard); dzTrack() sends custom events -->
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; window.dzTrack = (name, data) => { try { window.va('event', { name, data }); } catch {} };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <nav class="topnav" aria-label="Main">
