@@ -9,7 +9,7 @@ http.createServer((req, res) => {
   if (req.url.split('?')[0] === '/api/ice') return require('./api/ice.js')(req, res);
   if (req.url.split('?')[0] === '/api/rooms') return require('./api/rooms.js')(req, res);
   if (req.url.split('?')[0] === '/api/portfolio') return require('./api/portfolio.js')(req, res);
-  if (req.url.split('?')[0] === '/api/pfsync') return require('./api/pfsync.js')(req, res);
+  if (req.url.split('?')[0] === '/api/pfauth') return require('./api/pfauth.js')(req, res);
   if (req.url.split('?')[0] === '/wolves/list.json') {
     // which sticker files exist, so the page doesn't probe for missing numbers
     const files = fs.readdirSync(path.join(__dirname, 'wolves')).filter(f => /^\d+\.(webm|webp|png)$/.test(f));
