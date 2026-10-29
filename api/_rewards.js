@@ -13,6 +13,22 @@ const SEL = {
   totalSupply: '0x80aa9fdbfaf9615e4afc7f5f722e265daca5ccc655360fa5ccacf9c267936d',
 };
 const DAY_MS = 86400000, CHAIN_TTL = 10 * 60 * 1000;
+
+// ---- badge NFTs (contracts/degenz_badges): earned badges can be minted as ERC-721 tokens ----
+// BADGE_CONTRACT = the deployed contract, BADGE_NETWORK = mainnet | sepolia, BADGE_SIGNER_KEY = the site's signing key
+// (made with tools/badge-signer.js). The key can only say "this wallet earned this badge"; it holds no funds.
+const NFT_NET = { mainnet: { chainId: '0x534e5f4d41494e', rpc: 'https://api.cartridge.gg/x/starknet/mainnet' }, sepolia: { chainId: '0x534e5f5345504f4c4941', rpc: 'https://api.cartridge.gg/x/starknet/sepolia' } };
+const nftCfg = () => {
+  const net = NFT_NET[process.env.BADGE_NETWORK || 'mainnet'], contract = process.env.BADGE_CONTRACT, key = process.env.BADGE_SIGNER_KEY;
+  return net && /^0x[0-9a-fA-F]{1,64}$/.test(contract || '') && /^0x[0-9a-fA-F]{1,64}$/.test(key || '') ? { ...net, network: process.env.BADGE_NETWORK || 'mainnet', contract, key } : null;
+};
+const hx = x => '0x' + BigInt(x).toString(16);
+const shortStr = s => hx('0x' + Buffer.from(s, 'ascii').toString('hex'));
+// the same hash lib.cairo computes: pedersen over (tag, chain id, contract, badge, wallet), left to right
+function voucherHash(chainId, contract, badge, wallet) {
+  const { hash } = require('starknet'), H = (a, b) => hx(hash.computePedersenHash(a, b));
+  return H(H(H(H(shortStr('degenz.badge'), chainId), contract), shortStr(badge)), wallet);
+}
 const today = () => Math.floor(Date.now() / DAY_MS);
 const weekOf = d => Math.floor((d + 3) / 7); // Monday-based weeks (day 0 was a Thursday)
 
@@ -115,7 +131,7 @@ function view(addr, rec, state) {
   const d = today(), L = levelOf(rec.xp), s = liveStreak(rec, d);
   return {
     address: addr, xp: rec.xp, level: L, levelXp: xpFor(L), nextXp: xpFor(L + 1), streak: s, best: rec.best, claims: rec.claims,
-    canClaim: rec.last < d, nextClaimAt: (d + 1) * DAY_MS, freezeLeft: rec.freezeWeek !== weekOf(d),
+    canClaim: rec.last < d, nextClaimAt: (d + 1) * DAY_MS, freezeLeft: rec.freezeWeek !== weekOf(d), nft: nftInfo(),
     nextGain: rec.last < d ? claimXp((rec.last >= d - 1 || (rec.last === d - 2 && rec.freezeWeek !== weekOf(d)) ? rec.streak : 0) + 1) : 0,
     badges: BADGES.map(({ test, ...b }) => {
       let p = null; try { p = PROGRESS[b.id]?.({ rec, chain: rec.chain, state }) || null; } catch {}
@@ -153,5 +169,14 @@ async function kart(kv, addr, k, state) {
   return { fresh, view: view(addr, rec, state) };
 }
 async function profile(kv, addr) { return view(addr, await load(kv, addr)); }
+// a mint voucher for a badge this wallet has earned (null if NFTs aren't set up or the badge isn't earned)
+async function voucher(kv, addr, id) {
+  const c = nftCfg(); if (!c) return { error: 'Badge NFTs are not live yet.' };
+  const b = BADGES.find(x => x.id === id); if (!b) return { error: 'Unknown badge.' };
+  const rec = await load(kv, addr); if (!rec.badges[id]) return { error: 'Earn this badge first.' };
+  const { ec } = require('starknet'), sig = ec.starkCurve.sign(voucherHash(c.chainId, c.contract, id, addr), c.key);
+  return { contract: c.contract, network: c.network, badge: shortStr(id), r: hx(sig.r), s: hx(sig.s) };
+}
+const nftInfo = () => { const c = nftCfg(); return c ? { contract: c.contract, network: c.network, rpc: c.rpc } : null; };
 
-module.exports = { claim, me, kart, profile, BADGES };
+module.exports = { claim, me, kart, profile, voucher, nftInfo, voucherHash, shortStr, BADGES };

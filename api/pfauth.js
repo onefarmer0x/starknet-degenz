@@ -11,6 +11,7 @@
 //   GET  /api/pfauth?profile=0x…        -> view              anyone's public profile
 //   POST /api/pfauth { claim: true }    -> { gained, fresh, view }   today's reward
 //   POST /api/pfauth { kart: { level, wins, combo } } -> { fresh, view }   stats from Degenz Kart
+//   POST /api/pfauth { voucher: 'wolf' }  -> { contract, badge, r, s }   lets my wallet mint an earned badge as an NFT
 const crypto = require('crypto');
 const RW = require('./_rewards.js');
 const { typedData: TD, RpcProvider, num } = require('starknet');
@@ -37,7 +38,10 @@ function send(res, code, obj, cookie) {
 }
 const norm = a => '0x' + BigInt(a).toString(16).padStart(64, '0');
 const cookieOf = req => (String(req.headers.cookie || '').match(/(?:^|;\s*)pfs=([A-Za-z0-9]+)/) || [])[1];
-const sessionCookie = tok => `pfs=${tok}; Path=/api/pfauth; HttpOnly; SameSite=Lax; Max-Age=${tok ? SESSION_DAYS * DAY : 0}${process.env.VERCEL ? '; Secure' : ''}`;
+// the session cookie covers all of /api (sign-in, rewards, events). Older sessions were scoped to /api/pfauth:
+// those get moved over the next time the page asks who is signed in.
+const sessionCookie = (tok, path = '/api') => `pfs=${tok}; Path=${path}; HttpOnly; SameSite=Lax; Max-Age=${tok ? SESSION_DAYS * DAY : 0}${process.env.VERCEL ? '; Secure' : ''}`;
+const moveCookie = tok => [sessionCookie(tok), sessionCookie('', '/api/pfauth')];
 
 // same shape the page saves; anything else is dropped
 const ADDR = /^0x[0-9a-f]{64}$/;
@@ -97,11 +101,16 @@ module.exports = async (req, res) => {
       if (!who) return send(res, 401, { error: 'not signed in' });
       const [raw] = await kv(['GET', 'pf:user:' + who]);
       if (q.get('rw')) return send(res, 200, await RW.me(kv, who, raw ? JSON.parse(raw) : null));
-      return send(res, 200, { address: who, state: raw ? JSON.parse(raw) : null });
+      return send(res, 200, { address: who, state: raw ? JSON.parse(raw) : null }, moveCookie(tok));
     }
     if (req.method !== 'POST') return send(res, 405, { error: 'method' });
     const b = await body(req);
-    if (b.logout) { if (tok) await kv(['DEL', 'pf:sess:' + tok]); return send(res, 200, { ok: true }, sessionCookie('')); }
+    if (b.logout) { if (tok) await kv(['DEL', 'pf:sess:' + tok]); return send(res, 200, { ok: true }, [sessionCookie(''), sessionCookie('', '/api/pfauth')]); }
+    if (b.voucher) {
+      if (!who) return send(res, 401, { error: 'not signed in' });
+      const v = await RW.voucher(kv, who, String(b.voucher));
+      return send(res, v.error ? 400 : 200, v);
+    }
     if (b.claim || b.kart) {
       if (!who) return send(res, 401, { error: 'not signed in' });
       const [raw] = await kv(['GET', 'pf:user:' + who]), st = raw ? JSON.parse(raw) : null;

@@ -306,6 +306,10 @@ body.has-touch .hud .item { display: none; }
 .oroom .cnt { font: 400 22px var(--display); color: var(--orange); text-align: right; }
 .oroom .cnt i { display: block; font: 700 10px var(--ui); font-style: normal; color: #5b5075; }
 .oroom.racing { opacity: 0.55; cursor: default; }
+.oroom .live { color: #2f9e4f; }
+.evcount { text-align: center; font: 400 clamp(34px, 7vw, 54px)/1 var(--display); color: var(--yellow); text-shadow: 0 3px 0 #a35b00; min-height: 1em; }
+.evcount small { display: block; font: 700 14px var(--ui); color: #eef3ff; text-shadow: none; margin-top: 4px; }
+#evResults .lrow { cursor: default; }
 .roomopts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 560px) { .roomopts { grid-template-columns: 1fr; } }
 .hud #btnUnstick { bottom: calc(max(14px, env(safe-area-inset-bottom, 0px)) + 180px); }
@@ -522,6 +526,7 @@ html .maps-head b { font-size: 22px; }
     <button class="btn yellow play" id="btnPlay" type="button">PLAY</button>
     <div class="row2"><button class="btn" id="btnCreate" type="button">Create room</button><button class="btn" id="btnJoin" type="button">Join</button></div>
     <button class="btn openrooms" id="btnOpenRooms" type="button">🌐 Open rooms <small id="openCount"></small></button>
+    <button class="btn openrooms" id="btnEvents" type="button">🏆 Tournaments <small id="evCount"></small></button>
     <div class="row2"><button class="btn" id="btnArsenal" type="button">🔫 Arsenal</button><button class="btn" id="btnRecords" type="button" aria-expanded="false">🏆 Records</button></div>
     <div class="recs" id="recs" hidden>
       <div class="world" id="xpBoard"><h4 style="display:flex;align-items:center;gap:8px">⭐ XP leaders <select class="xpsel" id="xpMap" aria-label="XP leaderboard map"></select></h4><div class="empty">Loading…</div></div>
@@ -588,6 +593,49 @@ html .maps-head b { font-size: 22px; }
 </section>
 
 <!-- join -->
+<!-- tournaments: list + create -->
+<section class="screen modal" id="scrEvents" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="evsTitle" style="width:min(560px,100%)">
+    <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
+    <h2 class="t" id="evsTitle">Tournaments</h2>
+    <div class="jtabs" role="tablist"><button class="jtab" role="tab" data-et="list" aria-selected="true">📅 Upcoming</button><button class="jtab" role="tab" data-et="new" aria-selected="false">➕ Create</button></div>
+    <div id="etList" style="display:grid;gap:10px">
+      <p class="hint" style="margin:0;text-align:center">Races booked for a set time. Doors open 10 minutes before; anyone with the link can join.</p>
+      <div class="olist" id="evList"><p class="status">Loading…</p></div>
+    </div>
+    <form id="etNew" hidden style="display:grid;gap:10px" autocomplete="off">
+      <div class="field"><label class="lbl" for="evTitle">Name</label><input class="input" id="evTitle" maxlength="40" placeholder="Friday Night Rug Race" required></div>
+      <div class="row2"><div class="field"><label class="lbl" for="evDate">Date</label><input class="input" id="evDate" type="date" required></div><div class="field"><label class="lbl" for="evTime">Time</label><input class="input" id="evTime" type="time" required></div></div>
+      <div class="field"><label class="lbl" for="evTz">Time zone</label><select class="input" id="evTz"></select></div>
+      <div class="field"><span class="lbl">Players</span><div class="seg" id="evPlayers"><button type="button" data-v="2">2</button><button type="button" data-v="4" aria-pressed="true">4</button><button type="button" data-v="6">6</button><button type="button" data-v="8">8</button><button type="button" data-v="12">12</button></div></div>
+      <div class="row2"><div class="field"><label class="lbl" for="evMap">Map</label><select class="input" id="evMap"></select></div><div class="field"><label class="lbl" for="evLen" id="evLenLbl">Laps</label><select class="input" id="evLen"></select></div></div>
+      <button class="btn yellow" type="submit" id="evCreate">Create tournament</button>
+      <p class="status" id="evNewStatus"></p>
+    </form>
+  </div>
+</section>
+<!-- one tournament -->
+<section class="screen modal" id="scrEvent" hidden>
+  <div class="panel modal-card" role="dialog" aria-labelledby="evName" style="width:min(620px,100%)">
+    <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
+    <img id="evCard" alt="" style="width:100%;aspect-ratio:1200/630;border-radius:14px;border:3px solid var(--ink);background:#160c0b;display:block">
+    <h2 class="t" id="evName" style="margin:10px 0 0">Tournament</h2>
+    <p class="status" id="evWhen" style="margin:2px 0"></p>
+    <div class="evcount" id="evCountdown"></div>
+    <div class="board-panel" id="evResults" hidden></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <button class="btn yellow" id="evJoin" type="button">Join</button>
+      <button class="btn" id="evShare" type="button">Share on 𝕏</button>
+      <button class="btn" id="evCopy" type="button">Copy link</button>
+      <a class="btn" id="evCal" target="_blank" rel="noopener">📅 Calendar</a>
+      <button class="btn red" id="evCancel" type="button" hidden>Cancel event</button>
+      <button class="btn yellow" id="evConfirm" type="button" hidden>✓ Confirm results</button>
+      <button class="btn red" id="evVoid" type="button" hidden>Void results</button>
+    </div>
+    <p class="status" id="evStatus"></p>
+  </div>
+</section>
+
 <section class="screen modal" id="scrJoin" hidden>
   <div class="panel modal-card" role="dialog" aria-labelledby="joinTitle" style="width:min(520px,100%)">
     <button class="btn red round close" data-close type="button" aria-label="Close">✕</button>
@@ -653,6 +701,7 @@ html .maps-head b { font-size: 22px; }
     <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
       <button class="btn yellow" id="btnAgain" type="button">Play again</button>
       <button class="btn" id="btnShare" type="button">Share on 𝕏</button>
+      <button class="btn yellow" id="btnEvShare" type="button" hidden>🏆 Share results</button>
       <button class="btn" id="btnDoneQuit" type="button">Menu</button>
     </div>
     <p class="status" id="doneWait"></p>
@@ -3124,21 +3173,134 @@ function createRoom(pub = false) {
     conn.on('close', () => onPlayerLeft(conn));
   });
 }
+// ---------------- tournaments (api/events.js) ----------------
+// A tournament is booked for a time and a number of players. When doors open, the first player in hosts a room and
+// reports its code; everyone else joins it. If the host leaves before the start, the next player re-hosts.
+let evCur = null, evTick = 0, evTries = 0;
+const evTime = at => new Date(at).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const evLeft = ms => { const s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), hh = Math.floor(s % 86400 / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60; return d ? `${d}d ${hh}h ${mm}m` : hh ? `${hh}h ${mm}m ${String(ss).padStart(2, '0')}s` : `${mm}:${String(ss).padStart(2, '0')}`; };
+const evLink = id => `${location.origin}/e/${id}`;
+async function evGet(id) { const r = await fetch('/api/events?id=' + encodeURIComponent(id), { cache: 'no-store' }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Could not load the tournament.'); return j; }
+function evPost(body) { return fetch('/api/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(async r => ({ ok: r.ok, status: r.status, j: await r.json().catch(() => ({})) })); }
+async function evOpen(id) {
+  show('scrEvent'); $('evStatus').textContent = 'Loading…';
+  try { evCur = await evGet(id); evRender(); history.replaceState(null, '', `${location.pathname}?t=${evCur.id}`); }
+  catch (e) { $('evStatus').textContent = e.message; $('evName').textContent = 'Tournament'; $('evJoin').hidden = $('evShare').hidden = $('evCopy').hidden = $('evCal').hidden = true; }
+}
+function evRender() {
+  const e = evCur; if (!e) return;
+  const M = MAPS_BY[e.map] || MAPS_BY.bonfire;
+  $('evCard').src = `/api/events?card=${e.id}&v=${e.status}-${e.resultState || ''}`;
+  $('evName').textContent = e.title;
+  $('evWhen').innerHTML = `🗓️ <b>${evTime(e.at)}</b> your time · 👥 ${e.players} players · ${M.icon} ${M.name} · ${e.mode === 'race' ? e.laps + ' laps' : e.mins + ' min'}${e.by ? ` · by ${escapeHtml(e.by)}` : ''}`;
+  const open = e.status === 'open', done = e.status === 'finished';
+  $('evJoin').hidden = e.status !== 'open' && e.status !== 'scheduled'; $('evJoin').disabled = !open;
+  $('evJoin').textContent = open ? (e.room ? `Join now (${e.room.players} in)` : 'Join and host') : 'Doors open 10 min before';
+  $('evShare').hidden = $('evCopy').hidden = false; $('evCal').hidden = e.status !== 'scheduled';
+  $('evShare').textContent = done ? '🏆 Share results on 𝕏' : 'Share on 𝕏';
+  $('evCancel').hidden = !(e.mine && e.status === 'scheduled');
+  const z = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  $('evCal').href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🏁 ' + e.title + ' (Degenz Kart)')}&dates=${z(e.at)}/${z(e.at + 20 * 60000)}&details=${encodeURIComponent('Join: ' + evLink(e.id))}`;
+  $('evResults').hidden = !done;
+  const CHECK = { ok: '✓', conflict: '⚠️', suspect: '⚠️', unverified: '…', bot: '' };
+  if (done) $('evResults').innerHTML = (e.resultState === 'voided' ? '<p class="status">The organiser voided these results.</p>' : '') + e.results.map(r => `<div class="lrow"><span>${['🥇', '🥈', '🥉'][r.place - 1] || r.place}</span><b>${escapeHtml(r.name)} ${CHECK[r.check] || ''}</b><em>${escapeHtml(r.score || '')}</em></div>`).join('');
+  $('evConfirm').hidden = $('evVoid').hidden = !(e.mine && done);
+  $('evStatus').textContent = { scheduled: 'Doors open 10 minutes before the start. Share the link so your pack shows up!', open: e.room ? 'Doors are open. The room is live.' : 'Doors are open. Be the first in: you\'ll host the room.', finished: { official: 'Official results, confirmed by the organiser. GG!', verified: 'Results verified: every player\'s own report matches. GG!', provisional: 'Provisional: waiting for every player\'s own report to confirm the results.', disputed: 'Disputed: some results don\'t match what players reported (⚠️). The organiser can confirm or void them.', voided: 'The organiser voided these results.' }[e.resultState] || 'Finished. GG!', expired: 'This tournament ended without a race.', cancelled: 'This tournament was cancelled.' }[e.status] || '';
+  evCountdown();
+}
+function evCountdown() {
+  const e = evCur; if (!e || screenNow !== 'scrEvent') return;
+  const now = Date.now();
+  $('evCountdown').innerHTML = e.status === 'scheduled' ? `${evLeft(e.at - now)}<small>until the start</small>` : e.status === 'open' ? (now < e.at ? `${evLeft(e.at - now)}<small>until the start · doors open</small>` : 'LIVE<small>join now</small>') : '';
+}
+setInterval(() => {
+  if (screenNow !== 'scrEvent' || !evCur) return;
+  evCountdown();
+  // refresh the status now and then, and right when doors open
+  if (++evTick % 15 === 0 || (evCur.status === 'scheduled' && Date.now() >= evCur.doorsAt)) evGet(evCur.id).then(e => { evCur = e; evRender(); }).catch(() => {});
+}, 1000);
+// go to the tournament's room: join the live one, or host it if there isn't one yet
+async function evEnter(id, again) {
+  try { evCur = await evGet(id); } catch (e) { toast(e.message); return; }
+  if (evCur.status !== 'open') { evOpen(id); return; }
+  if (!again) evTries = 0;
+  cfg.map = evCur.map; cfg.mode = evCur.mode; cfg.laps = evCur.laps; cfg.mins = evCur.mins; // this match only (not saved)
+  if (evCur.room) { joinRoom(evCur.room.code); if (net) net.event = id; show('scrJoin'); $('joinStatus').textContent = 'Joining the tournament room…'; }
+  else { createRoom(true); net.event = id; net.target = evCur.players; renderRoom(); }
+  window.dzTrack?.('Tournament joined', { players: evCur.players });
+}
+function evRetry(id) { if (++evTries > 6) { toast('Could not reach the tournament room. Try again in a moment.'); evOpen(id); return; } setTimeout(() => evEnter(id, true), 5000); }
+async function evHeartbeat() {
+  const n = net, { ok, j } = await evPost({ room: n.event, code: n.code, players: n.players.length }).catch(() => ({}));
+  if (!ok || !j?.room || net !== n) return;
+  // someone else's room got there first: if nobody is in mine yet, move over to theirs
+  if (j.room.code !== n.code && n.players.length <= 1 && state === 'title') { const id = n.event; leaveNet(true); joinRoom(j.room.code); if (net) net.event = id; }
+}
+function evReport(order) {
+  const n = net, race = mode === 'race';
+  evPost({ results: n.event, code: n.code, order: order.map(k => ({ slot: karts.indexOf(k), name: k.label, human: !!k.human, finished: !!k.finished, time: k.finishTime || 0, kills: k.kills || 0, score: race ? (k.finished ? fmtT(k.finishTime) : 'DNF') : `${k.kills} kills` })) })
+    .then(({ ok, j }) => { if (ok && j?.id) evCur = j; });
+}
+// every player (host included) reports their own result, which the server uses to check the host's order
+function evSelfReport() {
+  const n = net, me = karts[meIdx]; if (!n?.event || !me) return;
+  evPost({ report: n.event, code: n.code, slot: meIdx, finished: !!me.finished, time: me.finishTime || 0, kills: me.kills || 0 });
+}
+function evShareX(e) {
+  const M = MAPS_BY[e.map] || MAPS_BY.bonfire;
+  const text = e.status === 'finished' && e.results?.length
+    ? `🏆 ${e.results[0].name} won ${e.title}${{ official: ' (official)', verified: ' (verified)', provisional: ' (provisional)', disputed: ' (disputed)' }[e.resultState] || ''}!\n\n${e.results.slice(0, 3).map(r => ['🥇', '🥈', '🥉'][r.place - 1] + ' ' + r.name + (r.score ? ' · ' + r.score : '')).join('\n')}\n\nDegenz Kart tournament on @StarknetDegenz 🐺`
+    : `🏁 ${e.title}\n\nDegenz Kart tournament · ${e.players} players · ${M.name}\n🗓️ ${new Date(e.at).toUTCString().slice(0, 22)} UTC\n\nFree, in your browser. Join with the link 👇`;
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(evLink(e.id))}`, '_blank', 'noopener');
+  window.dzTrack?.('Tournament shared', { status: e.status });
+}
+// list + create
+async function evList() {
+  $('evList').innerHTML = '<p class="status">Loading…</p>';
+  let list = null; try { const r = await fetch('/api/events?list=1', { cache: 'no-store' }); if (r.ok) list = (await r.json()).events; } catch {}
+  $('evCount').textContent = list?.length ? `(${list.length})` : '';
+  if (!list) { $('evList').innerHTML = '<p class="status">Tournaments are offline right now.</p>'; return; }
+  if (!list.length) { $('evList').innerHTML = '<p class="status">No tournaments booked yet. Create one and share the link!</p>'; return; }
+  $('evList').innerHTML = list.map(e => { const M = MAPS_BY[e.map] || MAPS_BY.bonfire, open = e.status === 'open';
+    return `<div class="oroom" data-ev="${e.id}" role="button" tabindex="0"><span class="ic">${M.icon}</span><span><b>${escapeHtml(e.title)}</b><small>${evTime(e.at)} · ${M.name}</small></span><span class="cnt ${open ? 'live' : ''}">${open ? 'OPEN' : e.players}<i>${open ? (e.room ? e.room.players + ' in' : 'doors open') : 'players'}</i></span></div>`; }).join('');
+}
+function evFormInit() {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  let zones = []; try { zones = Intl.supportedValuesOf('timeZone'); } catch { zones = [tz, 'UTC']; }
+  if (!zones.includes('UTC')) zones.unshift('UTC');
+  $('evTz').innerHTML = zones.map(z => `<option${z === tz ? ' selected' : ''}>${z}</option>`).join('');
+  $('evMap').innerHTML = MAPS.map(m => `<option value="${m.id}">${m.icon} ${m.name} (${m.world})</option>`).join('');
+  const d = new Date(Date.now() + 86400000); $('evDate').value = d.toISOString().slice(0, 10); $('evTime').value = '20:00';
+  evLenOpts();
+}
+function evLenOpts() { const race = MAPS_BY[$('evMap').value]?.world === 'race'; $('evLenLbl').textContent = race ? 'Laps' : 'Length'; $('evLen').innerHTML = (race ? [1, 3, 5] : [2, 3, 5]).map(n => `<option value="${n}"${n === 3 ? ' selected' : ''}>${race ? n + ' lap' + (n > 1 ? 's' : '') : n + ' min'}</option>`).join(''); }
+// wall-clock date + time in a time zone -> UTC milliseconds
+function zonedToUtc(date, time, tz) {
+  const [y, mo, d] = date.split('-').map(Number), [hh, mi] = time.split(':').map(Number), want = Date.UTC(y, mo - 1, d, hh, mi);
+  let at = want;
+  for (let i = 0; i < 2; i++) { const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(at).map(x => [x.type, x.value])); at += want - Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute); }
+  return at;
+}
+
 // ---------------- open rooms: public listing, auto-start ----------------
 const AUTO_START = 10; // seconds of countdown once a public room is full
 function roomPost(body) { return fetch('/api/rooms', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), keepalive: true }).catch(() => {}); }
 function listRoom() {
   if (!net?.host || !net.ready) return;
+  if (net.event) evHeartbeat();
   if (!net.pub) return;
   roomPost({ code: net.code, host: myName(), map: cfg.map, mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, players: net.players.length, target: net.target, status: state === 'title' ? 'waiting' : 'racing' });
 }
-function unlistRoom(n = net) { if (n?.host && n.pub) roomPost({ code: n.code, close: true }); }
+function unlistRoom(n = net) {
+  if (n?.host && n.pub) roomPost({ code: n.code, close: true });
+  if (n?.host && n.event) fetch('/api/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ room: n.event, code: n.code, leave: true }), keepalive: true }).catch(() => {}); // next player re-hosts straight away
+}
 setInterval(listRoom, 5000);
 addEventListener('pagehide', () => unlistRoom());
 // public rooms with enough humans start themselves after a short countdown
 function checkAutoStart() {
   if (!net?.host || !net.pub || state !== 'title') return;
-  const full = net.players.length >= net.target;
+  const full = net.players.length >= net.target || (net.event && evCur && Date.now() >= evCur.at && net.players.length >= 2);
   if (full && !net.autoAt) { net.autoAt = Date.now() + AUTO_START * 1000; blip(880, 0.15); }
   if (!full && net.autoAt) net.autoAt = 0;
 }
@@ -3151,7 +3313,8 @@ setInterval(() => {
     const s = Math.max(0, Math.ceil((at - Date.now()) / 1000));
     $('roomStatus').innerHTML = `<b style="color:var(--yellow);font-size:1.3em">Starting in ${s}…</b>`;
     if (net.host && s <= 0) { net.autoAt = 0; hostStart(); }
-  } else if (net.host && net.pub && net.ready) $('roomStatus').textContent = `Waiting for players: ${net.players.length} / ${net.target}. You can start once 2 are in.`;
+  } else if (net.host && net.event && evCur && net.ready) $('roomStatus').textContent = Date.now() < evCur.at ? `${net.players.length} / ${net.target} in. Starts in ${evLeft(evCur.at - Date.now())}` : `${net.players.length} / ${net.target} in. Starting as soon as 2 are here…`;
+  else if (net.host && net.pub && net.ready) $('roomStatus').textContent = `Waiting for players: ${net.players.length} / ${net.target}. You can start once 2 are in.`;
 }, 250);
 function broadcast(obj) { if (net?.host) net.conns.forEach(c => { if (c.open) c.send(obj); }); }
 function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins, bots: net.pub ? 0 : cfg.bots, pub: !!net.pub, target: net.target, autoIn: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0, autoAt: !!net.autoAt, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host', level: p.id === 'host' ? myLevel() : p.level || 1 })) }; }
@@ -3191,7 +3354,7 @@ function joinRoom(code) {
   net = { host: false, code, players: [] };
   const peer = new Peer(peerOpts()); net.peer = peer;
   $('joinStatus').textContent = 'Connecting…'; $('btnJoinGo').disabled = true;
-  const fail = msg => { if (!net || net.peer !== peer) return; $('joinStatus').textContent = msg; $('btnJoinGo').disabled = false; leaveNet(true); };
+  const fail = msg => { if (!net || net.peer !== peer) return; const ev = net.event; $('joinStatus').textContent = msg; $('btnJoinGo').disabled = false; leaveNet(true); if (ev) evRetry(ev); };
   const timer = setTimeout(() => fail('No answer from that room. Check the code and that the host still has the room open. On mobile data? Try wifi.'), 20000);
   peer.on('error', err => { clearTimeout(timer); fail(err.type === 'peer-unavailable' ? 'No room with that code. Check it and try again.' : `Couldn't connect (${err.type}).`); });
   peer.on('open', () => {
@@ -3208,7 +3371,12 @@ function joinRoom(code) {
     conn.on('iceStateChanged', s => { if ((s === 'failed' || s === 'closed') && !net?.lobby) { clearTimeout(timer); fail("Couldn't reach the host from this network. Try wifi, or have someone else host."); } });
     conn.on('error', () => { if (!net?.lobby) { clearTimeout(timer); fail('Connection dropped while joining. Try again.'); } });
     conn.on('data', onClientData);
-    conn.on('close', () => { if (net && net.conn === conn) { leaveNet(true); quitGame('title'); toast('The host closed the room'); } });
+    conn.on('close', () => {
+      if (!net || net.conn !== conn) return;
+      const ev = net.event; leaveNet(true);
+      if (ev && state === 'title') { toast('The host left. Finding the tournament room again…'); setTimeout(() => evEnter(ev, true), 1000 + Math.random() * 3000); return; } // someone else re-hosts
+      quitGame('title'); toast('The host closed the room');
+    });
   });
 }
 function onClientData(d) {
@@ -3230,14 +3398,16 @@ function renderRoom() {
   const host = net.host, L = host ? lobbyInfo() : (net.lobby || { players: [], mode: cfg.mode, laps: cfg.laps, mins: cfg.mins, bots: 0 });
   $('roomCode').textContent = net.code;
   $('roomLink').value = roomUrl(net.code);
-  $('roomTitle').textContent = host ? (net.pub ? 'Your open room' : 'Your room') : (L.pub ? 'Open room' : 'Room');
+  $('roomTitle').textContent = net.event && evCur ? '🏆 ' + evCur.title : host ? (net.pub ? 'Your open room' : 'Your room') : (L.pub ? 'Open room' : 'Room');
   $('roomOpts').hidden = !host;
   if (host) {
     $('segPub').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === '1') === !!net.pub)));
     $('segTarget').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === net.target)));
     $('targetField').hidden = !net.pub;
   }
-  $('roomDesc').innerHTML = host && net.pub
+  $('roomDesc').innerHTML = net.event && evCur
+    ? `Tournament room: humans only. It starts at <b>${evTime(evCur.at)}</b> with everyone who's in, or earlier once <b>${evCur.players} players</b> are here. Anyone with the link can join.`
+    : host && net.pub
     ? `Your room is listed under <b>Open rooms</b> for anyone to join. Humans only, no bots. It starts by itself at <b>${net.target} players</b>, or hit <b>Start match</b> once 2 are in.`
     : !host && L.pub ? `Open room: humans only. It starts automatically at <b>${L.target} players</b> (${L.players.length} in now), or when the host starts it.`
     : host
@@ -3510,7 +3680,7 @@ function updateCamera(dt, instant) {
 }
 
 // ---------------- screens ----------------
-const SCREENS = ['scrArsenal', 'scrTitle', 'scrGarage', 'scrSettings', 'scrMaps', 'scrJoin', 'scrRoom', 'scrDone', 'scrPause'];
+const SCREENS = ['scrArsenal', 'scrTitle', 'scrGarage', 'scrSettings', 'scrMaps', 'scrJoin', 'scrRoom', 'scrDone', 'scrPause', 'scrEvents', 'scrEvent'];
 let screenNow = 'scrTitle', mapCtx = 'solo';
 function show(which) {
   screenNow = which;
@@ -3804,6 +3974,46 @@ $('btnAdd').addEventListener('click', async () => {
   finally { btn.disabled = false; btn.textContent = 'Fetch avatar'; }
 });
 
+// tournaments
+$('btnEvents').addEventListener('click', () => { initAudio(); show('scrEvents'); evList(); });
+document.querySelectorAll('[data-et]').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('[data-et]').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+  $('etList').hidden = t.dataset.et !== 'list'; $('etNew').hidden = t.dataset.et !== 'new';
+  if (t.dataset.et === 'new' && !$('evTz').options.length) evFormInit();
+}));
+$('evList').addEventListener('click', e => { const r = e.target.closest('[data-ev]'); if (r) evOpen(r.dataset.ev); });
+$('evList').addEventListener('keydown', e => { const r = e.target.closest('[data-ev]'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); evOpen(r.dataset.ev); } });
+$('evPlayers').addEventListener('click', e => { const b = e.target.closest('button'); if (b) $('evPlayers').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+$('evMap').addEventListener('change', evLenOpts);
+$('etNew').addEventListener('submit', async e => {
+  e.preventDefault();
+  const race = MAPS_BY[$('evMap').value]?.world === 'race', len = +$('evLen').value;
+  const body = { create: { title: $('evTitle').value, at: zonedToUtc($('evDate').value, $('evTime').value, $('evTz').value), tz: $('evTz').value, players: +$('evPlayers').querySelector('[aria-pressed="true"]').dataset.v, map: $('evMap').value, laps: race ? len : 3, mins: race ? 3 : len } };
+  $('evCreate').disabled = true; $('evNewStatus').textContent = 'Creating…';
+  const { ok, status, j } = await evPost(body).catch(() => ({ j: {} }));
+  $('evCreate').disabled = false;
+  if (!ok) { $('evNewStatus').innerHTML = status === 401 ? 'Sign in first: <a href="/profile" style="color:var(--yellow)">open the site and tap the wallet icon</a>, then come back.' : escapeHtml(j.error || 'Could not create it.'); return; }
+  $('evNewStatus').textContent = ''; $('etNew').reset(); evFormInit();
+  window.dzTrack?.('Tournament created', { players: j.players, map: j.map });
+  evCur = j; show('scrEvent'); evRender(); history.replaceState(null, '', `${location.pathname}?t=${j.id}`);
+});
+$('evJoin').addEventListener('click', () => { if (evCur?.status === 'open') { initAudio(); evEnter(evCur.id); } });
+$('evShare').addEventListener('click', () => evCur && evShareX(evCur));
+$('btnEvShare').addEventListener('click', async () => { const id = net?.event || evCur?.id; if (!id) return; try { evShareX(await evGet(id)); } catch (e) { toast(e.message); } });
+$('evCopy').addEventListener('click', () => { if (!evCur) return; navigator.clipboard?.writeText(evLink(evCur.id)); $('evCopy').textContent = 'Copied ✓'; setTimeout(() => { $('evCopy').textContent = 'Copy link'; }, 1400); });
+for (const [btn, action, ask] of [['evConfirm', 'confirm', 'Make these results official?'], ['evVoid', 'void', 'Void these results? The podium will be removed from the card.']])
+  $(btn).addEventListener('click', async () => {
+    if (!evCur || !confirm(ask)) return;
+    const { ok, j } = await evPost({ verdict: evCur.id, action }).catch(() => ({ j: {} }));
+    if (ok) { evCur = j; evRender(); } else $('evStatus').textContent = j.error || 'Could not update the results.';
+  });
+$('evCancel').addEventListener('click', async () => {
+  if (!evCur || !confirm('Cancel this tournament? Anyone with the link will see it was cancelled.')) return;
+  const { ok, j } = await evPost({ cancel: evCur.id }).catch(() => ({ j: {} }));
+  if (ok) { evCur = { ...evCur, ...j, mine: true }; evRender(); } else $('evStatus').textContent = j.error || 'Could not cancel it.';
+});
+fetch('/api/events?list=1', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => { if (j?.events?.length) $('evCount').textContent = `(${j.events.length})`; }).catch(() => {});
+
 // lobby buttons
 $('btnPlay').addEventListener('click', () => { initAudio(); mapCtx = 'solo'; renderMaps(); show('scrMaps'); });
 $('btnCustomize').addEventListener('click', () => { renderGarage(); show('scrGarage'); });
@@ -3890,6 +4100,9 @@ function endGame(given) {
   }
   const place = order.indexOf(me) + 1;
   lastResult = { order, me, place, map: curMap, mode, laps: LAPS, mins: Math.round(matchLen / 60) };
+  if (net?.host && net.event) evReport(order);
+  if (net?.event) setTimeout(evSelfReport, net.host ? 1500 : 300); // after the host's results land
+  $('btnEvShare').hidden = !net?.event;
   window.dzTrack?.('Round finished', { mode, map: curMap, place, karts: order.length, online: net ? 'yes' : 'no', combo: bonus.best || 0 });
   let title, bestNote = '';
   if (mode === 'race') {
@@ -4078,6 +4291,7 @@ window.__kart = { tick: (secs, dt = 1 / 60) => { for (let t = 0; t < secs; t += 
 
 setWorld(); renderLobby(); renderSettings(); applyGfx();
 // invite links: ?room=CODE opens the join screen straight away
+{ const t = new URLSearchParams(location.search).get('t'); if (t && /^[A-Za-z2-9]{6}$/.test(t)) setTimeout(() => evOpen(t.toUpperCase()), 300); }
 { const q = new URLSearchParams(location.search).get('room'); if (q) { show('scrJoin'); $('joinCode').value = q.toUpperCase(); setTimeout(() => joinRoom(q), 300); } }
 requestAnimationFrame(t => { last = t; frame(t); });
 })();

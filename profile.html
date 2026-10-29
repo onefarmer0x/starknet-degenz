@@ -244,6 +244,40 @@ async function show() {
   if (mine && A.rewards) return paint(A.rewards, true);
   try { const r = await fetch('/api/pfauth?profile=' + encodeURIComponent(target)); if (r.ok) paint(await r.json(), mine); } catch {}
 }
+// ---- badge NFTs: earned badges can be minted as Starknet Degenz Badges (ERC-721), see contracts/degenz_badges ----
+const felt = s => '0x' + [...s].map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+const SELECTORS = { has_claimed: '0x26c13f753f29940fd34b6d5582c698d918495b203733dd3ebfaf36a35c17baf' }; // starknet_keccak('has_claimed')
+const explorer = (net, kind, x) => `https://${net === 'sepolia' ? 'sepolia.' : ''}voyager.online/${kind}/${x}`;
+async function nftCall(entry, calldata) {
+  const n = shownView.nft, r = await fetch(n.rpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'starknet_call', params: { request: { contract_address: n.contract, entry_point_selector: SELECTORS[entry], calldata }, block_id: 'latest' } }) });
+  const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result;
+}
+async function mintState(b) {
+  const box = () => document.getElementById('bvMint'); let minted = null;
+  try { minted = BigInt((await nftCall('has_claimed', [felt(b.id), shownView.address]))[0]) === 1n; } catch {}
+  if (!box() || location.hash !== '#' + b.id) return; // viewer moved on
+  const net = shownView.nft.network;
+  box().innerHTML = minted ? `<a class="btn ghost" href="${explorer(net, 'contract', shownView.nft.contract)}" target="_blank" rel="noopener">✓ Minted · view collection</a>`
+    : `<button class="btn" type="button" data-mint="${b.id}">🪙 Mint as NFT</button>${net === 'sepolia' ? '<small style="display:block;color:var(--p-dim);font-size:12px;margin-top:6px">Test network: switch your wallet to Sepolia</small>' : ''}`;
+}
+async function mint(id, btn) {
+  btn.disabled = true; btn.textContent = 'Getting voucher…';
+  try {
+    const r = await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ voucher: id }) });
+    const v = await r.json(); if (!r.ok) throw new Error(v.error || 'Could not get a voucher.');
+    btn.textContent = 'Confirm in your wallet…';
+    const tx = await window.DegenzAccount.invoke([{ contract_address: v.contract, entry_point: 'claim', calldata: [v.badge, v.r, v.s] }]);
+    btn.textContent = 'Minting…';
+    window.DegenzAccount.toast(`🪙 Mint sent! <small><a href="${explorer(v.network, 'tx', tx)}" target="_blank" rel="noopener" style="color:inherit">View transaction</a></small>`);
+    window.dzTrack?.('Badge minted', { badge: id });
+    for (let i = 0; i < 40; i++) { await new Promise(res => setTimeout(res, 3000)); try { if (BigInt((await nftCall('has_claimed', [felt(id), shownView.address]))[0]) === 1n) break; } catch {} }
+    const b = shownView.badges.find(x => x.id === id); if (b && location.hash === '#' + id) mintState(b);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '🪙 Mint as NFT';
+    window.DegenzAccount?.toast(/reject|cancel|abort|denied|declin/i.test(e?.message || '') ? 'Cancelled in the wallet.' : esc(e?.message || 'Mint failed.'));
+  }
+}
+
 // ---- badge viewer ----
 let shownView = null, shownMine = false;
 const fmtN = n => n >= 1e6 ? +(n / 1e6).toFixed(n >= 1e7 ? 0 : 2) + 'M' : n >= 1e3 ? +(n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'K' : String(+n.toFixed(2));
@@ -261,11 +295,13 @@ function openBadge(id) {
   $('bvTrail').textContent = b.trail ? `🎁 Unlocks the ${b.trail} trail in Degenz Kart` : ''; $('bvTrail').hidden = !b.trail;
   const [label, href] = CTA[b.cat || 'daily'] || [];
   const actions = [];
-  if (b.at && shownMine) actions.push('<button class="btn" type="button" data-share>Share on 𝕏</button>');
+  if (b.at && shownMine && shownView.nft) actions.push('<span id="bvMint"><button class="btn" type="button" disabled>Checking NFT…</button></span>');
+  if (b.at && shownMine) actions.push('<button class="btn ghost" type="button" data-share>Share on 𝕏</button>');
   if (!b.at && shownMine && label) actions.push(href ? `<a class="btn" href="${href}"${href.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}>${label}</a>` : (shownView.canClaim ? `<button class="btn" type="button" data-claim>${label}</button>` : ''));
   actions.push('<button class="btn ghost" type="button" data-close>Close</button>');
   $('bvRow').innerHTML = actions.join('');
   if (!d.open) d.showModal();
+  if (b.at && shownMine && shownView.nft) mintState(b);
   history.replaceState(null, '', location.pathname + location.search + '#' + id);
   window.dzTrack?.('Badge viewed', { badge: id, earned: b.at ? 'yes' : 'no' });
 }
@@ -274,6 +310,7 @@ $('bview').addEventListener('click', e => {
   const d = $('bview');
   if (e.target === d || e.target.closest('[data-close]')) d.close();
   else if (e.target.closest('[data-claim]')) { d.close(); window.DegenzAccount?.claim(); }
+  else if (e.target.closest('[data-mint]')) { const b = e.target.closest('[data-mint]'); mint(b.dataset.mint, b); }
   else if (e.target.closest('[data-share]')) {
     const b = shownView.badges.find(x => '#' + x.id === location.hash);
     if (b) window.open(`https://x.com/intent/post?text=${encodeURIComponent(`I just earned the ${b.name} badge in the Starknet Degenz pack 🐺 ${b.desc}.`)}&url=${encodeURIComponent(location.origin + '/profile?address=' + shownView.address + '#' + b.id)}`, '_blank', 'noopener');

@@ -4,7 +4,8 @@
 (() => {
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const short = a => a.slice(0, 6) + '…' + a.slice(-4);
-  let me = null, state = null, rw = null, readyResolve; // rw: daily rewards view (XP, streak, badges) from api/_rewards.js
+  let me = null, state = null, rw = null, readyResolve;
+  let live = null; // the wallet connection from this page visit ({ addr, request }), used to send transactions // rw: daily rewards view (XP, streak, badges) from api/_rewards.js
   const ready = new Promise(r => { readyResolve = r; });
   const emit = () => window.dispatchEvent(new CustomEvent('degenz:auth', { detail: { address: me, state } }));
   // a colour per wallet (tints the wallet icon), so the button shows "which wallet" at a glance
@@ -199,6 +200,8 @@
       const r = await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: addr, signature: sig.map(x => typeof x === 'bigint' ? '0x' + x.toString(16) : String(x)), nonce: n.nonce }) });
       const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Sign-in failed.');
       me = j.address; state = j.state; if (dlg.open) dlg.close(); render(); emit(); loadRw();
+      try { localStorage.setItem('dz.wallet', w.id || w.kind || ''); } catch {}
+      live = { addr, request };
       window.dzTrack?.('Sign in', { wallet: w.name || w.kind, page: location.pathname });
     } catch (e) {
       if (!dlg.open) dlg.showModal();
@@ -210,7 +213,23 @@
     me = null; state = null; rw = null; if (menu) menu.hidden = true; render(); emit(); rwEmit();
   }
 
-  window.DegenzAccount = { ready, get address() { return me; }, get state() { return state; }, get rewards() { return rw; }, signIn: () => openWallets(), signOut, claim, reloadRewards: loadRw, toast };
+  // Send a transaction from the signed-in wallet (reconnects to the wallet used at sign-in if needed).
+  // calls: [{ contract_address, entry_point, calldata }] -> transaction hash
+  async function invoke(calls) {
+    if (!me) throw new Error('Sign in first.');
+    if (!live || BigInt(live.addr) !== BigInt(me)) {
+      scanWallets();
+      let saved = ''; try { saved = localStorage.getItem('dz.wallet') || ''; } catch {}
+      const list = [...found.values()], w = list.find(x => x.id === saved || x.kind === saved) || list[0];
+      if (!w) throw new Error('Open this page in the browser that has your Starknet wallet.');
+      live = await connect(w, dlg);
+    }
+    if (!live.addr || BigInt(live.addr) !== BigInt(me)) { live = null; throw new Error(`Switch your wallet to the account you signed in with (${short(me)}).`); }
+    const res = await live.request({ type: 'wallet_addInvokeTransaction', params: { calls } });
+    return res.transaction_hash || res.transactionHash || res;
+  }
+
+  window.DegenzAccount = { ready, get address() { return me; }, get state() { return state; }, get rewards() { return rw; }, signIn: () => openWallets(), signOut, claim, reloadRewards: loadRw, toast, invoke };
 
   async function init() {
     build(); render();

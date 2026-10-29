@@ -3,6 +3,7 @@
   "private": true,
   "description": "Server functions for starknetdegenz.fun (portfolio wallet sign-in needs starknet.js to check SNIP-12 signatures)",
   "dependencies": {
+    "@vercel/og": "^0.6.8",
     "starknet": "6.24.1"
   }
 }

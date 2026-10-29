@@ -7,6 +7,19 @@
   "functions": {
     "api/portfolio.js": {
       "maxDuration": 30
+    },
+    "api/events.js": {
+      "maxDuration": 20
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/nft/:id",
+      "destination": "/api/nft?id=:id"
+    },
+    {
+      "source": "/e/:id",
+      "destination": "/api/events?share=:id"
+    }
+  ]
 }
