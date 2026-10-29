@@ -3,5 +3,10 @@
   "buildCommand": "",
   "installCommand": "",
   "outputDirectory": ".",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/portfolio.js": {
+      "maxDuration": 30
+    }
+  }
 }

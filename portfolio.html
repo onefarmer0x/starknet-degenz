@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Degenz Portfolio</title>
+<meta name="description" content="Track every Starknet token and NFT in your wallets: balances, USD prices, pools and logos, across as many wallets as you like.">
+<meta name="theme-color" content="#070506">
+<link rel="canonical" href="https://www.starknetdegenz.fun/portfolio">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-64.png" type="image/png" sizes="64x64">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="$DEGENZ">
+<meta property="og:title" content="Degenz Portfolio · every Starknet bag in one place">
+<meta property="og:description" content="Paste any Starknet wallet: all tokens, prices, pools and NFTs. Track multiple wallets.">
+<meta property="og:url" content="https://www.starknetdegenz.fun/portfolio">
+<meta property="og:image" content="https://www.starknetdegenz.fun/og-home.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@StarknetDegenz">
+<meta name="twitter:image" content="https://www.starknetdegenz.fun/og-home.png">
+<script src="/theme.js"></script>
+<link rel="stylesheet" href="/site.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/dark.css">
+<style>
+/* Portfolio: wallets bar on top, a big total, then tokens (table) and NFTs (grid). Same dark wolf-pack look as the rest of the site. */
+:root { --pf-bg: #070506; --pf-panel: #100c0d; --pf-panel2: #181213; --pf-line: #2b2022; --pf-text: #ece4dc; --pf-dim: #8f8079; --pf-ember: #ff7a1f; --pf-gold: #e9c46a; --pf-up: #4fd27a; --pf-down: #ff4b4b; }
+body { background: var(--pf-bg); color: var(--pf-text); font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; margin: 0; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)) 48px; }
+h1 { font: 400 clamp(38px, 7vw, 72px)/0.95 "Anton", Impact, sans-serif; text-transform: uppercase; letter-spacing: 0.01em; margin: 28px 0 6px; }
+h1 span { color: var(--pf-ember); }
+.sub { color: var(--pf-dim); margin: 0 0 22px; max-width: 60ch; }
+.card { background: var(--pf-panel); border: 1px solid var(--pf-line); border-radius: 14px; padding: 16px; }
+.add { display: flex; gap: 8px; flex-wrap: wrap; }
+.add input { flex: 1 1 200px; min-width: 0; background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 10px; color: var(--pf-text); padding: 12px 14px; font: 500 14px "DM Mono", monospace; }
+.add input.lbl { flex: 0 1 140px; font-family: inherit; }
+.add select { flex: 0 1 150px; background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 10px; color: var(--pf-text); padding: 12px 10px; font: inherit; }
+.add input:focus, .add select:focus { outline: 2px solid var(--pf-ember); outline-offset: 1px; }
+.btn { background: var(--pf-ember); color: #150b05; border: 0; border-radius: 10px; padding: 12px 18px; font: 700 14px inherit; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.btn.ghost { background: transparent; color: var(--pf-text); border: 1px solid var(--pf-line); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.err { color: var(--pf-down); font-size: 14px; margin: 8px 0 0; min-height: 1em; }
+.wallets { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 0; }
+.chip { display: inline-flex; align-items: center; gap: 8px; background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 999px; padding: 7px 8px 7px 14px; font-size: 14px; cursor: pointer; color: var(--pf-text); }
+.chip[aria-pressed="true"] { border-color: var(--pf-ember); box-shadow: 0 0 0 1px var(--pf-ember) inset; }
+.chip small { color: var(--pf-dim); font: 500 12px "DM Mono", monospace; }
+.chip b { font-weight: 700; }
+.chip .x { border: 0; background: none; color: var(--pf-dim); font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 50%; }
+.chip .x:hover { color: var(--pf-down); }
+.summary { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; margin: 18px 0; }
+.stat .k { color: var(--pf-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
+.stat .v { font: 400 clamp(26px, 4.4vw, 44px)/1.1 "Anton", Impact, sans-serif; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.stat.total .v { color: var(--pf-gold); }
+.stat .s { color: var(--pf-dim); font-size: 13px; margin-top: 4px; }
+.tabs { display: flex; gap: 6px; margin: 22px 0 10px; align-items: center; flex-wrap: wrap; }
+.tab { background: none; border: 1px solid var(--pf-line); color: var(--pf-dim); border-radius: 999px; padding: 8px 16px; font: 700 14px inherit; font-family: inherit; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--pf-text); border-color: var(--pf-text); }
+.tabs .grow { flex: 1; }
+.tabs .upd { color: var(--pf-dim); font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: right; color: var(--pf-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--pf-line); }
+th:first-child, td:first-child { text-align: left; }
+td { text-align: right; padding: 11px 10px; border-bottom: 1px solid var(--pf-line); font-size: 14px; vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+.tok { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tok img, .tok .ph { width: 32px; height: 32px; border-radius: 50%; flex: none; background: var(--pf-panel2); object-fit: cover; }
+.tok .ph { display: grid; place-items: center; font: 700 12px inherit; color: var(--pf-dim); }
+.tok b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22ch; }
+.tok small { display: block; color: var(--pf-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 26ch; }
+.ver { color: var(--pf-gold); font-size: 11px; margin-left: 4px; }
+.val { font-weight: 700; }
+.dim { color: var(--pf-dim); }
+.up { color: var(--pf-up); } .down { color: var(--pf-down); }
+td a { color: var(--pf-text); text-decoration: none; border-bottom: 1px dotted var(--pf-dim); }
+td a:hover { color: var(--pf-ember); }
+.more { margin-top: 10px; }
+.more summary { cursor: pointer; color: var(--pf-dim); font-size: 14px; padding: 6px 0; }
+.nfts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.nft { background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 12px; overflow: hidden; }
+.nft .img { aspect-ratio: 1; background: #0c0909 center / cover no-repeat; display: grid; place-items: center; font-size: 34px; }
+.nft .meta { padding: 10px; font-size: 13px; }
+.nft .meta b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nft .meta small { color: var(--pf-dim); }
+.empty { color: var(--pf-dim); text-align: center; padding: 34px 10px; }
+.loading { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--pf-line); border-top-color: var(--pf-ember); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hide-sm { }
+@media (max-width: 720px) {
+  .summary { grid-template-columns: 1fr 1fr; } .summary .total { grid-column: 1 / -1; }
+  .hide-sm { display: none; }
+  td, th { padding: 10px 6px; }
+  .tok b { max-width: 12ch; } .tok small { max-width: 14ch; }
+}
+.row-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 0; color: var(--pf-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
+.row-head + .wallets { margin-top: 8px; }
+.link { background: none; border: 0; color: var(--pf-ember); font: 700 13px inherit; font-family: inherit; cursor: pointer; text-transform: none; letter-spacing: 0; padding: 4px 0; }
+.link.on { color: var(--pf-up); }
+.chip .ed { border: 0; background: none; color: var(--pf-dim); font-size: 13px; cursor: pointer; padding: 2px 4px; }
+.chip .ed:hover { color: var(--pf-text); }
+.chip.bundle { border-style: dashed; }
+.chip.bundle[aria-pressed="true"] { border-style: solid; }
+dialog { background: var(--pf-panel); color: var(--pf-text); border: 1px solid var(--pf-line); border-radius: 14px; padding: 20px; width: min(420px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog h3 { margin: 0 0 12px; font: 400 26px "Anton", Impact, sans-serif; text-transform: uppercase; }
+dialog input { width: 100%; box-sizing: border-box; background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 10px; color: var(--pf-text); padding: 12px 14px; font: inherit; }
+dialog input:focus { outline: 2px solid var(--pf-ember); }
+.pick { display: grid; gap: 6px; margin: 12px 0 0; max-height: 46vh; overflow: auto; }
+.pick label { display: flex; align-items: center; gap: 10px; background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 14px; }
+.pick label small { color: var(--pf-dim); font: 500 12px "DM Mono", monospace; margin-left: auto; }
+.pick input { width: auto; accent-color: var(--pf-ember); }
+.dlg-btns { display: flex; gap: 8px; margin-top: 16px; } .dlg-btns .grow { flex: 1; }
+.btn.danger { color: var(--pf-down); border-color: rgba(255, 75, 75, 0.4); }
+#dlgNote { font-size: 13px; margin: 10px 0 0; word-break: break-all; }
+#dlgNote:empty { display: none; }
+tr.tr-tok { cursor: pointer; }
+tr.tr-tok:hover td { background: rgba(255, 255, 255, 0.02); }
+tr.tr-tok.open td { border-bottom-color: transparent; }
+.chev { display: inline-block; color: var(--pf-dim); font-size: 11px; margin-left: 6px; transition: transform 0.15s; }
+tr.open .chev { transform: rotate(90deg); }
+tr.tr-det td { text-align: left; padding: 0 10px 14px; background: rgba(255, 255, 255, 0.015); }
+.det { display: grid; gap: 10px; }
+.ca { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 500 12px "DM Mono", monospace; color: var(--pf-dim); word-break: break-all; }
+.ca code { color: var(--pf-text); }
+.tlinks { display: flex; gap: 6px; flex-wrap: wrap; }
+.tlinks a, .mini { display: inline-flex; align-items: center; gap: 6px; background: var(--pf-panel2); border: 1px solid var(--pf-line); border-radius: 999px; padding: 6px 12px; color: var(--pf-text); text-decoration: none; font: 700 12px inherit; font-family: inherit; cursor: pointer; border-bottom: 1px solid var(--pf-line); }
+.tlinks a:hover, .mini:hover { border-color: var(--pf-ember); color: var(--pf-text); }
+.tlinks a.swap { background: var(--pf-ember); color: #150b05; border-color: var(--pf-ember); }
+.desc { color: var(--pf-dim); font-size: 13px; max-width: 80ch; }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Main">
+  <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
+  <div class="links"><a href="/">Home</a><a href="/#stats">Stats</a><a href="/#chart">Chart</a><a href="/bonfire">Bonfire</a><a href="/race">Race</a><a href="/portfolio" aria-current="page">Portfolio</a><a href="https://t.me/starknet_degenz" target="_blank" rel="noopener">Telegram</a></div>
+  <a class="buy" href="https://brothereli.com/launchpad/token/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100" target="_blank" rel="noopener">BUY $DEGENZ</a>
+</nav>
+<main class="wrap">
+  <h1>Degenz <span>Portfolio</span></h1>
+  <p class="sub">Paste any Starknet wallet. We scan 3,000+ tokens on-chain for balances, then add prices, pools and logos. Name your wallets, group them into bundles, and turn on cloud save to get the same list on every device.</p>
+
+  <form class="card add" id="addForm" autocomplete="off">
+    <input id="addr" placeholder="0x… Starknet wallet address" aria-label="Wallet address" spellcheck="false">
+    <input id="label" class="lbl" placeholder="Name (optional)" aria-label="Wallet name" maxlength="20">
+    <select id="addBundle" class="lbl" aria-label="Add to bundle"></select>
+    <input id="addBundleName" class="lbl" placeholder="New bundle name" aria-label="New bundle name" maxlength="24" hidden>
+    <button class="btn" type="submit">Add wallet</button>
+  </form>
+  <p class="err" id="err" role="alert"></p>
+  <div class="row-head" id="wHead" hidden><span>Wallets</span><button class="link" id="syncBtn" type="button">☁ Cloud save: off</button></div>
+  <div class="wallets" id="wallets"></div>
+  <div class="row-head" id="bHead" hidden><span>Bundles</span><button class="link" id="newBundle" type="button">+ New bundle</button></div>
+  <div class="wallets" id="bundles"></div>
+
+  <dialog id="dlg">
+    <form method="dialog" id="dlgForm">
+      <h3 id="dlgTitle">Rename</h3>
+      <input id="dlgName" maxlength="24" placeholder="Name" autocomplete="off">
+      <div id="dlgPick" class="pick"></div>
+      <p class="dim" id="dlgNote"></p>
+      <div class="dlg-btns"><button class="btn ghost danger" id="dlgDel" type="button" hidden>Delete</button><span class="grow"></span><button class="btn ghost" value="cancel" type="submit" formnovalidate>Cancel</button><button class="btn" id="dlgOk" value="ok" type="submit">Save</button></div>
+    </form>
+  </dialog>
+
+  <section class="summary" id="summary" hidden>
+    <div class="card stat total"><div class="k">Total value</div><div class="v" id="sTotal">$0</div><div class="s" id="sTotalSub"></div></div>
+    <div class="card stat"><div class="k">Tokens</div><div class="v" id="sTokens">0</div><div class="s" id="sTokSub"></div></div>
+    <div class="card stat"><div class="k">NFTs</div><div class="v" id="sNfts">–</div><div class="s" id="sNftSub"></div></div>
+  </section>
+
+  <div id="results" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="tokens">Tokens</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="nfts">NFTs</button>
+      <span class="grow"></span><span class="upd" id="upd"></span>
+      <button class="btn ghost" id="refresh" type="button">↻ Refresh</button>
+    </div>
+    <div class="card" id="pTokens"></div>
+    <div class="card" id="pNfts" hidden></div>
+  </div>
+  <div class="card empty" id="intro">Add a wallet above to see everything in it.</div>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const short = a => a.slice(0, 6) + '…' + a.slice(-4);
+  const norm = a => '0x' + a.replace(/^0x/i, '').toLowerCase().replace(/^0+/, '').padStart(64, '0');
+  const usd = v => v == null ? '–' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }) : v >= 1 ? '$' + v.toFixed(2) : v > 0 ? '$' + v.toPrecision(2) : '$0';
+  const price = v => v == null ? '–' : v >= 1 ? '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : v > 0 ? '$' + v.toPrecision(3) : '$0';
+  const amt = v => v >= 1e9 ? (v / 1e9).toFixed(2) + 'B' : v >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? v.toLocaleString('en-US', { maximumFractionDigits: 0 }) : v >= 1 ? v.toFixed(2) : v.toPrecision(3);
+
+  // saved state: wallets (address + name) and bundles (named groups of wallets). Kept in this browser, and also in
+  // the cloud under a private sync id once cloud save is on. Views: 'all', 'w:<address>', 'b:<bundle id>'.
+  let st = ls.get('pf.state', null) || { wallets: ls.get('pf.wallets', []), bundles: [] };
+  let syncId = ls.get('pf.sync', null), view = 'all', tab = 'tokens', saveT = 0;
+  const data = {}; // address -> api result | { loading } | { error }
+  const open = new Set(), info = {}; // expanded token rows; token socials (address -> info | 'loading')
+  const nameOf = w => w.label || short(w.a);
+  const bundleOf = id => st.bundles.find(b => b.id === id);
+  const viewAddrs = () => view === 'all' ? st.wallets.map(w => w.a) : view.startsWith('b:') ? (bundleOf(view.slice(2))?.wallets || []) : [view.slice(2)];
+  const sumOf = addrs => addrs.reduce((s, a) => s + (data[a]?.totalUsd || 0), 0);
+
+  function save() {
+    ls.set('pf.state', st);
+    if (!syncId) return;
+    clearTimeout(saveT); saveT = setTimeout(async () => {
+      try { await fetch('/api/pfsync', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: syncId, state: st }) }); } catch {}
+    }, 600);
+  }
+
+  function renderWallets() {
+    const ws = st.wallets;
+    $('wallets').innerHTML = (ws.length > 1 ? `<button class="chip" data-view="all" aria-pressed="${view === 'all'}"><b>All wallets</b><small>${usd(sumOf(ws.map(w => w.a)))}</small></button>` : '') + ws.map(w => {
+      const d = data[w.a], v = d?.totalUsd != null ? usd(d.totalUsd) : d?.loading ? '<span class="loading"></span>' : '';
+      return `<span class="chip" role="button" tabindex="0" data-view="w:${w.a}" aria-pressed="${view === 'w:' + w.a}"><b>${esc(nameOf(w))}</b><small>${w.label ? short(w.a) + ' · ' : ''}${v}</small><button class="ed" type="button" data-ren="${w.a}" aria-label="Rename ${esc(nameOf(w))}" title="Rename">✎</button><button class="x" type="button" data-del="${w.a}" aria-label="Remove ${esc(nameOf(w))}" title="Remove">×</button></span>`;
+    }).join('');
+    $('bundles').innerHTML = st.bundles.map(b => `<span class="chip bundle" role="button" tabindex="0" data-view="b:${b.id}" aria-pressed="${view === 'b:' + b.id}"><b>📦 ${esc(b.name)}</b><small>${b.wallets.length} wallet${b.wallets.length === 1 ? '' : 's'} · ${usd(sumOf(b.wallets))}</small><button class="ed" type="button" data-bed="${b.id}" aria-label="Edit ${esc(b.name)}" title="Edit">✎</button></span>`).join('');
+    const sel = $('addBundle'), cur = sel.value;
+    sel.innerHTML = '<option value="">No bundle</option>' + st.bundles.map(b => `<option value="${b.id}">📦 ${esc(b.name)}</option>`).join('') + '<option value="+new">+ New bundle…</option>';
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : '';
+    $('wHead').hidden = !ws.length; $('bHead').hidden = ws.length < 2 && !st.bundles.length;
+    $('syncBtn').textContent = syncId ? '☁ Cloud save: on' : '☁ Cloud save: off'; $('syncBtn').classList.toggle('on', !!syncId);
+    $('intro').hidden = ws.length > 0;
+  }
+
+  // combine the selected wallet(s) into one list: same token across wallets is summed
+  function combined() {
+    const addrs = viewAddrs(), list = addrs.map(a => data[a]).filter(d => d && d.tokens);
+    const toks = new Map(), nfts = [];
+    let nftNote = '', nftKnown = false;
+    for (const d of list) {
+      for (const t of d.tokens) { const c = toks.get(t.address); if (c) { c.balance += t.balance; c.value = c.value != null && t.value != null ? c.value + t.value : c.value ?? t.value; } else toks.set(t.address, { ...t }); }
+      if (d.nfts) { nftKnown = true; nfts.push(...d.nfts); } else nftNote = d.nftNote;
+    }
+    const tokens = [...toks.values()].sort((a, b) => b.counted - a.counted || (b.value || 0) - (a.value || 0));
+    return { addrs, tokens, nfts: nftKnown ? nfts : null, nftNote, loading: addrs.some(a => data[a]?.loading), delayed: list.some(d => d.pricesDelayed), at: Math.min(...list.map(d => d.at)) };
+  }
+
+  function row(t) {
+    const logo = t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=ph>${esc(t.symbol.slice(0, 3))}</span>'">` : `<span class="ph">${esc((t.symbol || '?').slice(0, 3))}</span>`;
+    const ch = t.pool?.change24;
+    return `<tr class="tr-tok${open.has(t.address) ? ' open' : ''}" data-tok="${t.address}" tabindex="0" aria-expanded="${open.has(t.address)}"><td><div class="tok">${logo}<div><b>${esc(t.symbol)}${t.verified ? '<span class="ver" title="Verified on AVNU">✔</span>' : ''}<span class="chev">▶</span></b><small>${esc(t.name)}</small></div></div></td>
+      <td>${amt(t.balance)}</td><td class="hide-sm">${price(t.price)}${ch != null ? `<br><small class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '+' : ''}${ch.toFixed(1)}%</small>` : ''}</td>
+      <td class="val">${usd(t.value)}</td>
+      <td class="hide-sm">${t.pool ? `<a href="${esc(t.pool.url)}" target="_blank" rel="noopener" title="Liquidity ${usd(t.pool.liq)}">${esc(t.pool.name)}</a><br><small class="dim">liq ${usd(t.pool.liq)}</small>` : '<span class="dim">no pool</span>'}</td></tr>${open.has(t.address) ? detail(t) : ''}`;
+  }
+  const ETH = '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7';
+  function detail(t) {
+    const a = t.address, i = info[a], s = i && i !== 'loading' ? i : {};
+    const tw = s.twitter && `https://x.com/${encodeURIComponent(s.twitter.replace(/^@/, ''))}`, tg = s.telegram && (/^https?:/.test(s.telegram) ? s.telegram : `https://t.me/${encodeURIComponent(s.telegram.replace(/^@/, ''))}`);
+    const site = /^https?:\/\//.test(s.website || '') ? s.website : '', dc = /^https?:\/\//.test(s.discord || '') ? s.discord : '';
+    return `<tr class="tr-det"><td colspan="5"><div class="det">
+      <div class="ca">CA <code>${a}</code><button class="mini" type="button" data-copy="${a}">Copy</button></div>
+      <div class="tlinks">
+        <a class="swap" href="https://app.avnu.fi/en?tokenFrom=${a}&tokenTo=${a === ETH ? '0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8' : ETH}" target="_blank" rel="noopener">⇄ Trade on AVNU</a>
+        ${t.pool ? `<a href="${esc(t.pool.url)}" target="_blank" rel="noopener">🦎 GeckoTerminal</a>` : ''}
+        <a href="https://dexscreener.com/starknet/${a}" target="_blank" rel="noopener">📈 DexScreener</a>
+        <a href="https://voyager.online/token/${a}" target="_blank" rel="noopener">🔎 Voyager</a>
+        ${tw ? `<a href="${esc(tw)}" target="_blank" rel="noopener">𝕏 @${esc(s.twitter.replace(/^@/, ''))}</a>` : ''}
+        ${tg ? `<a href="${esc(tg)}" target="_blank" rel="noopener">✈️ Telegram</a>` : ''}
+        ${site ? `<a href="${esc(site)}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
+        ${dc ? `<a href="${esc(dc)}" target="_blank" rel="noopener">💬 Discord</a>` : ''}
+        ${i === 'loading' ? '<span class="dim" style="font-size:12px;align-self:center"><span class="loading"></span>socials…</span>' : ''}
+      </div>
+      ${s.description ? `<div class="desc">${esc(s.description)}</div>` : ''}
+    </div></td></tr>`;
+  }
+  const table = rows => `<table><thead><tr><th>Token</th><th>Balance</th><th class="hide-sm">Price</th><th>Value</th><th class="hide-sm">Main pool</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table>`;
+
+  function render() {
+    if (view.startsWith('b:') && !bundleOf(view.slice(2))) view = 'all';
+    if (view.startsWith('w:') && !st.wallets.some(w => 'w:' + w.a === view)) view = 'all';
+    if (view === 'all' && st.wallets.length === 1) view = 'w:' + st.wallets[0].a;
+    renderWallets();
+    const any = st.wallets.length > 0; $('summary').hidden = $('results').hidden = !any; if (!any) return;
+    const c = combined(), real = c.tokens.filter(t => t.counted), rest = c.tokens.filter(t => !t.counted);
+    const total = real.reduce((s, t) => s + t.value, 0), errs = c.addrs.filter(a => data[a]?.error);
+    $('sTotal').textContent = usd(total);
+    $('sTotalSub').innerHTML = c.loading ? '<span class="loading"></span>Scanning…' : errs.length ? `⚠ ${errs.length} wallet${errs.length > 1 ? 's' : ''} failed to load` : c.delayed ? '⏳ Some prices are delayed (busy price feed), refresh in a minute' : c.addrs.length > 1 ? `across ${c.addrs.length} wallets${view.startsWith('b:') ? ' in ' + esc(bundleOf(view.slice(2)).name) : ''}` : '';
+    $('sTokens').textContent = real.length; $('sTokSub').textContent = rest.length ? `+${rest.length} unpriced / spam` : '';
+    $('sNfts').textContent = c.nfts ? c.nfts.reduce((s, n) => s + (n.count || 1), 0) : '–'; $('sNftSub').textContent = c.nfts ? `${c.nfts.length} collections` : 'not connected';
+    $('upd').textContent = isFinite(c.at) ? 'updated ' + new Date(c.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+    $('pTokens').hidden = tab !== 'tokens'; $('pNfts').hidden = tab !== 'nfts';
+    if (!c.addrs.length) $('pTokens').innerHTML = '<div class="empty">This bundle has no wallets yet. Tap ✎ on it to add some.</div>';
+    else if (!c.tokens.length) $('pTokens').innerHTML = `<div class="empty">${c.loading ? '<span class="loading"></span>Scanning 3,000+ tokens on Starknet… (takes ~5 s)' : errs.length ? esc(data[errs[0]].error) : 'No tokens found.'}</div>`;
+    else $('pTokens').innerHTML = (real.length ? table(real) : '<div class="empty">No priced tokens.</div>') + (rest.length ? `<details class="more"><summary>Show ${rest.length} unpriced or low-liquidity tokens (often airdropped spam)</summary>${table(rest)}</details>` : '');
+    $('pNfts').innerHTML = c.nfts ? (c.nfts.length ? `<div class="nfts">${c.nfts.map(n => `<a class="nft" href="https://voyager.online/contract/${esc(n.contract)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div class="img" ${n.image ? `style="background-image:url('${esc(n.image)}')"` : ''}>${n.image ? '' : '🖼️'}</div><div class="meta"><b>${esc(n.name)}</b><small>${n.count > 1 ? `×${n.count}` : n.tokenId != null ? '#' + esc(String(n.tokenId).slice(0, 10)) : ''}</small></div></a>`).join('')}</div>` : '<div class="empty">No NFTs in this wallet.</div>')
+      : `<div class="empty">🖼️ NFT scanning is coming soon.<br><small>${esc(c.nftNote || '')}</small></div>`;
+  }
+
+  async function load(a, fresh) {
+    data[a] = { ...(data[a] || {}), loading: true, error: null }; render();
+    try {
+      const r = await fetch(`/api/portfolio?address=${a}${fresh ? '&fresh=1' : ''}`), j = await r.json();
+      data[a] = r.ok ? j : { error: j.error || 'Could not load this wallet.' };
+    } catch { data[a] = { error: 'Network error, try again.' }; }
+    render();
+  }
+
+  // one small dialog for renaming a wallet, creating / editing a bundle, and the cloud-save link
+  function dialog({ title, name, pick, note, okText = 'Save', del, onOk, onDel, noName }) {
+    $('dlgTitle').textContent = title; $('dlgName').value = name || ''; $('dlgName').hidden = !!noName;
+    $('dlgPick').innerHTML = pick ? st.wallets.map(w => `<label><input type="checkbox" value="${w.a}" ${pick.includes(w.a) ? 'checked' : ''}> ${esc(nameOf(w))}<small>${short(w.a)}</small></label>`).join('') || '<p class="dim">Add some wallets first.</p>' : '';
+    $('dlgNote').innerHTML = note || ''; $('dlgOk').textContent = okText; $('dlgDel').hidden = !del; $('dlgDel').textContent = del || 'Delete';
+    $('dlgDel').onclick = () => { $('dlg').close(); onDel && onDel(); };
+    // handled on submit (synchronously), not on the dialog's close event, so a result can't leak into the next dialog
+    $('dlgForm').onsubmit = e => { if (e.submitter?.value === 'ok') onOk && onOk($('dlgName').value.trim(), [...$('dlgPick').querySelectorAll('input:checked')].map(i => i.value)); };
+    if ($('dlg').open) $('dlg').close();
+    $('dlg').showModal(); if (!noName) setTimeout(() => $('dlgName').focus(), 30);
+  }
+
+  $('addForm').addEventListener('submit', e => {
+    e.preventDefault(); $('err').textContent = '';
+    const raw = $('addr').value.trim();
+    if (!/^0x[0-9a-fA-F]{1,64}$/.test(raw)) { $('err').textContent = 'That doesn\'t look like a Starknet address (0x followed by up to 64 hex characters).'; return; }
+    const a = norm(raw);
+    if (st.wallets.some(w => w.a === a)) { $('err').textContent = 'That wallet is already on the list.'; view = 'w:' + a; render(); return; }
+    st.wallets.push({ a, label: $('label').value.trim().slice(0, 20) });
+    // optionally drop it straight into an existing or brand new bundle
+    let pick = $('addBundle').value;
+    if (pick === '+new') { const b = { id: Math.random().toString(36).slice(2, 10), name: ($('addBundleName').value.trim() || 'Bundle ' + (st.bundles.length + 1)).slice(0, 24), wallets: [a] }; st.bundles.push(b); pick = b.id; }
+    else if (pick) bundleOf(pick)?.wallets.push(a);
+    save();
+    $('addr').value = $('label').value = $('addBundleName').value = ''; $('addBundleName').hidden = true; view = 'w:' + a; load(a);
+    $('addBundle').value = pick; // keep that bundle picked for the next wallet
+  });
+  const chipClick = e => {
+    const t = e.target;
+    if (t.closest('[data-del]')) {
+      e.stopPropagation(); const a = t.closest('[data-del]').dataset.del, w = st.wallets.find(x => x.a === a);
+      if (!confirm(`Remove ${nameOf(w)} from your wallets?`)) return;
+      st.wallets = st.wallets.filter(x => x.a !== a); st.bundles.forEach(b => b.wallets = b.wallets.filter(x => x !== a)); delete data[a]; save(); render(); return;
+    }
+    if (t.closest('[data-ren]')) {
+      e.stopPropagation(); const w = st.wallets.find(x => x.a === t.closest('[data-ren]').dataset.ren);
+      dialog({ title: 'Rename wallet', name: w.label, note: w.a, onOk: n => { w.label = n.slice(0, 20); save(); render(); } }); return;
+    }
+    if (t.closest('[data-bed]')) {
+      e.stopPropagation(); const b = bundleOf(t.closest('[data-bed]').dataset.bed);
+      dialog({ title: 'Edit bundle', name: b.name, pick: b.wallets, del: 'Delete bundle', onOk: (n, picked) => { b.name = (n || b.name).slice(0, 24); b.wallets = picked; save(); render(); }, onDel: () => { st.bundles = st.bundles.filter(x => x !== b); save(); render(); } }); return;
+    }
+    const chip = t.closest('[data-view]'); if (chip) { view = chip.dataset.view; render(); }
+  };
+  $('addBundle').addEventListener('change', () => { const n = $('addBundle').value === '+new'; $('addBundleName').hidden = !n; if (n) $('addBundleName').focus(); });
+  $('wallets').addEventListener('click', chipClick); $('bundles').addEventListener('click', chipClick);
+  const chipKey = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset?.view) { e.preventDefault(); view = e.target.dataset.view; render(); } };
+  $('wallets').addEventListener('keydown', chipKey); $('bundles').addEventListener('keydown', chipKey);
+  $('newBundle').addEventListener('click', () => dialog({ title: 'New bundle', name: '', pick: view.startsWith('w:') ? [view.slice(2)] : [], okText: 'Create', onOk: (n, picked) => {
+    const b = { id: Math.random().toString(36).slice(2, 10), name: (n || 'Bundle ' + (st.bundles.length + 1)).slice(0, 24), wallets: picked };
+    st.bundles.push(b); view = 'b:' + b.id; save(); render();
+  } }));
+  $('syncBtn').addEventListener('click', async () => {
+    const link = id => `${location.origin}/portfolio?sync=${id}`;
+    if (syncId) return dialog({ title: 'Cloud save is on', noName: true, okText: 'Copy link', del: 'Turn off', note: `Open this private link on any device to get the same wallets and bundles. Anyone with the link can see and edit the list, so keep it to yourself.<br><br><b>${esc(link(syncId))}</b>`,
+      onOk: () => navigator.clipboard?.writeText(link(syncId)), onDel: () => { syncId = null; ls.set('pf.sync', null); render(); } });
+    dialog({ title: 'Cloud save', noName: true, okText: 'Turn on', note: 'Saves your wallets, names and bundles online so they survive a cleared browser and show up on your other devices. You get a private link to open them anywhere.', onOk: async () => {
+      try { const r = await fetch('/api/pfsync', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: st }) }), j = await r.json(); if (!r.ok) throw 0; syncId = j.id; ls.set('pf.sync', syncId); render(); $('syncBtn').click(); }
+      catch { $('err').textContent = 'Cloud save is unavailable right now, try again later.'; }
+    } });
+  });
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; render(); }));
+  const toggleTok = a => {
+    if (open.has(a)) open.delete(a); else {
+      open.add(a);
+      if (!info[a]) { info[a] = 'loading'; fetch('/api/portfolio?info=' + a).then(r => r.ok ? r.json() : null).catch(() => null).then(d => { if (d) info[a] = d; else delete info[a]; render(); }); /* failed: try again next time it is opened */ }
+    }
+    render();
+  };
+  $('pTokens').addEventListener('click', e => {
+    const cp = e.target.closest('[data-copy]');
+    if (cp) { navigator.clipboard?.writeText(cp.dataset.copy); cp.textContent = 'Copied ✓'; setTimeout(() => { cp.textContent = 'Copy'; }, 1200); return; }
+    if (e.target.closest('a')) return;
+    const tr = e.target.closest('tr.tr-tok'); if (tr) toggleTok(tr.dataset.tok);
+  });
+  $('pTokens').addEventListener('keydown', e => { const tr = e.target.closest?.('tr.tr-tok'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleTok(tr.dataset.tok); } });
+  $('refresh').addEventListener('click', () => viewAddrs().forEach(a => load(a, true)));
+
+  async function start() {
+    const q = new URLSearchParams(location.search);
+    // ?sync=<id> opens a cloud-saved list (and keeps syncing to it on this device)
+    const sid = q.get('sync');
+    if (sid && /^[A-Za-z0-9]{20,40}$/.test(sid)) {
+      try { const r = await fetch('/api/pfsync?id=' + sid); if (r.ok) { st = (await r.json()).state; syncId = sid; ls.set('pf.sync', sid); ls.set('pf.state', st); } else $('err').textContent = 'That cloud save link was not found.'; } catch {}
+      history.replaceState(null, '', '/portfolio');
+    } else if (syncId) {
+      try { const r = await fetch('/api/pfsync?id=' + syncId); if (r.ok) { st = (await r.json()).state; ls.set('pf.state', st); } } catch {} // pick up changes from your other devices
+    }
+    // ?address=0x… opens (and adds) a wallet straight away, so a link can be shared
+    const qa = q.get('address');
+    if (qa && /^0x[0-9a-fA-F]{1,64}$/.test(qa)) { const a = norm(qa); if (!st.wallets.some(w => w.a === a)) { st.wallets.push({ a, label: '' }); save(); } view = 'w:' + a; }
+    render(); st.wallets.forEach(w => load(w.a));
+  }
+  start();
+})();
+</script>
+</body>
+</html>
