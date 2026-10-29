@@ -16,7 +16,7 @@ async function redis(...cmds) {
 }
 
 // board name = map key + laps (race maps) or minutes (arena maps); 'race' / 'arena' are Bonfire Bay / The Pit
-const KIND = { race: 'race', night: 'race', halloween: 'race', chain: 'race', arena: 'arena', degenz: 'arena' };
+const KIND = { race: 'race', night: 'race', halloween: 'race', chain: 'race', quantum: 'race', arena: 'arena', degenz: 'arena', stack: 'arena', maze: 'arena' };
 function parseBoard(b) {
   const m = /^([a-z]+)(\d{1,2})$/.exec(String(b || ''));
   if (!m || !KIND[m[1]]) return null;

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Degenz Profile</title>
+<meta name="description" content="Daily rewards, levels and badges for the Starknet Degenz pack. Sign in every day, keep your streak, collect badges.">
+<meta name="theme-color" content="#070506">
+<link rel="canonical" href="https://www.starknetdegenz.fun/profile">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-64.png" type="image/png" sizes="64x64">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="$DEGENZ">
+<meta property="og:title" content="Degenz Profile · streaks, levels and badges">
+<meta property="og:description" content="Sign in daily, keep your streak, collect badges for holding, burning and racing.">
+<meta property="og:url" content="https://www.starknetdegenz.fun/profile">
+<meta property="og:image" content="https://www.starknetdegenz.fun/og-home.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@StarknetDegenz">
+<meta name="twitter:image" content="https://www.starknetdegenz.fun/og-home.png">
+<script src="/theme.js"></script>
+<script src="/account.js" defer></script>
+<link rel="stylesheet" href="/site.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/dark.css">
+<style>
+/* Profile: level + streak up top, the daily claim, then every badge (earned in colour, the rest locked). */
+:root { --p-bg: #070506; --p-panel: #100c0d; --p-panel2: #181213; --p-line: #2b2022; --p-text: #ece4dc; --p-dim: #8f8079; --p-ember: #ff7a1f; --p-gold: #e9c46a; --p-silver: #c9d1dc; }
+body { background: var(--p-bg); color: var(--p-text); font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; margin: 0; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)) 56px; }
+h1 { font: 400 clamp(38px, 7vw, 72px)/0.95 "Anton", Impact, sans-serif; text-transform: uppercase; margin: 28px 0 6px; }
+h1 span { color: var(--p-ember); }
+h2 { font: 400 26px "Anton", Impact, sans-serif; text-transform: uppercase; margin: 32px 0 12px; letter-spacing: .01em; }
+.sub { color: var(--p-dim); margin: 0 0 22px; max-width: 62ch; }
+.card { background: var(--p-panel); border: 1px solid var(--p-line); border-radius: 14px; padding: 18px; }
+.btn { background: var(--p-ember); color: #150b05; border: 0; border-radius: 10px; padding: 12px 18px; font: 700 15px "Archivo", Arial, sans-serif; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.btn.ghost { background: transparent; color: var(--p-text); border: 1px solid var(--p-line); }
+.btn:disabled { background: var(--p-panel2); color: var(--p-dim); cursor: default; }
+.hero { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; }
+.ava { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; font: 400 30px "Anton", Impact, sans-serif; color: #150b05; }
+.who b { display: block; font: 500 15px "DM Mono", monospace; word-break: break-all; }
+.who .lv { font: 400 44px/1 "Anton", Impact, sans-serif; margin-top: 4px; }
+.who .lv small { font: 500 14px "Archivo", sans-serif; color: var(--p-dim); margin-left: 8px; }
+.bar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 12px; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff7a1f, #e9c46a); transition: width .6s; }
+.barlbl { color: var(--p-dim); font-size: 13px; margin-top: 6px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+.stat { background: var(--p-panel2); border: 1px solid var(--p-line); border-radius: 12px; padding: 12px; }
+.stat .k { color: var(--p-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+.stat .v { font: 400 28px/1.1 "Anton", Impact, sans-serif; margin-top: 4px; }
+.claimrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.claimrow .note { color: var(--p-dim); font-size: 14px; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
+.week div { background: var(--p-panel2); border: 1px solid var(--p-line); border-radius: 10px; padding: 8px 4px; text-align: center; font-size: 12px; color: var(--p-dim); }
+.week div b { display: block; font: 400 17px "Anton", Impact, sans-serif; color: var(--p-text); }
+.week .done { border-color: var(--p-ember); background: rgba(255,122,31,.12); }
+.week .done b { color: var(--p-ember); }
+.week .big b { color: var(--p-gold); }
+.bsec { margin-bottom: 22px; }
+button.badge { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+button.badge:hover { border-color: var(--p-ember); transform: translateY(-1px); }
+button.badge:focus-visible { outline: 2px solid var(--p-ember); outline-offset: 2px; }
+.bview { background: var(--p-panel); color: var(--p-text); border: 1px solid var(--p-line); border-radius: 18px; padding: 24px 22px 20px; width: min(380px, calc(100vw - 32px)); text-align: center; font-family: "Archivo", Arial, sans-serif; }
+.bview::backdrop { background: rgba(0,0,0,.7); }
+.bview .big { width: 200px; height: 200px; margin: 0 auto 8px; display: block; }
+.bview.locked .big { filter: grayscale(1) brightness(.7); }
+.bview em { font-style: normal; font: 600 11px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
+.bview.common em { color: var(--p-dim); } .bview.silver em { color: var(--p-silver); } .bview.gold em { color: var(--p-gold); } .bview.trophy em { color: var(--p-ember); }
+.bview h3 { margin: 4px 0 2px; font: 400 32px "Anton", Impact, sans-serif; text-transform: uppercase; }
+.bview .grp { color: var(--p-dim); font-size: 13px; margin: 0 0 12px; }
+.bview .desc { font-size: 16px; margin: 0 0 14px; }
+.bview .status { background: var(--p-panel2); border: 1px solid var(--p-line); border-radius: 12px; padding: 12px; font-size: 14px; margin-bottom: 12px; }
+.bview .status.ok { border-color: rgba(79,210,122,.5); color: #7be08f; }
+.bview .status .bar { margin-top: 8px; }
+.bview .status small { display: block; color: var(--p-dim); margin-top: 6px; }
+.bview .trail { font-size: 14px; color: var(--p-gold); margin: 0 0 14px; }
+.bview .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.bview .x { position: absolute; top: 10px; right: 12px; background: none; border: 0; color: var(--p-dim); font-size: 22px; cursor: pointer; }
+.bhead { display: flex; align-items: center; gap: 10px; }
+.bhead h3 { margin: 0; font: 400 20px "Anton", Impact, sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+.bhow { color: var(--p-dim); font-size: 14px; margin: 4px 0 10px; }
+.bhow a { color: var(--p-ember); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.badge { background: var(--p-panel); border: 1px solid var(--p-line); border-radius: 14px; padding: 12px; display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+.badge .ic { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; }
+.badge .ic img { width: 64px; height: 64px; display: block; }
+.badge b { display: block; font-size: 15px; }
+.badge small { display: block; color: var(--p-dim); font-size: 12px; margin-top: 2px; }
+.badge em { font-style: normal; font: 600 10px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .1em; }
+.badge.common em { color: var(--p-dim); } .badge.silver em { color: var(--p-silver); } .badge.gold em { color: var(--p-gold); } .badge.trophy em { color: var(--p-ember); }
+
+.badge.got.gold, .badge.got.trophy { border-color: rgba(233,196,106,.35); }
+.badge.locked .ic { filter: grayscale(1); opacity: .35; }
+.badge.locked b { color: var(--p-dim); }
+.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.how .card b { display: block; font: 400 20px "Anton", Impact, sans-serif; text-transform: uppercase; margin-bottom: 4px; }
+.how .card p, .how .card li { color: var(--p-dim); font-size: 14px; margin: 0; }
+.how .card ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.how .card li b { display: inline; font: 600 14px Archivo, sans-serif; text-transform: none; color: var(--p-text); margin: 0; }
+.how .card a { color: var(--p-ember); }
+.how .wide { grid-column: 1 / -1; }
+.gate { text-align: center; padding: 34px 18px; }
+.gate p { color: var(--p-dim); }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--p-panel2); border: 1px solid var(--p-line); color: var(--p-dim); font-size: 12px; }
+@media (max-width: 720px) {
+  .hero { grid-template-columns: auto 1fr; } .hero .share { grid-column: 1 / -1; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .how { grid-template-columns: 1fr; }
+  .week div { font-size: 10px; } .week div b { font-size: 14px; }
+}
+</style>
+<!-- Vercel Web Analytics (enable it in the Vercel dashboard); dzTrack() sends custom events -->
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); }; window.dzTrack = (name, data) => { try { window.va('event', { name, data }); } catch {} };</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<nav class="topnav" aria-label="Main">
+  <a class="logo" href="/"><img src="/favicon-64.png" alt=""><span>$DEGENZ</span></a>
+  <div class="links"><a href="/">Home</a><a href="/#stats">Stats</a><a href="/#chart">Chart</a><a href="/bonfire">Bonfire</a><a href="/race">Race</a><a href="/portfolio">Portfolio</a><a href="https://t.me/starknet_degenz" target="_blank" rel="noopener">Telegram</a></div>
+  <a class="buy" href="https://brothereli.com/launchpad/token/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100" target="_blank" rel="noopener">BUY $DEGENZ</a>
+</nav>
+<main class="wrap">
+  <h1>Degenz <span>Profile</span></h1>
+  <p class="sub">Sign in once a day to claim XP and grow your streak. Badges come from your streak, holding and burning $DEGENZ, racing in Degenz Kart and using the portfolio.</p>
+
+  <section class="card gate" id="gate" hidden>
+    <h2 style="margin-top:0">Sign in to start your streak</h2>
+    <p>A free signature with your Starknet wallet: no transaction, nothing leaves your wallet.</p>
+    <button class="btn" id="gateSignIn" type="button">Sign in with Starknet wallet</button>
+  </section>
+
+  <div id="app" hidden>
+    <section class="card">
+      <div class="hero">
+        <div class="ava" id="ava"></div>
+        <div class="who"><b id="addr"></b><div class="lv" id="lv"></div></div>
+        <button class="btn ghost share" id="share" type="button">Share on 𝕏</button>
+      </div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="barlbl" id="barlbl"></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Streak</div><div class="v" id="sStreak"></div></div>
+        <div class="stat"><div class="k">Best streak</div><div class="v" id="sBest"></div></div>
+        <div class="stat"><div class="k">Days claimed</div><div class="v" id="sClaims"></div></div>
+        <div class="stat"><div class="k">Badges</div><div class="v" id="sBadges"></div></div>
+      </div>
+      <div id="mine" hidden>
+        <div class="week" id="week" aria-label="This week's streak rewards"></div>
+        <div class="claimrow"><button class="btn" id="claim" type="button"></button><span class="note" id="note"></span></div>
+      </div>
+    </section>
+
+    <h2>Badges</h2>
+    <div id="badges"></div>
+
+    <h2>How it works</h2>
+    <div class="how">
+      <div class="card"><b>🎁 Claim daily</b><p>Sign in with your Starknet wallet and claim once a day. It resets at 00:00 UTC. Each claim gives 20 XP, plus 5 more for every day of your streak (up to 70 XP).</p></div>
+      <div class="card"><b>🔥 Streak bonuses</b><p>Big extra XP when your streak hits day 3 (+30), 7 (+100), 14 (+150), 30 (+500), 60 (+800), 100 (+2,000) and 365 (+10,000).</p></div>
+      <div class="card"><b>🧊 Streak freeze</b><p>Miss one day and your weekly freeze saves the streak automatically (one per week, Monday to Sunday). Miss two days in a row and it starts again from day 1.</p></div>
+      <div class="card"><b>⭐ Levels</b><p>XP adds up to your account level, shown on your profile and next to your wallet. Levels 10 and 25 earn badges of their own.</p></div>
+      <div class="card"><b>🏅 Badges</b><p>Five ways to earn them: daily activity, holding $DEGENZ, burning on the <a href="/bonfire">bonfire</a>, racing in <a href="/race">Degenz Kart</a> and using the <a href="/portfolio">portfolio</a>. Tap any badge to see what it takes.</p></div>
+      <div class="card"><b>💎 Rarity</b><p>Every badge is <b style="display:inline;font:inherit;color:var(--p-dim)">Common</b>, <b style="display:inline;font:inherit;color:var(--p-silver)">Silver</b>, <b style="display:inline;font:inherit;color:var(--p-gold)">Gold</b> or <b style="display:inline;font:inherit;color:var(--p-ember)">Trophy</b>, shown by the colour of its ring. Once earned, a badge is yours for good, even if you later sell.</p></div>
+      <div class="card wide"><b>🏎️ Kart trails</b><p>Some badges unlock a trail that streams behind your kart in Degenz Kart. Pick it in the game's Settings; everyone in your online room sees it.</p>
+        <ul>
+          <li><b>🔸 Ember</b>: First Howl (your first claim)</li>
+          <li><b>🔥 Wildfire</b>: Week Wolf (7-day streak)</li>
+          <li><b>🌈 Rainbow</b>: Iron Howl (30-day streak)</li>
+          <li><b>🐺 Gold Wolf</b>: Wolf (hold 1M $DEGENZ)</li>
+          <li><b>👑 Royal</b>: Pack Leader (hold 10M $DEGENZ)</li>
+          <li><b>🪵 Ashes</b>: Kindling (burn any $DEGENZ)</li>
+          <li><b>⚡ Neon</b>: Combo King (10× combo in Degenz Kart)</li>
+        </ul></div>
+      <div class="card wide"><b>ℹ️ Good to know</b>
+        <ul>
+          <li>Holding and burning badges only count the wallet you signed in with, not other wallets in your portfolio.</li>
+          <li>They're checked on-chain and update within about 10 minutes of buying or burning.</li>
+          <li>Racing badges count when you play Degenz Kart in the same browser where you're signed in on this site.</li>
+          <li>Signing in is a free signature: no transaction, and nothing leaves your wallet.</li>
+        </ul></div>
+    </div>
+  </div>
+</main>
+<dialog class="bview" id="bview" aria-labelledby="bvName"><button class="x" type="button" data-close aria-label="Close">✕</button><img class="big" id="bvImg" alt=""><em id="bvRar"></em><h3 id="bvName"></h3><p class="grp" id="bvGrp"></p><p class="desc" id="bvDesc"></p><div class="status" id="bvStatus"></div><p class="trail" id="bvTrail"></p><div class="row" id="bvRow"></div></dialog>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const short = a => a.slice(0, 6) + '…' + a.slice(-4);
+const MILESTONE = { 3: 30, 7: 100, 14: 150, 30: 500, 60: 800, 100: 2000, 365: 10000 };
+const claimXp = s => 20 + 5 * Math.min(s - 1, 10);
+const RARITY = { common: 'Common', silver: 'Silver', gold: 'Gold', trophy: 'Trophy' };
+const CATS = [
+  ['daily', '🎁 Daily activity', 'Sign in and claim every day. Keep your streak alive and level up your account.'],
+  ['hold', '🐺 Holding $DEGENZ', 'Checked on-chain on the wallet you signed in with. Updates within about 10 minutes of buying.'],
+  ['burn', '🔥 Burning', 'Burn $DEGENZ on the <a href="/bonfire">bonfire</a> from the wallet you signed in with. Counted on-chain.'],
+  ['race', '🏎️ Racing', 'Play <a href="/race">Degenz Kart</a> while signed in on this site in the same browser. Racing badges unlock kart trails.'],
+  ['portfolio', '💼 Portfolio', 'Track wallets and make bundles in your <a href="/portfolio">portfolio</a>.'],
+];
+const asked = new URLSearchParams(location.search).get('address');
+let shown = null; // address on screen
+
+function paint(v, mine) {
+  shown = v.address; shownView = v; shownMine = !!mine;
+  $('gate').hidden = true; $('app').hidden = false; $('mine').hidden = !mine;
+  const hue = parseInt(v.address.slice(-6), 16) % 360;
+  $('ava').style.background = `hsl(${hue} 80% 62%)`; $('ava').textContent = v.level;
+  $('addr').textContent = short(v.address); $('addr').title = v.address;
+  $('lv').innerHTML = `LV ${v.level}<small>${v.xp.toLocaleString()} XP</small>`;
+  $('bar').style.width = Math.min(100, (v.xp - v.levelXp) / Math.max(1, v.nextXp - v.levelXp) * 100) + '%';
+  $('barlbl').textContent = `${(v.nextXp - v.xp).toLocaleString()} XP to level ${v.level + 1}`;
+  $('sStreak').textContent = `🔥 ${v.streak}`; $('sBest').textContent = v.best; $('sClaims').textContent = v.claims;
+  const got = v.badges.filter(b => b.at);
+  $('sBadges').textContent = `${got.length}/${v.badges.length}`;
+  // earned first (newest first), then locked in their natural order
+  // one section per way of earning them; earned first (newest first), then locked in their natural order
+  const card = b => `<button type="button" class="badge ${b.rarity} ${b.at ? 'got' : 'locked'}" data-badge="${b.id}" aria-label="${esc(b.name)}, ${b.at ? 'earned' : 'locked'}. Show details"><div class="ic" aria-hidden="true">${b.img ? `<img src="${b.img}" alt="" loading="lazy">` : b.icon}</div><div><em>${RARITY[b.rarity]}${b.at ? '' : ' · locked'}</em><b>${esc(b.name)}</b><small>${esc(b.desc)}${b.at ? ` · ${new Date(b.at).toLocaleDateString()}` : ''}</small></div></button>`;
+  $('badges').innerHTML = CATS.map(([id, title, how]) => {
+    const all = v.badges.filter(b => (b.cat || 'daily') === id); if (!all.length) return '';
+    const mine = all.filter(b => b.at).sort((x, y) => y.at - x.at), rest = all.filter(b => !b.at);
+    return `<section class="bsec"><div class="bhead"><h3>${title}</h3><span class="pill">${mine.length}/${all.length}</span></div><p class="bhow">${how}</p><div class="grid">${[...mine, ...rest].map(card).join('')}</div></section>`;
+  }).join('');
+  const want = location.hash.slice(1);
+  if (want && v.badges.some(b => b.id === want)) setTimeout(() => openBadge(want), 50); // also refreshes an open viewer when newer data arrives
+  if (mine) {
+    // the next 7 days of the streak and what each one pays
+    const first = v.canClaim ? v.streak + 1 : v.streak; // today's streak day (already claimed or not)
+    $('week').innerHTML = Array.from({ length: 7 }, (_, i) => first + i)
+      .map((d, i) => { const done = !v.canClaim && i === 0; return `<div class="${done ? 'done' : ''} ${MILESTONE[d] ? 'big' : ''}">Day ${d}<b>+${claimXp(d) + (MILESTONE[d] || 0)}</b>${done ? '✓' : MILESTONE[d] ? '🎉' : ''}</div>`; }).join('');
+    $('claim').disabled = !v.canClaim;
+    $('claim').textContent = v.canClaim ? `🎁 Claim +${v.nextGain} XP` : '✓ Claimed today';
+    const ms = Math.max(0, v.nextClaimAt - Date.now()), hh = Math.floor(ms / 3600e3), mm = Math.floor(ms % 3600e3 / 60e3);
+    $('note').textContent = v.canClaim ? (v.streak ? `Keep your ${v.streak}-day streak going.` : 'Start your streak today.') : `Next claim in ${hh}h ${mm}m${v.freezeLeft ? ' · freeze ready' : ' · freeze used this week'}`;
+  }
+}
+
+async function show() {
+  const A = window.DegenzAccount, me = A?.address;
+  const target = asked && /^0x[0-9a-fA-F]{1,64}$/.test(asked) ? asked : me;
+  if (!target) { $('app').hidden = true; $('gate').hidden = false; return; }
+  const mine = me && BigInt(target) === BigInt(me);
+  if (mine && A.rewards) return paint(A.rewards, true);
+  try { const r = await fetch('/api/pfauth?profile=' + encodeURIComponent(target)); if (r.ok) paint(await r.json(), mine); } catch {}
+}
+// ---- badge viewer ----
+let shownView = null, shownMine = false;
+const fmtN = n => n >= 1e6 ? +(n / 1e6).toFixed(n >= 1e7 ? 0 : 2) + 'M' : n >= 1e3 ? +(n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'K' : String(+n.toFixed(2));
+const CTA = { daily: ['🎁 Claim today', null], hold: ['Buy $DEGENZ', 'https://brothereli.com/launchpad/token/0x049092ff7929ee84fec51b8f1658cea5083d6c83dbc18d7b106d8c7d2389b100'], burn: ['🔥 Go to the bonfire', '/bonfire'], race: ['🏎️ Play Degenz Kart', '/race'], portfolio: ['💼 Open portfolio', '/portfolio'] };
+function openBadge(id) {
+  const b = shownView?.badges.find(x => x.id === id); if (!b) return;
+  const cat = CATS.find(c => c[0] === (b.cat || 'daily')), d = $('bview');
+  d.className = `bview ${b.rarity} ${b.at ? 'got' : 'locked'}`;
+  $('bvImg').src = b.img; $('bvRar').textContent = RARITY[b.rarity] + ' badge'; $('bvName').textContent = b.name;
+  $('bvGrp').textContent = cat ? cat[1] : ''; $('bvDesc').textContent = b.desc;
+  const st = $('bvStatus'), pr = b.progress;
+  if (b.at) { st.className = 'status ok'; st.innerHTML = `✓ Earned on ${new Date(b.at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}`; }
+  else if (pr) { st.className = 'status'; st.innerHTML = `🔒 ${fmtN(pr[0])} / ${fmtN(pr[1])} ${esc(pr[2])}<div class="bar"><i style="width:${Math.min(100, pr[0] / Math.max(pr[1], 1e-9) * 100)}%"></i></div>${cat ? `<small>${cat[2]}</small>` : ''}`; }
+  else { st.className = 'status'; st.innerHTML = `🔒 Not earned yet${cat ? `<small>${cat[2]}</small>` : ''}`; }
+  $('bvTrail').textContent = b.trail ? `🎁 Unlocks the ${b.trail} trail in Degenz Kart` : ''; $('bvTrail').hidden = !b.trail;
+  const [label, href] = CTA[b.cat || 'daily'] || [];
+  const actions = [];
+  if (b.at && shownMine) actions.push('<button class="btn" type="button" data-share>Share on 𝕏</button>');
+  if (!b.at && shownMine && label) actions.push(href ? `<a class="btn" href="${href}"${href.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}>${label}</a>` : (shownView.canClaim ? `<button class="btn" type="button" data-claim>${label}</button>` : ''));
+  actions.push('<button class="btn ghost" type="button" data-close>Close</button>');
+  $('bvRow').innerHTML = actions.join('');
+  if (!d.open) d.showModal();
+  history.replaceState(null, '', location.pathname + location.search + '#' + id);
+  window.dzTrack?.('Badge viewed', { badge: id, earned: b.at ? 'yes' : 'no' });
+}
+$('badges').addEventListener('click', e => { const b = e.target.closest('[data-badge]'); if (b) openBadge(b.dataset.badge); });
+$('bview').addEventListener('click', e => {
+  const d = $('bview');
+  if (e.target === d || e.target.closest('[data-close]')) d.close();
+  else if (e.target.closest('[data-claim]')) { d.close(); window.DegenzAccount?.claim(); }
+  else if (e.target.closest('[data-share]')) {
+    const b = shownView.badges.find(x => '#' + x.id === location.hash);
+    if (b) window.open(`https://x.com/intent/post?text=${encodeURIComponent(`I just earned the ${b.name} badge in the Starknet Degenz pack 🐺 ${b.desc}.`)}&url=${encodeURIComponent(location.origin + '/profile?address=' + shownView.address + '#' + b.id)}`, '_blank', 'noopener');
+  }
+});
+$('bview').addEventListener('close', () => history.replaceState(null, '', location.pathname + location.search));
+
+$('gateSignIn').addEventListener('click', () => window.DegenzAccount?.signIn());
+$('claim').addEventListener('click', () => window.DegenzAccount?.claim());
+$('share').addEventListener('click', () => {
+  const v = shown, got = document.querySelectorAll('.badge.got').length;
+  const text = `I'm level ${$('lv').firstChild.textContent.replace('LV ', '')} in the Starknet Degenz pack 🐺 ${$('sStreak').textContent}-day streak, ${got} badges. Claim yours daily:`;
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.origin + '/profile?address=' + v)}`, '_blank', 'noopener');
+  window.dzTrack?.('Share profile', {});
+});
+window.addEventListener('degenz:auth', show);
+window.addEventListener('degenz:rewards', e => { const A = window.DegenzAccount; if (e.detail && A?.address && (!asked || BigInt(asked) === BigInt(A.address))) paint(e.detail, true); else show(); });
+</script>
+</body>
+</html>

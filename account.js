@@ -4,7 +4,7 @@
 (() => {
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const short = a => a.slice(0, 6) + '…' + a.slice(-4);
-  let me = null, state = null, readyResolve;
+  let me = null, state = null, rw = null, readyResolve; // rw: daily rewards view (XP, streak, badges) from api/_rewards.js
   const ready = new Promise(r => { readyResolve = r; });
   const emit = () => window.dispatchEvent(new CustomEvent('degenz:auth', { detail: { address: me, state } }));
   // a colour per wallet (tints the wallet icon), so the button shows "which wallet" at a glance
@@ -51,6 +51,26 @@
 .acct-dlg .err { color: #ff6b6b; font-size: 14px; min-height: 1em; margin: 10px 0 0; }
 .acct-dlg .row { display: flex; justify-content: flex-end; margin-top: 12px; }
 .acct-dlg .row button { background: none; border: 1px solid var(--d-line, #2b2022); color: var(--d-text, #ece4dc); border-radius: 10px; padding: 9px 16px; font: 700 14px var(--d-body, Arial, sans-serif); cursor: pointer; }
+.acct-btn { position: relative; }
+.acct-btn .dot { position: absolute; top: -4px; right: -4px; width: 11px; height: 11px; border-radius: 50%; background: var(--d-ember, #ff7a1f); box-shadow: 0 0 0 2px var(--d-bg, #070506); animation: acctPulse 1.6s ease-in-out infinite; }
+@keyframes acctPulse { 50% { transform: scale(1.3); } }
+@media (prefers-reduced-motion: reduce) { .acct-btn .dot { animation: none; } }
+.acct-menu .rw { padding: 10px 12px; border-bottom: 1px solid var(--d-line, #2b2022); margin-bottom: 4px; display: grid; gap: 8px; }
+.acct-menu .rw .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--d-dim, #8f8079); }
+.acct-menu .rw .top b { color: var(--d-text, #ece4dc); font: 400 18px var(--d-display, Impact, sans-serif); letter-spacing: .02em; }
+.acct-menu .rw .bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.acct-menu .rw .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff7a1f, #e9c46a); }
+.acct-menu .rw .claim { justify-content: center; background: var(--d-ember, #ff7a1f); color: #150b05; font-weight: 700; padding: 10px; }
+.acct-menu .rw .claim:hover { background: var(--d-ember, #ff7a1f); filter: brightness(1.08); }
+.acct-menu .rw .claim:disabled { background: rgba(255,255,255,.06); color: var(--d-dim, #8f8079); cursor: default; filter: none; font-weight: 500; }
+.acct-menu .rw .bdg { display: flex; gap: 4px; flex-wrap: wrap; font-size: 16px; min-height: 22px; align-items: center; }
+.acct-menu .rw .bdg a { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
+.acct-menu .rw .bdg a:hover { background: none; transform: scale(1.12); }
+.acct-menu .rw .bdg img { width: 30px; height: 30px; display: block; }
+.acct-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 200; background: var(--d-panel, #100c0d); color: var(--d-text, #ece4dc); border: 1px solid var(--d-ember, #ff7a1f); border-radius: 14px; padding: 12px 18px; box-shadow: 0 18px 40px rgba(0,0,0,.6); font: 600 15px var(--d-body, Arial, sans-serif); text-align: center; max-width: calc(100vw - 32px); }
+.acct-toast[hidden] { display: none; }
+.acct-toast small { display: block; color: var(--d-dim, #8f8079); font-weight: 500; font-size: 13px; margin-top: 3px; }
+@media (max-width: 640px) { .acct-toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } }
 @media (max-width: 640px) {
   .acct-btn { padding: 0 9px; height: 34px; }
   .acct-btn .lbl, .acct-btn .full { display: none; } /* phones: wallet icon (+ last 4 characters once signed in) */
@@ -110,15 +130,53 @@
   function render() {
     if (!btn) return;
     btn.innerHTML = me
-      ? `<span class="ic" style="color:hsl(${hue(me)} 80% 65%)">${ICON.wallet}</span><small class="full">${short(me)}</small><small class="tail">…${me.slice(-4)}</small>`
+      ? `<span class="ic" style="color:hsl(${hue(me)} 80% 65%)">${ICON.wallet}</span><small class="full">${short(me)}</small><small class="tail">…${me.slice(-4)}</small>${rw?.canClaim ? '<span class="dot" title="Daily reward ready"></span>' : ''}`
       : `<span class="ic">${ICON.wallet}</span><span class="lbl">Sign in</span>`;
     btn.setAttribute('aria-label', me ? `Account ${short(me)}` : 'Sign in with your wallet');
     btn.setAttribute('aria-haspopup', me ? 'menu' : 'dialog');
     if (!me) { menu.innerHTML = ''; return; }
     menu.innerHTML = `<div class="hd"><b>${short(me)}</b><button class="ib" type="button" data-act="copy" title="Copy address" aria-label="Copy address">${ICON.copy}</button><a class="ib" href="https://voyager.online/contract/${me}" target="_blank" rel="noopener" title="Open in Voyager" aria-label="Open in Voyager">${ICON.ext}</a></div>
+      ${rwCard()}
+      <a role="menuitem" href="/profile">🏅 Badges &amp; profile</a>
       <a role="menuitem" href="/portfolio">💼 Portfolio</a>
       <a role="menuitem" href="/portfolio#settings">⚙️ Settings</a>`;
+    menu.querySelector('[data-act="claim"]')?.addEventListener('click', claim);
     menu.querySelector('[data-act="copy"]').addEventListener('click', e => { const b = e.currentTarget; navigator.clipboard?.writeText(me); b.innerHTML = ICON.check; setTimeout(() => { b.innerHTML = ICON.copy; }, 1200); });
+  }
+
+  // ---------- daily rewards ----------
+  const left = t => { const s = Math.max(0, t - Date.now()) / 1000, hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60); return hh ? `${hh}h ${mm}m` : `${mm}m`; };
+  function rwCard() {
+    if (!rw) return '<div class="rw"><div class="top"><span>Loading rewards…</span></div></div>';
+    const pct = Math.min(100, (rw.xp - rw.levelXp) / Math.max(1, rw.nextXp - rw.levelXp) * 100), got = rw.badges.filter(b => b.at);
+    return `<div class="rw"><div class="top"><b>LV ${rw.level}</b><span>🔥 ${rw.streak}-day streak · ${rw.xp} XP</span></div>
+      <div class="bar" title="${rw.nextXp - rw.xp} XP to level ${rw.level + 1}"><i style="width:${pct}%"></i></div>
+      <button class="claim" type="button" data-act="claim" ${rw.canClaim ? '' : 'disabled'}>${rw.canClaim ? `🎁 Claim daily reward (+${rw.nextGain} XP)` : `✓ Claimed · next in ${left(rw.nextClaimAt)}`}</button>
+      <div class="bdg" aria-label="${got.length} badges">${got.length ? got.slice(-8).map(b => `<a class="${b.rarity}" href="/profile#${b.id}" title="${esc(b.name)}: ${esc(b.desc)}" aria-label="${esc(b.name)}">${b.img ? `<img src="${b.img}" alt="">` : b.icon}</a>`).join('') : '<small style="color:var(--d-dim,#8f8079);font-size:12px">No badges yet. Claim daily to start earning.</small>'}</div></div>`;
+  }
+  let toastT;
+  function toast(html) {
+    let t = document.querySelector('.acct-toast'); if (!t) { t = document.createElement('div'); t.className = 'acct-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.innerHTML = html; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4200);
+  }
+  const named = ids => ids.map(id => rw?.badges.find(b => b.id === id)).filter(Boolean);
+  function announce(fresh) { if (fresh?.length) toast(`<div style="display:flex;gap:6px;justify-content:center;margin-bottom:6px">${named(fresh).map(b => `<img src="${b.img}" alt="" width="56" height="56">`).join('')}</div>🏅 New badge${fresh.length > 1 ? 's' : ''}: ${named(fresh).map(b => esc(b.name)).join(', ')}`); }
+  const rwEmit = () => window.dispatchEvent(new CustomEvent('degenz:rewards', { detail: rw }));
+  async function loadRw() {
+    if (!me) { rw = null; return; }
+    try { const r = await fetch('/api/pfauth?rw=1'); if (r.ok) { const j = await r.json(); rw = j.view; render(); rwEmit(); announce(j.fresh); } } catch {}
+  }
+  async function claim(e) {
+    const b = e?.currentTarget; if (b) { b.disabled = true; b.textContent = 'Claiming…'; }
+    try {
+      const r = await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ claim: true }) });
+      const j = await r.json(); if (j.view) rw = j.view; render(); rwEmit();
+      if (!r.ok) { toast(esc(j.error || 'Could not claim right now.')); return; }
+      const extra = [j.bonus ? `+${j.bonus} streak bonus` : '', j.froze ? 'streak freeze used' : '', j.levelUp ? `level up! LV ${rw.level}` : ''].filter(Boolean).join(' · ');
+      toast(`🎁 +${j.gained} XP · 🔥 ${rw.streak}-day streak${extra ? `<small>${extra}</small>` : ''}`);
+      if (j.fresh?.length) setTimeout(() => announce(j.fresh), 2600);
+      window.dzTrack?.('Daily claim', { streak: rw.streak, level: rw.level });
+    } catch { toast('Could not claim right now.'); render(); }
   }
 
   function openWallets() {
@@ -140,7 +198,7 @@
       if (sig && !Array.isArray(sig)) sig = sig.signature || [sig.r, sig.s]; // some wallets return { r, s }
       const r = await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: addr, signature: sig.map(x => typeof x === 'bigint' ? '0x' + x.toString(16) : String(x)), nonce: n.nonce }) });
       const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Sign-in failed.');
-      me = j.address; state = j.state; if (dlg.open) dlg.close(); render(); emit();
+      me = j.address; state = j.state; if (dlg.open) dlg.close(); render(); emit(); loadRw();
       window.dzTrack?.('Sign in', { wallet: w.name || w.kind, page: location.pathname });
     } catch (e) {
       if (!dlg.open) dlg.showModal();
@@ -149,15 +207,15 @@
   }
   async function signOut() {
     try { await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ logout: true }) }); } catch {}
-    me = null; state = null; if (menu) menu.hidden = true; render(); emit();
+    me = null; state = null; rw = null; if (menu) menu.hidden = true; render(); emit(); rwEmit();
   }
 
-  window.DegenzAccount = { ready, get address() { return me; }, get state() { return state; }, signIn: () => openWallets(), signOut };
+  window.DegenzAccount = { ready, get address() { return me; }, get state() { return state; }, get rewards() { return rw; }, signIn: () => openWallets(), signOut, claim, reloadRewards: loadRw, toast };
 
   async function init() {
     build(); render();
     try { const r = await fetch('/api/pfauth'); if (r.ok) { const j = await r.json(); me = j.address; state = j.state; } } catch {}
-    render(); readyResolve({ address: me, state }); emit();
+    render(); readyResolve({ address: me, state }); emit(); loadRw();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

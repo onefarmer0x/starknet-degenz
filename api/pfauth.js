@@ -6,7 +6,13 @@
 //   GET  /api/pfauth                    -> { address, state } | 401     who am I
 //   POST /api/pfauth { save: state }    -> { ok }                       save my list (needs the session)
 //   POST /api/pfauth { logout: true }   -> { ok }
+// Daily rewards (see api/_rewards.js):
+//   GET  /api/pfauth?rw=1               -> { fresh, view }   my XP, streak, badges (needs the session)
+//   GET  /api/pfauth?profile=0x…        -> view              anyone's public profile
+//   POST /api/pfauth { claim: true }    -> { gained, fresh, view }   today's reward
+//   POST /api/pfauth { kart: { level, wins, combo } } -> { fresh, view }   stats from Degenz Kart
 const crypto = require('crypto');
+const RW = require('./_rewards.js');
 const { typedData: TD, RpcProvider, num } = require('starknet');
 const RURL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const RTOK = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -81,16 +87,27 @@ module.exports = async (req, res) => {
       await kv(['SET', 'pf:nonce:' + nonce, String(issued), 'EX', 300]);
       return send(res, 200, { nonce, typedData: loginMessage(nonce, issued) });
     }
+    if (req.method === 'GET' && q.get('profile')) {
+      if (!/^0x[0-9a-fA-F]{1,64}$/.test(q.get('profile'))) return send(res, 400, { error: 'bad address' });
+      return send(res, 200, await RW.profile(kv, norm(q.get('profile'))));
+    }
     const tok = cookieOf(req);
     const who = tok ? (await kv(['GET', 'pf:sess:' + tok]))[0] : null;
     if (req.method === 'GET') {
       if (!who) return send(res, 401, { error: 'not signed in' });
       const [raw] = await kv(['GET', 'pf:user:' + who]);
+      if (q.get('rw')) return send(res, 200, await RW.me(kv, who, raw ? JSON.parse(raw) : null));
       return send(res, 200, { address: who, state: raw ? JSON.parse(raw) : null });
     }
     if (req.method !== 'POST') return send(res, 405, { error: 'method' });
     const b = await body(req);
     if (b.logout) { if (tok) await kv(['DEL', 'pf:sess:' + tok]); return send(res, 200, { ok: true }, sessionCookie('')); }
+    if (b.claim || b.kart) {
+      if (!who) return send(res, 401, { error: 'not signed in' });
+      const [raw] = await kv(['GET', 'pf:user:' + who]), st = raw ? JSON.parse(raw) : null;
+      const r = b.claim ? await RW.claim(kv, who, st) : await RW.kart(kv, who, b.kart, st);
+      return send(res, r.error ? 409 : 200, r);
+    }
     if (b.save) {
       if (!who) return send(res, 401, { error: 'not signed in' });
       await kv(['SET', 'pf:user:' + who, JSON.stringify(clean(b.save))]);
