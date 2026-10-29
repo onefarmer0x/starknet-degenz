@@ -7,7 +7,7 @@ const RURL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const RTOK = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 const TTL = 15;
 const mem = globalThis.__kartRooms || (globalThis.__kartRooms = {});
-const MAPS = ['bonfire', 'pit', 'night', 'halloween', 'chain', 'degenz'];
+const MAPS = ['bonfire', 'pit', 'night', 'halloween', 'chain', 'degenz', 'quantum', 'stack', 'maze'];
 
 async function redis(...cmds) {
   const r = await fetch(RURL + '/pipeline', { method: 'POST', headers: { authorization: 'Bearer ' + RTOK, 'content-type': 'application/json' }, body: JSON.stringify(cmds) });
