@@ -36,7 +36,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   var nav = document.querySelector('.topnav'); if (!nav || document.querySelector('.dock')) return;
   var path = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
-  var items = [['/', '🏠', 'Home'], ['/portfolio', '💼', 'Wallet'], null, ['/race', '🏁', 'Race'], ['/bonfire', '🔥', 'Bonfire']];
+  var items = [['/', '🏠', 'Home'], ['/#chart', '📊', 'Chart'], null, ['/race', '🏁', 'Race'], ['/bonfire', '🔥', 'Bonfire']];
   var dock = document.createElement('nav'); dock.className = 'dock'; dock.setAttribute('aria-label', 'Quick menu');
   items.forEach(function (it) {
     var a = document.createElement('a');

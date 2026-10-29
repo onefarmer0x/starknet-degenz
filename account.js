@@ -7,7 +7,7 @@
   let me = null, state = null, readyResolve;
   const ready = new Promise(r => { readyResolve = r; });
   const emit = () => window.dispatchEvent(new CustomEvent('degenz:auth', { detail: { address: me, state } }));
-  // a colour per wallet, so the button shows "which wallet" at a glance
+  // a colour per wallet (tints the wallet icon), so the button shows "which wallet" at a glance
   const hue = a => parseInt(a.slice(-6), 16) % 360;
   // simple line icons (drawn here, no icon font needed)
   const ICON = {
@@ -23,8 +23,8 @@
 .acct-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--d-line, #2b2022); background: var(--d-panel, #100c0d); color: var(--d-text, #ece4dc); font: 700 13px var(--d-body, Arial, sans-serif); cursor: pointer; white-space: nowrap; }
 .acct-btn:hover, .acct-btn[aria-expanded="true"] { border-color: var(--d-ember, #ff7a1f); }
 .acct-btn .ic { display: grid; place-items: center; }
-.acct-btn .dot { width: 18px; height: 18px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,.08); }
 .acct-btn small { font: 500 12px "DM Mono", monospace; color: var(--d-dim, #8f8079); }
+.acct-btn .tail { display: none; }
 .acct-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 230px; background: var(--d-panel, #100c0d); border: 1px solid var(--d-line, #2b2022); border-radius: 12px; padding: 6px; box-shadow: 0 18px 40px rgba(0,0,0,.6); z-index: 80; }
 .acct-menu[hidden] { display: none; }
 .acct-menu .hd { padding: 10px 12px 8px; border-bottom: 1px solid var(--d-line, #2b2022); margin-bottom: 4px; font-size: 12px; color: var(--d-dim, #8f8079); }
@@ -53,7 +53,8 @@
 .acct-dlg .row button { background: none; border: 1px solid var(--d-line, #2b2022); color: var(--d-text, #ece4dc); border-radius: 10px; padding: 9px 16px; font: 700 14px var(--d-body, Arial, sans-serif); cursor: pointer; }
 @media (max-width: 640px) {
   .acct-btn { padding: 0 9px; height: 34px; }
-  .acct-btn .lbl, .acct-btn small { display: none; } /* icon / colour dot only on phones */
+  .acct-btn .lbl, .acct-btn .full { display: none; } /* phones: wallet icon (+ last 4 characters once signed in) */
+  .acct-btn .tail { display: inline; }
   .acct-menu { position: fixed; left: 12px; right: 12px; top: 64px; min-width: 0; }
 }`;
 
@@ -109,7 +110,7 @@
   function render() {
     if (!btn) return;
     btn.innerHTML = me
-      ? `<span class="dot" style="background:linear-gradient(135deg,hsl(${hue(me)} 80% 60%),hsl(${(hue(me) + 60) % 360} 80% 45%))"></span><small>${short(me)}</small>`
+      ? `<span class="ic" style="color:hsl(${hue(me)} 80% 65%)">${ICON.wallet}</span><small class="full">${short(me)}</small><small class="tail">…${me.slice(-4)}</small>`
       : `<span class="ic">${ICON.wallet}</span><span class="lbl">Sign in</span>`;
     btn.setAttribute('aria-label', me ? `Account ${short(me)}` : 'Sign in with your wallet');
     btn.setAttribute('aria-haspopup', me ? 'menu' : 'dialog');
