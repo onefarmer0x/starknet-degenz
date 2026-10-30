@@ -3281,7 +3281,9 @@ function evShareX(e) {
   const text = e.status === 'finished' && e.results?.length
     ? `🏆 ${e.results[0].name} won ${e.title}!\n\n${e.results.slice(0, 3).map(r => ['🥇', '🥈', '🥉'][r.place - 1] + ' ' + r.name + (r.score ? ' · ' + r.score : '')).join('\n')}\n\nDegenz Kart tournament on @StarknetDegenz 🐺`
     : `🏁 ${e.title}\n\nDegenz Kart tournament · ${e.players} players · ${M.name}\n🗓️ ${new Date(e.at).toUTCString().slice(0, 22)} UTC\n\nFree, in your browser. Join with the link 👇`;
-  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(evLink(e.id))}`, '_blank', 'noopener');
+  // X keeps the first preview it saw for a link, so a results post gets its own link (?results), never the upcoming one
+  const link = evLink(e.id) + (e.status === 'finished' ? '?results' : '');
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`, '_blank', 'noopener');
   window.dzTrack?.('Tournament shared', { status: e.status });
 }
 // list + create
