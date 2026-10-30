@@ -154,16 +154,17 @@ async function card(e) {
 // so Vercel's CDN can cache it for good and forgets it when nobody asks any more. Creating or cancelling a tournament
 // requests the new URL once so the CDN already has it when the link gets shared (X gives up on slow images).
 const cardVer = e => statusOf(e) + (e.results ? '-' + settle(e).state + '-' + Object.keys(e.reports || {}).length : '');
-const warmCard = e => process.env.VERCEL ? fetch(`${SITE}/e/${e.id}/card-${cardVer(e)}.png`, { signal: AbortSignal.timeout(9000) }).then(r => r.arrayBuffer()).catch(() => {}) : Promise.resolve();
+const warmCard = e => process.env.VERCEL ? fetch(`${SITE}/api/events?card=${e.id}&v=${cardVer(e)}`, { signal: AbortSignal.timeout(9000) }).then(r => r.arrayBuffer()).catch(() => {}) : Promise.resolve();
 function sharePage(e) {
   const st = statusOf(e), t = when(e), [, mapName] = MAPS[e.map] || ['', e.map];
   const title = st === 'finished' ? `${e.title}: results` : `${e.title} · Degenz Kart tournament`;
   const desc = st === 'finished' ? `🥇 ${settle(e).rows.find(r => !r.dq)?.name || ''} won. ${e.players}-player ${mapName} race on Starknet Degenz.` : `${t.local} (${t.utc}) · ${e.players} players · ${mapName}. Join with the link: free, in your browser.`;
-  const img = `${SITE}/e/${e.id}/card-${cardVer(e)}.png`, go = `/race?t=${e.id}`;
+  // same image address format that worked on X from the start; the version makes every new look a new URL
+  const ver = cardVer(e), img = `${SITE}/api/events?card=${e.id}&v=${ver}`, go = `/race?t=${e.id}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${esc(desc)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="$DEGENZ"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${img}"><meta property="og:image:type" content="image/png"><meta property="og:image:alt" content="${esc(title)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${SITE}/e/${e.id}">
+<meta property="og:image" content="${img}"><meta property="og:image:type" content="image/png"><meta property="og:image:alt" content="${esc(title)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${SITE}/e/${e.id}?v=${ver}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@StarknetDegenz"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${img}">
 <style>body{background:#070506;color:#ece4dc;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#ff7a1f}</style></head>
 <body><p>Opening the tournament… <a href="${go}">tap here if nothing happens</a></p><script>location.replace(${JSON.stringify(go)})</script></body></html>`;
@@ -188,7 +189,7 @@ module.exports = async (req, res) => {
         const png = await card(e);
         res.statusCode = 200; res.setHeader('content-type', 'image/png'); res.setHeader('content-length', png.length);
         // a versioned URL (/e/<id>/card-<look>.png) never changes content: the CDN may keep it; the bare ?card= form only briefly
-        res.setHeader('cache-control', q.get('f') ? 'public, max-age=86400, s-maxage=31536000, immutable' : 'public, max-age=60, s-maxage=300');
+        res.setHeader('cache-control', q.get('f') || q.get('v') ? 'public, max-age=86400, s-maxage=31536000, immutable' : 'public, max-age=60, s-maxage=300');
         return res.end(png);
       }
       if (q.get('id')) {
