@@ -165,7 +165,7 @@ function sharePage(e) {
 <meta property="og:type" content="website"><meta property="og:site_name" content="$DEGENZ"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${img}"><meta property="og:image:type" content="image/png"><meta property="og:image:alt" content="${esc(title)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${SITE}/e/${e.id}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@StarknetDegenz"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${img}">
-<meta http-equiv="refresh" content="0; url=${go}"><style>body{background:#070506;color:#ece4dc;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#ff7a1f}</style></head>
+<style>body{background:#070506;color:#ece4dc;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#ff7a1f}</style></head>
 <body><p>Opening the tournament… <a href="${go}">tap here if nothing happens</a></p><script>location.replace(${JSON.stringify(go)})</script></body></html>`;
 }
 
@@ -179,6 +179,9 @@ module.exports = async (req, res) => {
         if (q.get('share')) {
           res.setHeader('content-type', 'text/html; charset=utf-8'); res.setHeader('cache-control', 'public, max-age=60, s-maxage=60');
           if (!e) { res.statusCode = 404; return res.end('<!doctype html><meta http-equiv="refresh" content="0; url=/race"><p>That tournament is gone. <a href="/race">Play Degenz Kart</a></p>'); }
+          // make sure the card sits in the CDN near this server before X (or anyone) asks for the image: a hit takes
+          // ~0.1 s, a miss draws it once (~3 s) and caches it. Slow first images are what make X show no picture.
+          await warmCard(e);
           return res.end(sharePage(e));
         }
         if (!e) return send(res, 404, { error: 'no such event' });
