@@ -14,6 +14,10 @@
   },
   "rewrites": [
     {
+      "source": "/e/:id/:file",
+      "destination": "/api/events?card=:id&f=:file"
+    },
+    {
       "source": "/api/nft/:id",
       "destination": "/api/nft?id=:id"
     },

@@ -158,15 +158,25 @@ async function card(e) {
   const r = new ImageResponse(el, { width: 1200, height: 630, fonts: await fonts(), emoji: 'twemoji' });
   return Buffer.from(await r.arrayBuffer());
 }
+// X gives up on slow images and then remembers "no image" for days, so a card is drawn once per look
+// (status + result state) and kept in Redis; the first draw happens when the tournament is created.
+const cardVer = e => statusOf(e) + (e.results ? '-' + checkResults(e).state : '');
+async function cardPng(e) {
+  const key = `ev:card:${e.id}:${cardVer(e)}`, [hit] = await kv(['GET', key]).catch(() => [null]);
+  if (hit) return Buffer.from(hit, 'base64');
+  const png = await card(e);
+  await kv(['SET', key, png.toString('base64'), 'PX', String(Math.max(MIN, e.at + KEEP - Date.now()))]).catch(() => {});
+  return png;
+}
 function sharePage(e) {
   const st = statusOf(e), t = when(e), [, mapName] = MAPS[e.map] || ['', e.map];
   const title = st === 'finished' ? `${e.title}: results` : `${e.title} · Degenz Kart tournament`;
   const desc = st === 'finished' ? `🥇 ${e.results[0]?.name || ''} won. ${e.players}-player ${mapName} race on Starknet Degenz.` : `${t.local} (${t.utc}) · ${e.players} players · ${mapName}. Join with the link: free, in your browser.`;
-  const img = `${SITE}/api/events?card=${e.id}&v=${st}${e.results ? '-' + checkResults(e).state : ''}`, go = `/race?t=${e.id}`;
+  const img = `${SITE}/e/${e.id}/card-${cardVer(e)}.png`, go = `/race?t=${e.id}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${esc(desc)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="$DEGENZ"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${SITE}/e/${e.id}">
+<meta property="og:image" content="${img}"><meta property="og:image:type" content="image/png"><meta property="og:image:alt" content="${esc(title)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${SITE}/e/${e.id}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@StarknetDegenz"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${img}">
 <meta http-equiv="refresh" content="0; url=${go}"><style>body{background:#070506;color:#ece4dc;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#ff7a1f}</style></head>
 <body><p>Opening the tournament… <a href="${go}">tap here if nothing happens</a></p><script>location.replace(${JSON.stringify(go)})</script></body></html>`;
@@ -185,8 +195,9 @@ module.exports = async (req, res) => {
           return res.end(sharePage(e));
         }
         if (!e) return send(res, 404, { error: 'no such event' });
-        const png = await card(e);
-        res.statusCode = 200; res.setHeader('content-type', 'image/png'); res.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
+        const png = await cardPng(e);
+        res.statusCode = 200; res.setHeader('content-type', 'image/png'); res.setHeader('content-length', png.length);
+        res.setHeader('cache-control', 'public, max-age=300, s-maxage=86400, stale-while-revalidate=86400'); // the URL changes whenever the card does
         return res.end(png);
       }
       if (q.get('id')) {
@@ -220,6 +231,7 @@ module.exports = async (req, res) => {
       const id = Array.from(crypto.randomBytes(6), x => alphabet[x % alphabet.length]).join('');
       const e = { id, title, creator: who, at, tz, players: int(c.players, 2, 12, 4), map, mode: MAPS[map][0], laps: int(c.laps, 1, 9, 3), mins: int(c.mins, 1, 10, 3), created: now };
       await save(e); await kv(['ZADD', 'ev:list', String(at), id]);
+      await cardPng(e).catch(() => {}); // ready before anyone shares the link
       return send(res, 200, { ...(await view(e)), mine: true });
     }
 
@@ -231,7 +243,7 @@ module.exports = async (req, res) => {
     if (b.cancel) {
       const who = await whoIs(req); if (!who || who !== e.creator) return send(res, 403, { error: 'Only the creator can cancel it.' });
       if (st !== 'scheduled') return send(res, 409, { error: 'It can only be cancelled before doors open.' });
-      e.cancelled = now; await save(e); await kv(['ZREM', 'ev:list', id]);
+      e.cancelled = now; await save(e); await kv(['ZREM', 'ev:list', id]); await cardPng(e).catch(() => {});
       return send(res, 200, await view(e));
     }
     if (b.room) {

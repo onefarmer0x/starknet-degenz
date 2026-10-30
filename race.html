@@ -501,7 +501,8 @@ html .map .tag { top: 7px; left: -32px; padding: 1px 32px; font-size: 11px; }
 html .map .name { padding: 5px 6px; font-size: 18px; }
 html .map .name small { font-size: 11px; }
 html .maps-head b { font-size: 22px; }
-.seg.trails { flex-wrap: wrap; }
+.seg.trails, .seg.botlv { flex-wrap: wrap; }
+.seg.botlv button small { display: block; font-size: 10px; opacity: .75; }
 .seg.trails button[disabled] { opacity: .45; cursor: not-allowed; }
 .seg.trails button small { display: block; font-size: 10px; opacity: .8; }
 </style>
@@ -571,7 +572,7 @@ html .maps-head b { font-size: 22px; }
       <div class="field"><span class="lbl">Bots</span><div class="seg" data-cfg="bots"><button data-v="0">0</button><button data-v="3">3</button><button data-v="5">5</button><button data-v="7">7</button><button data-v="11">11</button></div></div>
       <div class="field"><span class="lbl">Race laps</span><div class="seg" data-cfg="laps"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
       <div class="field"><span class="lbl">Arena length</span><div class="seg" data-cfg="mins"><button data-v="2">2 min</button><button data-v="3">3 min</button><button data-v="5">5 min</button></div></div>
-      <div class="field"><span class="lbl">Bot skill</span><div class="seg" data-cfg="diff"><button data-v="chill">Chill</button><button data-v="normal">Normal</button><button data-v="degen">Degen</button></div></div>
+      <div class="field" style="grid-column:1/-1"><span class="lbl">Bot level <b class="rv">same top speed as you; better driving</b></span><div class="seg botlv" data-cfg="diff"><button data-v="easy">🐣 Paper Hands<small>easy</small></button><button data-v="pleb">🥔 Pleb<small>normal</small></button><button data-v="hard">💎 Diamond Hands<small>hard</small></button><button data-v="pro">🐋 Whale<small>pro</small></button><button data-v="degen">🦍 Full Degen<small>insane</small></button></div></div>
       <div class="field" style="grid-column:1/-1"><span class="lbl">Kart trail <b class="rv" id="trailNote">badge rewards</b></span><div class="seg trails" id="trailSeg"></div></div>
       <div class="field"><span class="lbl">Sound</span><div class="seg" data-cfg="sound"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="field"><span class="lbl">Graphics</span><div class="seg" data-cfg="gfx"><button data-v="high">High</button><button data-v="low">Low</button></div></div>
@@ -782,8 +783,9 @@ const allDrivers = () => [...BUILTIN, ...customs];
 
 // settings, saved in this browser
 // phones start on low graphics (no shadows, 1x resolution); everyone can switch in setup
-const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'normal', sound: 'off', sensPct: 50, spdPct: 50, assist: 'light', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
+const DEFAULT_CFG = { mode: 'race', name: '', driver: 'degenz', bots: 5, laps: 3, mins: 3, diff: 'pleb', sound: 'off', sensPct: 50, spdPct: 50, assist: 'light', gfx: matchMedia('(pointer: coarse)').matches ? 'low' : 'high' };
 const cfg = Object.assign({}, DEFAULT_CFG, store.get('kart.cfg', {}));
+cfg.diff = { chill: 'easy', normal: 'pleb' }[cfg.diff] || cfg.diff; // older saved settings
 const saveCfg = () => store.set('kart.cfg', cfg);
 const best = store.get('kart.best', { race: {}, arena: 0 });
 const driverOf = id => allDrivers().find(d => d.id === id) || BUILTIN[0];
@@ -2123,8 +2125,21 @@ const isClient = () => !!(net && !net.host);
 // ax: analog steering from the touch joystick (-1 right … +1 left), 0 when not touching
 const keys = { up: false, down: false, left: false, right: false, drift: false, item: false, fire: false, ax: 0 };
 const hazards = [], projectiles = [], fx = [];
-const SKILL = { chill: 0.86, normal: 0.95, degen: 1.04 };
-const AIM = { chill: 0.25, normal: 0.12, degen: 0.05 };
+// Bot levels. Every level has the same top speed as the human karts (see botStats); what changes is how well they
+// drive: corner (how much speed they keep through bends), wobble (how far they wander off the racing line), drift
+// (chance they drift-boost a bend), items (seconds between item uses), aim (arena shooting error), lvl (unlocks).
+const BOT_LEVELS = {
+  easy:  { name: '🐣 Paper Hands', corner: 0.50, wobble: 6.5, drift: 0,    items: [7, 12], aim: 0.32, lvl: 3 },
+  pleb:  { name: '🥔 Pleb',        corner: 0.64, wobble: 4.5, drift: 0.25, items: [4, 9],  aim: 0.2,  lvl: 6 },
+  hard:  { name: '💎 Diamond Hands', corner: 0.78, wobble: 3, drift: 0.6,  items: [3, 6],  aim: 0.12, lvl: 10 },
+  pro:   { name: '🐋 Whale',       corner: 0.9, wobble: 2,   drift: 0.85, items: [2, 5],  aim: 0.07, lvl: 15 },
+  degen: { name: '🦍 Full Degen',  corner: 1.0,  wobble: 1,   drift: 1,    items: [1.5, 4], aim: 0.04, lvl: 20 },
+};
+const BL = () => BOT_LEVELS[cfg.diff] || BOT_LEVELS.pleb;
+const SKILL = new Proxy({}, { get: () => 1 }); // kept for old callers: bots no longer get a speed multiplier
+const AIM = new Proxy({}, { get: () => BL().aim });
+// bots drive the same kart stats as the humans in the match (their average), so nobody is out-sped by a bot
+let botStats = null;
 
 // race items. w = pick weight by place: [back of the pack, 2nd-3rd, leading]
 const RACE_ITEMS = [
@@ -2201,7 +2216,7 @@ const prog = store.get('kart.prog', { xp: 0 });
 const xpFor = L => 50 * (L - 1) ** 2;
 const levelOf = xp => { let L = 1; while (L < MAX_LVL && xp >= xpFor(L + 1)) L++; return L; };
 const myLevel = () => levelOf(prog.xp);
-const BOT_LVL = { chill: 4, normal: 9, degen: MAX_LVL };
+const BOT_LVL = new Proxy({}, { get: (_, k) => (BOT_LEVELS[k] || BOT_LEVELS.pleb).lvl });
 const UNLOCKS = [...RACE_ITEMS.map(r => ({ ...r, world: 'race' })), ...Object.entries(WEAPONS).map(([id, w]) => ({ id, ...w, world: 'arena' }))].sort((a, b) => a.lvl - b.lvl);
 const unlocksAt = L => UNLOCKS.filter(u => u.lvl === L);
 const nextUnlock = L => UNLOCKS.find(u => u.lvl > L);
@@ -2213,7 +2228,7 @@ function makeKart(r, slot, isPlayer, label) {
     r, m, isPlayer, label, heading: 0, speed: 0, vy: 0, y: 0, side: 0,
     idx: 0, lap: 0, passedHalf: false, progress: 0, finished: false, finishTime: 0,
     item: null, rolling: 0, boost: 0, spin: 0, drifting: false, driftDir: 0, driftT: 0,
-    lane: 0, laneDrift: Math.random() * 6.28, aiItemT: 2 + Math.random() * 4, aiSkill: SKILL[cfg.diff] * (0.96 + Math.random() * 0.08),
+    lane: 0, laneDrift: Math.random() * 6.28, aiItemT: 2 + Math.random() * 4, aiSkill: 1,
     hp: 100, alive: true, respawnT: 0, invuln: 0, weapon: null, ammo: 0, fireCd: 0, kills: 0, deaths: 0, aiT: 0, aiTarget: null, stuckT: 0,
   };
   if (mode === 'race') {
@@ -2693,7 +2708,7 @@ function arenaBot(k, dt) {
 // ---------------- physics ----------------
 const tmp = new THREE.Vector3();
 function stepKart(k, dt) {
-  const r = k.r;
+  const r = !k.human && botStats ? { ...k.r, spd: botStats.spd, acc: botStats.acc } : k.r;
   if (k.rolling > 0 && (k.rolling -= dt) <= 0) {
     k.rolling = 0;
     if (mode === 'race') { k.item = k.rollItem; setItemHud(k.item); logEvent(`${k.item.icon} You picked up ${k.item.name}`, 'pick'); }
@@ -2732,18 +2747,25 @@ function stepKart(k, dt) {
     }
   } else if (live || (mode === 'race' && state === 'done')) {
     if (mode === 'race') {
-      throttle = 1; steer = aiSteer(k); wantDrift = Math.abs(steer) > 0.75 && k.speed > maxBase * 0.6;
+      const L = BL(); steer = aiSteer(k);
+      // read the bend coming up (how far the road turns over the next stretch): weaker bots brake harder for it,
+      // a Full Degen keeps it pinned. Top speed on the straights is the same for every level.
+      const ta = TAN[k.idx % N], tb = TAN[(k.idx + 30 + Math.floor(Math.max(0, k.speed) * 0.4)) % N];
+      const bend = Math.min(1, Math.acos(Math.max(-1, Math.min(1, ta.x * tb.x + ta.z * tb.z))) / 0.6), keep = 1 - (1 - L.corner) * bend;
+      throttle = k.speed < maxBase * keep ? 1 : 0; brake = k.speed > maxBase * keep * 1.06 ? 1 : 0;
+      if (k.driftRoll == null || Math.abs(steer) < 0.5) k.driftRoll = Math.random(); // one dice roll per bend
+      wantDrift = k.driftRoll < L.drift && Math.abs(steer) > 0.75 && k.speed > maxBase * 0.6;
       // wedged against something: back out for a moment, steering the other way
       if (live && k.spin <= 0 && Math.abs(k.speed) < 3) k.stuckT += dt; else k.stuckT = 0;
       if (k.stuckT > 1) { k.reverseT = 0.9; k.stuckT = 0; }
       if (k.reverseT > 0) { k.reverseT -= dt; throttle = 0; brake = 1; steer = -steer; wantDrift = false; }
-      if (k.item && (k.aiItemT -= dt) < 0) { useRaceItem(k); k.aiItemT = 2 + Math.random() * 5; }
+      if (k.item && (k.aiItemT -= dt) < 0) { useRaceItem(k); const [a, b] = BL().items; k.aiItemT = a + Math.random() * (b - a); }
     } else ({ throttle, brake, steer } = arenaBot(k, dt));
   }
   const off = mode === 'race' && Math.abs(k.side || 0) > ROAD_W / 2 + 2.6;
   let band = 1;
   if (k.isPlayer) band = keys.touchSpd || 1; // phones: top speed setting
-  if (!k.isPlayer) band = k.aiSkill * (!net && touchUI() ? keys.touchSpd || 1 : 1) * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0.1, (ME().progress - k.progress) / N * 0.35)) : 1);
+  if (!k.isPlayer) band = k.aiSkill * (!net && touchUI() ? keys.touchSpd || 1 : 1) * (mode === 'race' ? 1 + Math.max(-0.08, Math.min(0, (ME().progress - k.progress) / N * 0.35)) : 1);
   const max = maxBase * band * (off ? (k.isPlayer && touchUI() ? 0.65 : 0.45) : 1) * (k.boost > 0 ? 1.35 : 1);
   if (k.spin > 0) { k.spin -= dt; throttle = 0; steer = 0; k.m.rotation.y += dt * 14; }
   if (throttle) k.speed += accel * throttle * dt * (k.speed < max ? 1 : 0);
@@ -2822,7 +2844,7 @@ function assistSteer(k) {
 function aiSteer(k) {
   const look = Math.floor(14 + Math.max(0, k.speed) * 0.35), i = (k.idx + look) % N;
   k.laneDrift += 0.01;
-  const lane = k.lane * 0.6 + Math.sin(k.laneDrift) * 3;
+  const lane = k.lane * 0.6 + Math.sin(k.laneDrift) * (k.human ? 3 : BL().wobble);
   const tx = PTS[i].x + NRM[i].x * lane, tz = PTS[i].z + NRM[i].z * lane;
   let diff = Math.atan2(tx - k.m.position.x, tz - k.m.position.z) - k.heading; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
   return Math.max(-1, Math.min(1, diff * 2.2));
@@ -3143,7 +3165,7 @@ let snapAcc = 0, meAcc = 0, pingT = 0, fpsN = 0, fpsT = 0, fps = 60;
 function leaveNet(silent) {
   if (!net) return;
   unlistRoom();
-  try { net.conns?.forEach(c => c.close()); net.conn?.close(); net.peer?.destroy(); } catch {}
+  try { net.conns?.forEach(c => c.close()); if (net.host) Object.values(net.fast || {}).forEach(c => c.close()); else net.fast?.close(); net.conn?.close(); net.peer?.destroy(); } catch {}
   net = null; $('btnInvite').hidden = true; $('hNet').textContent = '';
   if (!silent) toast('Left the room');
 }
@@ -3152,6 +3174,8 @@ function leaveNet(silent) {
 let ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
 fetch('/api/ice', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d?.iceServers?.length) ICE = d.iceServers; }).catch(() => {});
 const peerOpts = () => ({ debug: 0, config: { iceServers: ICE } });
+// one id per browser tab, kept across reloads (sessionStorage): lets the host spot a player who reconnects
+const TAB_ID = (() => { try { let v = sessionStorage.getItem('kart.tab'); if (!v) { v = Math.random().toString(36).slice(2, 12); sessionStorage.setItem('kart.tab', v); } return v; } catch { return Math.random().toString(36).slice(2, 12); } })();
 function createRoom(pub = false) {
   window.dzTrack?.('Room created', { public: pub ? 'yes' : 'no' });
   leaveNet(true);
@@ -3168,6 +3192,12 @@ function createRoom(pub = false) {
     $('roomStatus').textContent = `Couldn't open the room (${err.type}). Check your connection and try again.`;
   });
   peer.on('connection', conn => {
+    if (conn.label === 'fast') { // positions only (see NET_FAST)
+      conn.on('open', () => { if (net?.host) (net.fast ||= {})[conn.peer] = conn; });
+      conn.on('data', d => onHostData(conn, d));
+      conn.on('close', () => { if (net?.fast?.[conn.peer] === conn) delete net.fast[conn.peer]; });
+      return;
+    }
     conn.on('open', () => net.conns.push(conn));
     conn.on('data', d => onHostData(conn, d));
     conn.on('close', () => onPlayerLeft(conn));
@@ -3220,8 +3250,12 @@ setInterval(() => {
   if (++evTick % 15 === 0 || (evCur.status === 'scheduled' && Date.now() >= evCur.doorsAt)) evGet(evCur.id).then(e => { evCur = e; evRender(); }).catch(() => {});
 }, 1000);
 // go to the tournament's room: join the live one, or host it if there isn't one yet
+let evBusy = false;
 async function evEnter(id, again) {
-  try { evCur = await evGet(id); } catch (e) { toast(e.message); return; }
+  if (evBusy) return; // already on its way in (double tap, or a retry racing a hand-off)
+  if (net?.event === id && (net.host ? net.ready : net.lobby)) { renderRoom(); show('scrRoom'); return; } // already in it
+  evBusy = true; setTimeout(() => { evBusy = false; }, 4000);
+  try { evCur = await evGet(id); } catch (e) { evBusy = false; toast(e.message); return; }
   if (evCur.status !== 'open') { evOpen(id); return; }
   if (!again) evTries = 0;
   cfg.map = evCur.map; cfg.mode = evCur.mode; cfg.laps = evCur.laps; cfg.mins = evCur.mins; // this match only (not saved)
@@ -3306,6 +3340,10 @@ function checkAutoStart() {
 }
 setInterval(() => {
   if (!net) return;
+  if (state === 'title') {
+    if (!net.host && net.lobby && net.conn?.open && Date.now() - (net.pingAt || 0) > 3000) { net.pingAt = Date.now(); net.send({ t: 'ping', at: performance.now() }); }
+    if (net.host) for (const p of net.players.filter(p => p.conn && Date.now() - (p.conn.lastSeen || Date.now()) > 12000)) { try { p.conn.close(); } catch {} onPlayerLeft(p.conn); } // gone without saying bye
+  }
   checkAutoStart();
   const at = net.host ? net.autoAt : net.lobby?.autoAt ? Date.now() + net.lobby.autoIn * 1000 - (Date.now() - net.lobby.got) : 0;
   if (state !== 'title' || screenNow !== 'scrRoom') return;
@@ -3316,6 +3354,17 @@ setInterval(() => {
   } else if (net.host && net.event && evCur && net.ready) $('roomStatus').textContent = Date.now() < evCur.at ? `${net.players.length} / ${net.target} in. Starts in ${evLeft(evCur.at - Date.now())}` : `${net.players.length} / ${net.target} in. Starting as soon as 2 are here…`;
   else if (net.host && net.pub && net.ready) $('roomStatus').textContent = `Waiting for players: ${net.players.length} / ${net.target}. You can start once 2 are in.`;
 }, 250);
+// NET_FAST: positions travel on a second, unordered channel. On the main (reliable, ordered) channel one lost
+// packet holds up everything behind it until it is resent, which on mobile data shows up as stutter and karts
+// jumping. Snapshots carry a sequence number so a late one is simply skipped; events (hits, laps, items) and
+// everything else stay on the reliable channel.
+let snapSeq = 0;
+function sendSnapshot() {
+  const s = snapshot(), ev = s.ev; delete s.ev; s.q = ++snapSeq;
+  if (ev.length) broadcast({ t: 'ev', ev });
+  net.conns.forEach(c => { if (!c.open) return; const f = net.fast?.[c.peer]; (f?.open ? f : c).send(s); });
+}
+const netFast = obj => { if (net?.fast?.open) net.fast.send(obj); else net?.send(obj); };
 function broadcast(obj) { if (net?.host) net.conns.forEach(c => { if (c.open) c.send(obj); }); }
 function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins, bots: net.pub ? 0 : cfg.bots, pub: !!net.pub, target: net.target, autoIn: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0, autoAt: !!net.autoAt, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host', level: p.id === 'host' ? myLevel() : p.level || 1 })) }; }
 function onHostData(conn, d) {
@@ -3325,11 +3374,16 @@ function onHostData(conn, d) {
     if (state !== 'title') { conn.send({ t: 'nope', why: 'That match already started. Ask the host to let you in after it ends.' }); setTimeout(() => conn.close(), 300); return; }
     const drv = d.driver && typeof d.driver === 'object' ? d.driver : pubDriver(BUILTIN[0]);
     drv.img = typeof drv.img === 'string' && (drv.img.startsWith('/racers/') || drv.img.startsWith('data:image/')) && drv.img.length < 200000 ? drv.img : BUILTIN[0].img;
-    net.players = net.players.filter(p => p.id !== conn.peer);
-    net.players.push({ id: conn.peer, conn, name: String(d.name || 'PLAYER').slice(0, 14).toUpperCase(), driver: drv, level: Math.max(1, Math.min(MAX_LVL, d.level | 0 || 1)), trail: trailById(d.trail)?.id || null });
+    // the same tab coming back (reload, re-join, hand-off): drop its old, dead connection first
+    const tab = typeof d.tab === 'string' ? d.tab.slice(0, 16) : '';
+    for (const old of net.players.filter(p => p.id !== conn.peer && tab && p.tab === tab)) { try { old.conn?.close(); } catch {} net.conns = net.conns.filter(c => c !== old.conn); }
+    net.players = net.players.filter(p => p.id !== conn.peer && !(tab && p.tab === tab));
+    conn.lastSeen = Date.now();
+    net.players.push({ id: conn.peer, tab, conn, name: String(d.name || 'PLAYER').slice(0, 14).toUpperCase(), driver: drv, level: Math.max(1, Math.min(MAX_LVL, d.level | 0 || 1)), trail: trailById(d.trail)?.id || null });
     checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); blip(1000, 0.08);
     return;
   }
+  conn.lastSeen = Date.now();
   if (d.t === 'ping') { conn.send({ t: 'pong', at: d.at }); return; }
   const k = karts.find(x => x.remote === conn.peer);
   if (!k) return;
@@ -3363,8 +3417,9 @@ function joinRoom(code) {
     net.send = obj => { if (conn.open) conn.send(obj); };
     conn.on('open', () => {
       clearTimeout(timer); $('btnJoinGo').disabled = false; $('joinStatus').textContent = 'Joining…';
+      try { const fast = peer.connect(ROOM_PREFIX + code, { reliable: false, label: 'fast', serialization: 'json' }); net.fast = fast; fast.on('data', onClientData); } catch {}
       // the very first message on a fresh channel can get lost, so say hello until the host answers
-      let tries = 0; const hello = () => { if (!net || net.conn !== conn || net.lobby) return; if (tries++ > 8) { fail('Connected, but the host is not answering. Ask them to reopen the room.'); return; } conn.send({ t: 'hello', name: myName(), driver: pubDriver(driverOf(cfg.driver)), level: myLevel(), trail: myTrailId() }); setTimeout(hello, 1200); };
+      let tries = 0; const hello = () => { if (!net || net.conn !== conn || net.lobby) return; if (tries++ > 8) { fail('Connected, but the host is not answering. Ask them to reopen the room.'); return; } conn.send({ t: 'hello', tab: TAB_ID, name: myName(), driver: pubDriver(driverOf(cfg.driver)), level: myLevel(), trail: myTrailId() }); setTimeout(hello, 1200); };
       setTimeout(hello, 150);
     });
     // a network that blocks peer-to-peer (and no relay got through) fails here instead of hanging on "Connecting…"
@@ -3384,7 +3439,8 @@ function onClientData(d) {
   if (d.t === 'nope') { $('joinStatus').textContent = d.why; leaveNet(true); show('scrJoin'); return; }
   if (d.t === 'lobby') { d.got = Date.now(); net.lobby = d; $('joinStatus').textContent = ''; if (state === 'title') { renderRoom(); show('scrRoom'); } return; }
   if (d.t === 'start') { clientStart(d); return; }
-  if (d.t === 's') { applySnap(d); return; }
+  if (d.t === 's') { if (d.q && d.q <= (net.lastQ || 0)) return; net.lastQ = d.q || net.lastQ; applySnap(d); return; } // late snapshot: skip
+  if (d.t === 'ev') { for (const e of d.ev || []) notify(e); return; }
   if (d.t === 'end') { endGame(d.order.map(i => karts[i]).filter(Boolean)); return; }
   if (d.t === 'pong') { net.ping = Math.round(performance.now() - d.at); return; }
   if (d.t === 'room') { quitGame('room'); return; }
@@ -3465,6 +3521,7 @@ function startGame(opts = {}) {
     if (isClient() && i !== meIdx) k.puppet = true;
     return k;
   });
+  { const hum = karts.filter(k => k.human); botStats = hum.length ? { spd: hum.reduce((s, k) => s + k.r.spd, 0) / hum.length, acc: hum.reduce((s, k) => s + k.r.acc, 0) / hum.length } : null; }
   finishOrder = []; raceT = 0; countdown = 3.999; state = 'countdown'; raceEndAt = 0;
   bumpFreeUntil = performance.now() + 9000; karts.forEach(k => k.noBumpUntil = 0); // 4 s countdown + 5 s
   Object.assign(bonus, { xp: 0, combo: 0, comboT: -9, best: 0, boostT: 0, list: {} }); $('hXpBoost').hidden = true;
@@ -3577,7 +3634,7 @@ function pushSample(k, s) { const b = (k.buf ||= []); b.push({ t: performance.no
 const lerpAng = (a, b, t) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
 function bufferedPose(k) {
   const b = k.buf; if (!b || !b.length) return k.np;
-  const rt = performance.now() - 100;
+  const gap = b.length > 1 ? (b[b.length - 1].t - b[0].t) / (b.length - 1) : 50, rt = performance.now() - Math.max(45, Math.min(120, gap * 1.5 + 12));
   if (rt <= b[0].t) return b[0];
   for (let i = b.length - 1; i > 0; i--) {
     const a = b[i - 1], c = b[i];
@@ -3624,11 +3681,11 @@ function netTick(dt) {
   if (net.host) {
     if (!net.conns.length || !karts.length || state === 'title') return;
     snapAcc += dt;
-    if (snapAcc >= 1 / 20) { snapAcc = 0; broadcast(snapshot()); }
+    if (snapAcc >= 1 / 25) { snapAcc = 0; sendSnapshot(); }
   } else if (karts.length && net.conn?.open) {
     meAcc += dt;
     const k = ME();
-    if (meAcc >= 1 / 30 && k) { meAcc = 0; net.send({ t: 'me', x: +k.m.position.x.toFixed(2), z: +k.m.position.z.toFixed(2), y: +k.y.toFixed(2), h: +k.heading.toFixed(3), sp: +k.speed.toFixed(1), d: k.drifting ? k.driftDir : 0, b: k.boost > 0 ? 1 : 0, fh: keys.fire ? 1 : 0 }); }
+    if (meAcc >= 1 / 30 && k) { meAcc = 0; netFast({ t: 'me', x: +k.m.position.x.toFixed(2), z: +k.m.position.z.toFixed(2), y: +k.y.toFixed(2), h: +k.heading.toFixed(3), sp: +k.speed.toFixed(1), d: k.drifting ? k.driftDir : 0, b: k.boost > 0 ? 1 : 0, fh: keys.fire ? 1 : 0 }); }
     if ((pingT += dt) > 2) { pingT = 0; net.send({ t: 'ping', at: performance.now() }); }
   }
 }
