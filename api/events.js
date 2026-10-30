@@ -16,12 +16,12 @@
 //   POST { room: id, code, leave: true } the host is leaving: free the slot so the next player re-hosts at once
 //   POST { results: id, code, order }    the host, once, when the race ends
 //   POST { report: id, code, slot, finished, time, kills }   every player's own result, to check the host's
-//   POST { verdict: id, action: 'confirm' | 'void' }       (the creator) make the results official, or void them
 //
-// Results are checked three ways. Each player's browser drives its own kart, so each reports its own finish time
-// or kills; the host's order is compared with those. Times faster than physically plausible (or than 85% of the
-// map's world record) are flagged. And the creator can confirm or void the podium. The page and the card show
-// where a result stands: verified, provisional, disputed, official or voided.
+// Results settle themselves by fixed rules, with nobody approving anything. Each player's browser drives its own
+// kart (the host only relays it), so each player's own report is the source for their own time or kills, and the
+// host can't change anyone else's result. A time faster than physically possible (15 s a lap, or 85% of the map's
+// world record) is disqualified automatically. A player whose report never arrives falls back to the host's record.
+// The standings are rebuilt from those numbers.
 //
 // Status: scheduled (until 10 min before) -> open (until 15 min after the start, or until results) -> finished |
 // expired (nobody played) | cancelled. Records expire 7 days after the start time.
@@ -82,46 +82,38 @@ function statusOf(e, now = Date.now()) {
 }
 async function load(id) { const [raw] = await kv(['GET', 'ev:' + id]); return raw ? JSON.parse(raw) : null; }
 const save = e => kv(['SET', 'ev:' + e.id, JSON.stringify(e), 'PX', String(Math.max(MIN, e.at + KEEP - Date.now()))]);
-// how far each result can be trusted: 'ok' (the player's own report agrees), 'conflict', 'suspect' (impossible
-// time), or 'unverified' (no report from that player yet)
-const TOL = 1.5; // seconds of disagreement allowed between host and player (network delay at the finish line)
-function checkResults(e) {
+const REPORT_WAIT = 2 * MIN; // after this, players who never reported keep the host's record
+const fmtTime = t => { const m = Math.floor(t / 60), x = t - m * 60; return `${m}:${x.toFixed(2).padStart(5, '0')}`; };
+// final standings: own reports first, host record as fallback, impossible results disqualified, then re-sorted
+function settle(e, now = Date.now()) {
   if (!e.results) return null;
-  let conflict = false, suspect = false, waiting = false;
   const rows = e.results.map(r => {
-    let check = 'unverified';
-    if (r.suspect) { check = 'suspect'; suspect = true; }
-    else if (r.human) {
-      const rep = e.reports?.[r.slot];
-      if (!rep) waiting = true;
-      else if (e.mode === 'race' ? (rep.finished !== r.finished || (r.finished && Math.abs(rep.time - r.time) > TOL)) : rep.kills !== r.kills) { check = 'conflict'; conflict = true; }
-      else check = 'ok';
-    } else check = 'bot';
-    return { ...r, check };
+    const own = r.human ? e.reports?.[r.slot] : null, src = own || r;
+    const finished = !!src.finished, time = +src.time || 0, kills = +src.kills || 0;
+    const dq = e.mode === 'race' ? finished && time < (e.minTime || 15 * e.laps) : kills > 25 * e.mins;
+    return { slot: r.slot, name: r.name, human: r.human, finished, time, kills, dq, own: !!own, hostPlace: r.place };
   });
-  const state = e.verdict === 'void' ? 'voided' : e.verdict === 'confirm' ? 'official' : conflict || suspect ? 'disputed' : waiting ? 'provisional' : 'verified';
-  return { rows, state };
+  rows.sort((a, b) => (a.dq - b.dq) || (e.mode === 'race'
+    ? (b.finished - a.finished) || (a.finished ? a.time - b.time : a.hostPlace - b.hostPlace)
+    : (b.kills - a.kills) || (a.hostPlace - b.hostPlace)));
+  const out = rows.map((r, i) => ({ place: i + 1, name: r.name, human: r.human, dq: r.dq, score: r.dq ? 'DQ' : e.mode === 'race' ? (r.finished ? fmtTime(r.time) : 'DNF') : `${r.kills} kills` }));
+  const waiting = rows.some(r => r.human && !r.own) && now < (e.finishedAt || 0) + REPORT_WAIT;
+  return { rows: out, state: waiting ? 'counting' : 'final' };
 }
 async function view(e) {
   const [room] = await kv(['GET', 'ev:room:' + e.id]);
   const { creator, ...pub } = e;
-  const chk = checkResults(e); delete pub.reports;
-  if (chk) pub.results = chk.rows.map(({ time, kills, finished, ...r }) => r);
+  const chk = settle(e); delete pub.reports; delete pub.minTime; delete pub.verdict;
+  if (chk) pub.results = chk.rows;
   return { ...pub, resultState: chk?.state || null, by: creator ? creator.slice(0, 6) + '…' + creator.slice(-4) : '', mine: false, status: statusOf(e), doorsAt: e.at - DOORS, closesAt: e.at + GRACE, room: room ? JSON.parse(room) : null, link: `${SITE}/e/${e.id}` };
 }
 
 // ---------------- share card (PNG) ----------------
-let fontP;
-function fonts() {
-  // Anton for the headline, Archivo for the rest; an old user agent makes Google Fonts serve TTF, which the renderer needs
-  fontP ||= Promise.all([['Anton', 400], ['Archivo', 500], ['Archivo', 700]].map(async ([family, weight]) => {
-    const css = await (await fetch(`https://fonts.googleapis.com/css2?family=${family}:wght@${weight}`, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/534.30 (KHTML, like Gecko) Safari/534.30' } })).text();
-    // the CSS lists one file per alphabet subset; the plain Latin one is marked /* latin */
-    const block = css.split('/* latin */')[1] || css, url = (block.match(/src:\s*url\(([^)]+)\)/) || [])[1];
-    return { name: family, weight, style: 'normal', data: await (await fetch(url)).arrayBuffer() };
-  })).catch(() => { fontP = null; return []; });
-  return fontP;
-}
+// fonts ship with the code (api/_fonts, Latin subsets of Anton and Archivo, open licence): no download per cold start
+const FONTS = [['Anton', 400, 'anton-400'], ['Archivo', 500, 'archivo-500'], ['Archivo', 700, 'archivo-700']]
+  .map(([name, weight, file]) => { try { return { name, weight, style: 'normal', data: require('fs').readFileSync(require('path').join(__dirname, '_fonts', file + '.woff')) }; } catch { return null; } }).filter(Boolean);
+let wolfP; // the wolf picture, fetched once per warm server instance and kept in memory (≈60 KB)
+const wolf = () => (wolfP ||= fetch(`${SITE}/racers/degenz.png`).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && 'data:image/png;base64,' + Buffer.from(b).toString('base64')).catch(() => { wolfP = null; return null; }));
 const h = (type, style, children) => ({ type, props: { style: { display: 'flex', ...style }, children } });
 function when(e) {
   const d = new Date(e.at), f = (o, tz) => new Intl.DateTimeFormat('en-GB', { timeZone: tz, ...o }).format(d);
@@ -130,13 +122,13 @@ function when(e) {
   return { local: `${local} ${zone}`, utc: f({ hour: '2-digit', minute: '2-digit', hour12: false }, 'UTC') + ' UTC' };
 }
 async function card(e) {
-  const { ImageResponse } = await import('@vercel/og');
+  const { ImageResponse } = await import('@vercel/og'), wolfSrc = await wolf();
   const st = statusOf(e), [world, mapName] = MAPS[e.map] || ['race', e.map], t = when(e);
   const pill = (txt, bg, fg = '#150b05') => h('div', { background: bg, color: fg, borderRadius: 999, padding: '8px 22px', fontSize: 26, fontFamily: 'Archivo', fontWeight: 700 }, txt);
-  const rs = checkResults(e)?.state;
-  const badge = st === 'finished' ? { official: ['OFFICIAL RESULTS', '#e9c46a'], verified: ['RESULTS ✓ VERIFIED', '#4fd27a'], provisional: ['RESULTS · PROVISIONAL', '#e9c46a'], disputed: ['RESULTS ⚠️ DISPUTED', '#ff9a3c'], voided: ['RESULTS VOIDED', '#ff4b4b'] }[rs]
+  const settled = settle(e), rs = settled?.state;
+  const badge = st === 'finished' ? (rs === 'counting' ? ['RESULTS COMING IN', '#e9c46a'] : ['🏆 FINAL RESULTS', '#e9c46a'])
     : { scheduled: ['UPCOMING', '#ff7a1f'], open: ['DOORS OPEN · JOIN NOW', '#4fd27a'], expired: ['ENDED', '#8f8079'], cancelled: ['CANCELLED', '#ff4b4b'] }[st];
-  const top3 = rs === 'voided' ? [] : (e.results || []).slice(0, 3);
+  const top3 = (settled?.rows || []).filter(r => !r.dq).slice(0, 3);
   const body = top3.length
     ? h('div', { flexDirection: 'column', gap: 10, marginTop: 26 }, top3.map((r, i) => h('div', { alignItems: 'center', gap: 18, fontSize: i ? 38 : 52, fontFamily: 'Archivo', fontWeight: 700, color: i ? '#ece4dc' : '#ffd23f' }, [`${['🥇', '🥈', '🥉'][i]}`, h('div', {}, r.name), h('div', { color: '#8f8079', fontSize: 28, fontWeight: 500 }, r.score || '')])))
     : h('div', { flexDirection: 'column', gap: 14, marginTop: 30 }, [
@@ -144,34 +136,29 @@ async function card(e) {
       h('div', { fontSize: 30, fontFamily: 'Archivo', fontWeight: 500, color: '#8f8079' }, `${t.utc} · times shown in your own zone on the page`),
     ]);
   const el = h('div', { width: '100%', height: '100%', flexDirection: 'column', justifyContent: 'space-between', padding: '56px 64px', background: 'radial-gradient(circle at 78% 18%, #4a2312 0%, #160c0b 45%, #070506 100%)', color: '#ece4dc', fontFamily: 'Archivo' }, [
-    { type: 'img', props: { src: `${SITE}/racers/degenz.png`, width: 300, height: 300, style: { position: 'absolute', right: 56, top: 170, borderRadius: 150, border: '8px solid #ff7a1f' } } },
+    ...(wolfSrc ? [{ type: 'img', props: { src: wolfSrc, width: 300, height: 300, style: { position: 'absolute', right: 56, top: 170, borderRadius: 150, border: '8px solid #ff7a1f' } } }] : []),
     h('div', { flexDirection: 'column' }, [
       h('div', { alignItems: 'center', gap: 16, fontSize: 28, fontWeight: 700, color: '#ff7a1f', letterSpacing: 3 }, [h('div', {}, '🏁 DEGENZ KART TOURNAMENT'), pill(badge[0], badge[1])]),
       h('div', { fontFamily: 'Anton', fontSize: e.title.length > 26 ? 76 : 96, lineHeight: 1.02, marginTop: 18, textTransform: 'uppercase', color: '#fff6e3', maxWidth: 740 }, e.title),
       body,
     ]),
     h('div', { alignItems: 'center', justifyContent: 'space-between' }, [
-      h('div', { gap: 14 }, [pill(`👥 ${e.players} PLAYERS`, '#2b2022', '#ece4dc'), pill(`${world === 'race' ? '🏁' : '💥'} ${mapName.toUpperCase()}`, '#2b2022', '#ece4dc'), pill(world === 'race' ? `${e.laps} LAPS` : `${e.mins} MIN`, '#2b2022', '#ece4dc')]),
+      h('div', { gap: 14 }, [pill(`👥 ${e.players} PLAYERS`, '#2b2022', '#ece4dc'), pill(`${world === 'race' ? '🏁' : '💥'} ${mapName.toUpperCase()}`, '#2b2022', '#ece4dc'), pill(world === 'race' ? `${e.laps} LAP${e.laps > 1 ? "S" : ""}` : `${e.mins} MIN`, '#2b2022', '#ece4dc')]),
       h('div', { fontSize: 26, color: '#8f8079', fontWeight: 500 }, 'starknetdegenz.fun'),
     ]),
   ]);
-  const r = new ImageResponse(el, { width: 1200, height: 630, fonts: await fonts(), emoji: 'twemoji' });
+  const r = new ImageResponse(el, { width: 1200, height: 630, fonts: FONTS, emoji: 'twemoji' });
   return Buffer.from(await r.arrayBuffer());
 }
-// X gives up on slow images and then remembers "no image" for days, so a card is drawn once per look
-// (status + result state) and kept in Redis; the first draw happens when the tournament is created.
-const cardVer = e => statusOf(e) + (e.results ? '-' + checkResults(e).state : '');
-async function cardPng(e) {
-  const key = `ev:card:${e.id}:${cardVer(e)}`, [hit] = await kv(['GET', key]).catch(() => [null]);
-  if (hit) return Buffer.from(hit, 'base64');
-  const png = await card(e);
-  await kv(['SET', key, png.toString('base64'), 'PX', String(Math.max(MIN, e.at + KEEP - Date.now()))]).catch(() => {});
-  return png;
-}
+// Cards are drawn on demand and never stored by us. Each look has its own URL (status + result state + reports),
+// so Vercel's CDN can cache it for good and forgets it when nobody asks any more. Creating or cancelling a tournament
+// requests the new URL once so the CDN already has it when the link gets shared (X gives up on slow images).
+const cardVer = e => statusOf(e) + (e.results ? '-' + settle(e).state + '-' + Object.keys(e.reports || {}).length : '');
+const warmCard = e => process.env.VERCEL ? fetch(`${SITE}/e/${e.id}/card-${cardVer(e)}.png`, { signal: AbortSignal.timeout(9000) }).then(r => r.arrayBuffer()).catch(() => {}) : Promise.resolve();
 function sharePage(e) {
   const st = statusOf(e), t = when(e), [, mapName] = MAPS[e.map] || ['', e.map];
   const title = st === 'finished' ? `${e.title}: results` : `${e.title} · Degenz Kart tournament`;
-  const desc = st === 'finished' ? `🥇 ${e.results[0]?.name || ''} won. ${e.players}-player ${mapName} race on Starknet Degenz.` : `${t.local} (${t.utc}) · ${e.players} players · ${mapName}. Join with the link: free, in your browser.`;
+  const desc = st === 'finished' ? `🥇 ${settle(e).rows.find(r => !r.dq)?.name || ''} won. ${e.players}-player ${mapName} race on Starknet Degenz.` : `${t.local} (${t.utc}) · ${e.players} players · ${mapName}. Join with the link: free, in your browser.`;
   const img = `${SITE}/e/${e.id}/card-${cardVer(e)}.png`, go = `/race?t=${e.id}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${esc(desc)}">
@@ -195,9 +182,10 @@ module.exports = async (req, res) => {
           return res.end(sharePage(e));
         }
         if (!e) return send(res, 404, { error: 'no such event' });
-        const png = await cardPng(e);
+        const png = await card(e);
         res.statusCode = 200; res.setHeader('content-type', 'image/png'); res.setHeader('content-length', png.length);
-        res.setHeader('cache-control', 'public, max-age=300, s-maxage=86400, stale-while-revalidate=86400'); // the URL changes whenever the card does
+        // a versioned URL (/e/<id>/card-<look>.png) never changes content: the CDN may keep it; the bare ?card= form only briefly
+        res.setHeader('cache-control', q.get('f') ? 'public, max-age=86400, s-maxage=31536000, immutable' : 'public, max-age=60, s-maxage=300');
         return res.end(png);
       }
       if (q.get('id')) {
@@ -231,11 +219,11 @@ module.exports = async (req, res) => {
       const id = Array.from(crypto.randomBytes(6), x => alphabet[x % alphabet.length]).join('');
       const e = { id, title, creator: who, at, tz, players: int(c.players, 2, 12, 4), map, mode: MAPS[map][0], laps: int(c.laps, 1, 9, 3), mins: int(c.mins, 1, 10, 3), created: now };
       await save(e); await kv(['ZADD', 'ev:list', String(at), id]);
-      await cardPng(e).catch(() => {}); // ready before anyone shares the link
+      await warmCard(e); // the CDN has the card before anyone shares the link
       return send(res, 200, { ...(await view(e)), mine: true });
     }
 
-    const id = String(b.cancel || b.room || b.results || b.report || b.verdict || '').toUpperCase();
+    const id = String(b.cancel || b.room || b.results || b.report || '').toUpperCase();
     if (!validId(id)) return send(res, 400, { error: 'bad event' });
     const e = await load(id); if (!e) return send(res, 404, { error: 'That tournament does not exist or has ended.' });
     const st = statusOf(e);
@@ -243,7 +231,7 @@ module.exports = async (req, res) => {
     if (b.cancel) {
       const who = await whoIs(req); if (!who || who !== e.creator) return send(res, 403, { error: 'Only the creator can cancel it.' });
       if (st !== 'scheduled') return send(res, 409, { error: 'It can only be cancelled before doors open.' });
-      e.cancelled = now; await save(e); await kv(['ZREM', 'ev:list', id]); await cardPng(e).catch(() => {});
+      e.cancelled = now; await save(e); await kv(['ZREM', 'ev:list', id]); await warmCard(e);
       return send(res, 200, await view(e));
     }
     if (b.room) {
@@ -264,15 +252,13 @@ module.exports = async (req, res) => {
       if (st !== 'open' || now < e.at - DOORS) return send(res, 409, { error: 'not open' });
       const [cur] = await kv(['GET', 'ev:room:' + id]);
       if (cur && JSON.parse(cur).code !== String(b.code || '').toUpperCase()) return send(res, 403, { error: 'not the event room' });
-      const min = e.mode === 'race' ? await fastestBelievable(e) : 0, maxKills = 25 * e.mins;
+      const min = e.mode === 'race' ? await fastestBelievable(e) : 0;
       const order = (Array.isArray(b.order) ? b.order : []).slice(0, 12).map((r, i) => {
         const finished = !!r?.finished, time = Math.round(+r?.time * 100) / 100 || 0, kills = int(r?.kills, 0, 999, 0);
-        const suspect = e.mode === 'race' ? finished && time < min : kills > maxKills;
-        return { place: i + 1, slot: int(r?.slot, 0, 11, i), name: clean(r?.name, 14).toUpperCase() || 'PLAYER', score: clean(r?.score, 16), human: !!r?.human, finished, time, kills, ...(suspect ? { suspect: true } : {}) };
+        return { place: i + 1, slot: int(r?.slot, 0, 11, i), name: clean(r?.name, 14).toUpperCase() || 'PLAYER', human: !!r?.human, finished, time, kills };
       });
+      e.minTime = min;
       if (order.filter(r => r.human).length < 2) return send(res, 400, { error: 'needs at least 2 players' });
-      // a finisher can't be placed behind someone who didn't finish, or behind a slower finisher
-      if (e.mode === 'race') order.forEach((r, i) => { const prev = order[i - 1]; if (prev && r.finished && (!prev.finished || r.time + TOL < prev.time)) r.suspect = true; });
       e.results = order; e.finishedAt = now; e.resultsCode = String(b.code || '').toUpperCase();
       for (const [k, r] of Object.entries(e.reports || {})) if (r.code !== e.resultsCode) delete e.reports[k]; // reports from another room don't count
       await save(e); await kv(['ZREM', 'ev:list', id]);
@@ -287,12 +273,6 @@ module.exports = async (req, res) => {
       if (e.resultsCode && String(b.code || '').toUpperCase() !== e.resultsCode) return send(res, 403, { error: 'not the event room' });
       if (!e.reports[slot]) { e.reports[slot] = { code: String(b.code || '').toUpperCase().slice(0, 5), finished: !!b.finished, time: Math.round(+b.time * 100) / 100 || 0, kills: int(b.kills, 0, 999, 0), at: now }; await save(e); }
       return send(res, 200, { ok: true });
-    }
-    if (b.verdict) {
-      const who = await whoIs(req); if (!who || who !== e.creator) return send(res, 403, { error: 'Only the creator can confirm or void results.' });
-      if (!e.results) return send(res, 409, { error: 'No results yet.' });
-      e.verdict = b.action === 'void' ? 'void' : 'confirm'; e.verdictAt = now; await save(e);
-      return send(res, 200, { ...(await view(e)), mine: true });
     }
     send(res, 400, { error: 'unknown request' });
   } catch (err) {

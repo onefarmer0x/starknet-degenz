@@ -9,7 +9,8 @@
       "maxDuration": 30
     },
     "api/events.js": {
-      "maxDuration": 20
+      "maxDuration": 20,
+      "includeFiles": "api/_fonts/**"
     }
   },
   "rewrites": [

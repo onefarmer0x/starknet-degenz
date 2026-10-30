@@ -630,8 +630,6 @@ html .maps-head b { font-size: 22px; }
       <button class="btn" id="evCopy" type="button">Copy link</button>
       <a class="btn" id="evCal" target="_blank" rel="noopener">📅 Calendar</a>
       <button class="btn red" id="evCancel" type="button" hidden>Cancel event</button>
-      <button class="btn yellow" id="evConfirm" type="button" hidden>✓ Confirm results</button>
-      <button class="btn red" id="evVoid" type="button" hidden>Void results</button>
     </div>
     <p class="status" id="evStatus"></p>
   </div>
@@ -3222,7 +3220,7 @@ function evRender() {
   const M = MAPS_BY[e.map] || MAPS_BY.bonfire;
   $('evCard').src = `/api/events?card=${e.id}&v=${e.status}-${e.resultState || ''}`;
   $('evName').textContent = e.title;
-  $('evWhen').innerHTML = `🗓️ <b>${evTime(e.at)}</b> your time · 👥 ${e.players} players · ${M.icon} ${M.name} · ${e.mode === 'race' ? e.laps + ' laps' : e.mins + ' min'}${e.by ? ` · by ${escapeHtml(e.by)}` : ''}`;
+  $('evWhen').innerHTML = `🗓️ <b>${evTime(e.at)}</b> your time · 👥 ${e.players} players · ${M.icon} ${M.name} · ${e.mode === 'race' ? e.laps + (e.laps > 1 ? ' laps' : ' lap') : e.mins + ' min'}${e.by ? ` · by ${escapeHtml(e.by)}` : ''}`;
   const open = e.status === 'open', done = e.status === 'finished';
   $('evJoin').hidden = e.status !== 'open' && e.status !== 'scheduled'; $('evJoin').disabled = !open;
   $('evJoin').textContent = open ? (e.room ? `Join now (${e.room.players} in)` : 'Join and host') : 'Doors open 10 min before';
@@ -3232,10 +3230,8 @@ function evRender() {
   const z = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   $('evCal').href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🏁 ' + e.title + ' (Degenz Kart)')}&dates=${z(e.at)}/${z(e.at + 20 * 60000)}&details=${encodeURIComponent('Join: ' + evLink(e.id))}`;
   $('evResults').hidden = !done;
-  const CHECK = { ok: '✓', conflict: '⚠️', suspect: '⚠️', unverified: '…', bot: '' };
-  if (done) $('evResults').innerHTML = (e.resultState === 'voided' ? '<p class="status">The organiser voided these results.</p>' : '') + e.results.map(r => `<div class="lrow"><span>${['🥇', '🥈', '🥉'][r.place - 1] || r.place}</span><b>${escapeHtml(r.name)} ${CHECK[r.check] || ''}</b><em>${escapeHtml(r.score || '')}</em></div>`).join('');
-  $('evConfirm').hidden = $('evVoid').hidden = !(e.mine && done);
-  $('evStatus').textContent = { scheduled: 'Doors open 10 minutes before the start. Share the link so your pack shows up!', open: e.room ? 'Doors are open. The room is live.' : 'Doors are open. Be the first in: you\'ll host the room.', finished: { official: 'Official results, confirmed by the organiser. GG!', verified: 'Results verified: every player\'s own report matches. GG!', provisional: 'Provisional: waiting for every player\'s own report to confirm the results.', disputed: 'Disputed: some results don\'t match what players reported (⚠️). The organiser can confirm or void them.', voided: 'The organiser voided these results.' }[e.resultState] || 'Finished. GG!', expired: 'This tournament ended without a race.', cancelled: 'This tournament was cancelled.' }[e.status] || '';
+  if (done) $('evResults').innerHTML = e.results.map(r => `<div class="lrow"><span>${r.dq ? '🚫' : ['🥇', '🥈', '🥉'][r.place - 1] || r.place}</span><b>${escapeHtml(r.name)}</b><em>${escapeHtml(r.score || '')}</em></div>`).join('');
+  $('evStatus').textContent = { scheduled: 'Doors open 10 minutes before the start. Share the link so your pack shows up!', open: e.room ? 'Doors are open. The room is live.' : 'Doors are open. Be the first in: you\'ll host the room.', finished: e.resultState === 'counting' ? 'Results coming in from every player…' : 'Final results: each time comes from the player\'s own game; impossible times are disqualified (🚫). GG!', expired: 'This tournament ended without a race.', cancelled: 'This tournament was cancelled.' }[e.status] || '';
   evCountdown();
 }
 function evCountdown() {
@@ -3247,7 +3243,7 @@ setInterval(() => {
   if (screenNow !== 'scrEvent' || !evCur) return;
   evCountdown();
   // refresh the status now and then, and right when doors open
-  if (++evTick % 15 === 0 || (evCur.status === 'scheduled' && Date.now() >= evCur.doorsAt)) evGet(evCur.id).then(e => { evCur = e; evRender(); }).catch(() => {});
+  if (++evTick % (evCur.resultState === 'counting' ? 5 : 15) === 0 || (evCur.status === 'scheduled' && Date.now() >= evCur.doorsAt)) evGet(evCur.id).then(e => { evCur = e; evRender(); }).catch(() => {});
 }, 1000);
 // go to the tournament's room: join the live one, or host it if there isn't one yet
 let evBusy = false;
@@ -3283,7 +3279,7 @@ function evSelfReport() {
 function evShareX(e) {
   const M = MAPS_BY[e.map] || MAPS_BY.bonfire;
   const text = e.status === 'finished' && e.results?.length
-    ? `🏆 ${e.results[0].name} won ${e.title}${{ official: ' (official)', verified: ' (verified)', provisional: ' (provisional)', disputed: ' (disputed)' }[e.resultState] || ''}!\n\n${e.results.slice(0, 3).map(r => ['🥇', '🥈', '🥉'][r.place - 1] + ' ' + r.name + (r.score ? ' · ' + r.score : '')).join('\n')}\n\nDegenz Kart tournament on @StarknetDegenz 🐺`
+    ? `🏆 ${e.results[0].name} won ${e.title}!\n\n${e.results.slice(0, 3).map(r => ['🥇', '🥈', '🥉'][r.place - 1] + ' ' + r.name + (r.score ? ' · ' + r.score : '')).join('\n')}\n\nDegenz Kart tournament on @StarknetDegenz 🐺`
     : `🏁 ${e.title}\n\nDegenz Kart tournament · ${e.players} players · ${M.name}\n🗓️ ${new Date(e.at).toUTCString().slice(0, 22)} UTC\n\nFree, in your browser. Join with the link 👇`;
   window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(evLink(e.id))}`, '_blank', 'noopener');
   window.dzTrack?.('Tournament shared', { status: e.status });
@@ -3366,11 +3362,13 @@ function sendSnapshot() {
 }
 const netFast = obj => { if (net?.fast?.open) net.fast.send(obj); else net?.send(obj); };
 function broadcast(obj) { if (net?.host) net.conns.forEach(c => { if (c.open) c.send(obj); }); }
-function lobbyInfo() { return { t: 'lobby', code: net.code, mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins, bots: net.pub ? 0 : cfg.bots, pub: !!net.pub, target: net.target, autoIn: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0, autoAt: !!net.autoAt, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host', level: p.id === 'host' ? myLevel() : p.level || 1 })) }; }
+function lobbyInfo() { const E = net.event && evCur ? evCur : cfg; return { t: 'lobby', code: net.code, mode: E.mode, map: E.map, laps: E.laps, mins: E.mins, bots: net.pub ? 0 : cfg.bots, pub: !!net.pub, target: net.target, autoIn: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0, autoAt: !!net.autoAt, players: net.players.map(p => ({ name: p.name, driver: p.driver, host: p.id === 'host', level: p.id === 'host' ? myLevel() : p.level || 1 })) }; }
 function onHostData(conn, d) {
   if (!net?.host || !d || typeof d !== 'object') return;
   if (d.t === 'hello') {
-    if (net.players.length >= MAX_KARTS) { conn.send({ t: 'nope', why: `That room is full (${MAX_KARTS} players).` }); setTimeout(() => conn.close(), 300); return; }
+    const tabBack = typeof d.tab === 'string' && net.players.some(p => p.tab === d.tab); // a reconnect doesn't take a new seat
+    const cap = net.event && evCur ? evCur.players : MAX_KARTS;
+    if (net.players.length >= cap && !tabBack) { conn.send({ t: 'nope', why: net.event ? `This tournament is full (${cap} players).` : `That room is full (${MAX_KARTS} players).` }); setTimeout(() => conn.close(), 300); return; }
     if (state !== 'title') { conn.send({ t: 'nope', why: 'That match already started. Ask the host to let you in after it ends.' }); setTimeout(() => conn.close(), 300); return; }
     const drv = d.driver && typeof d.driver === 'object' ? d.driver : pubDriver(BUILTIN[0]);
     drv.img = typeof drv.img === 'string' && (drv.img.startsWith('/racers/') || drv.img.startsWith('data:image/')) && drv.img.length < 200000 ? drv.img : BUILTIN[0].img;
@@ -3462,7 +3460,7 @@ function renderRoom() {
     $('targetField').hidden = !net.pub;
   }
   $('roomDesc').innerHTML = net.event && evCur
-    ? `Tournament room: humans only. It starts at <b>${evTime(evCur.at)}</b> with everyone who's in, or earlier once <b>${evCur.players} players</b> are here. Anyone with the link can join.`
+    ? `🔒 Tournament room: settings are locked (${(MAPS_BY[evCur.map] || MAPS_BY.bonfire).name}, ${evCur.mode === 'race' ? evCur.laps + (evCur.laps > 1 ? ' laps' : ' lap') : evCur.mins + ' min'}, up to ${evCur.players} players, no bots). It starts at <b>${evTime(evCur.at)}</b> with everyone who's in, or earlier once all <b>${evCur.players}</b> are here.`
     : host && net.pub
     ? `Your room is listed under <b>Open rooms</b> for anyone to join. Humans only, no bots. It starts by itself at <b>${net.target} players</b>, or hit <b>Start match</b> once 2 are in.`
     : !host && L.pub ? `Open room: humans only. It starts automatically at <b>${L.target} players</b> (${L.players.length} in now), or when the host starts it.`
@@ -3472,11 +3470,14 @@ function renderRoom() {
   const botN = Math.max(0, Math.min(MAX_KARTS - L.players.length, L.bots));
   $('roomPlayers').innerHTML = L.players.map(p => `<div class="pl"><img src="${escapeHtml(p.driver.img)}" alt=""><b>${escapeHtml(p.name)}</b><em class="lv">Lv ${p.level || 1}</em>${p.host ? '<span>HOST</span>' : ''}</div>`).join('')
     + (botN ? `<div class="pl bot"><img src="/racers/degenz.png" alt=""><b>+ ${botN} bot${botN > 1 ? 's' : ''}</b></div>` : '');
+  if (net.event && evCur) Object.assign(L, { mode: evCur.mode, map: evCur.map, laps: evCur.laps, mins: evCur.mins, bots: 0 });
   const race = L.mode === 'race', LM = MAPS_BY[L.map] || MAPS_BY[race ? 'bonfire' : 'pit'];
   $('roomMapArt').className = 'art'; $('roomMapArt').style.background = LM.art; $('roomMapArt').textContent = LM.icon;
   $('roomMapName').innerHTML = race ? `${LM.name}<small>Race · ${L.laps} lap${L.laps > 1 ? 's' : ''}</small>` : `${LM.name}<small>Free for all · ${L.mins} mins</small>`;
-  $('roomMap').disabled = !host;
-  $('btnRoomStart').hidden = !host; $('btnRoomSettings').hidden = !host;
+  const locked = !!(net.event && evCur); // tournament rooms run on the tournament's own settings
+  if (locked) $('roomOpts').hidden = true;
+  $('roomMap').disabled = !host || locked;
+  $('btnRoomStart').hidden = !host || locked; $('btnRoomSettings').hidden = !host || locked;
   $('btnRoomStart').disabled = !net.ready || (net.pub && net.players.length < 2);
   if (!host) $('roomStatus').textContent = 'Waiting for the host to start…';
 }
@@ -3497,7 +3498,7 @@ function hostRoster() {
   const list = net.players.map(p => ({ name: p.name, driver: p.driver, human: true, peer: p.id, level: p.id === 'host' ? myLevel() : p.level || 1, trail: p.id === 'host' ? myTrailId() : p.trail || null }));
   const used = new Set(list.map(p => p.driver.id));
   const pool = BUILTIN.filter(d => !used.has(d.id)).concat(BUILTIN.filter(d => used.has(d.id)));
-  const bots = net.pub ? 0 : Math.max(0, Math.min(MAX_KARTS - list.length, cfg.bots));
+  const bots = net.pub || net.event ? 0 : Math.max(0, Math.min(MAX_KARTS - list.length, cfg.bots));
   for (let i = 0; i < bots; i++) { const d = pool[i % pool.length]; list.push({ name: kartLabel(d), driver: pubDriver(d), human: false, level: BOT_LVL[cfg.diff] || 9 }); }
   return list;
 }
@@ -3540,7 +3541,7 @@ function startGame(opts = {}) {
 function hostStart() {
   if (!net?.host) return;
   const roster = hostRoster();
-  const settings = { mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins };
+  const settings = net.event && evCur ? { mode: evCur.mode, map: evCur.map, laps: evCur.laps, mins: evCur.mins } : { mode: cfg.mode, map: cfg.map, laps: cfg.laps, mins: cfg.mins };
   startGame({ roster, ...settings, me: 0 });
   net.conns.forEach(c => { const you = roster.findIndex(r => r.peer === c.peer); if (you >= 0 && c.open) c.send({ t: 'start', roster, ...settings, you }); });
 }
@@ -3828,8 +3829,8 @@ for (const [id, key, out] of [['cfgSens', 'sensPct', 'sensVal'], ['cfgTspd', 'sp
   el.addEventListener('input', () => { cfg[key] = +el.value; $(out).textContent = el.value + '%'; saveCfg(); if (key === 'spdPct' && !$('touch').hidden) keys.touchSpd = touchSpd(); });
 }
 // public / private and auto-start target (host, on the room screen)
-$('segPub').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !net?.host) return; const pub = b.dataset.v === '1'; if (!pub) unlistRoom(); net.pub = pub; net.autoAt = 0; checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); });
-$('segTarget').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !net?.host) return; net.target = cfg.target = +b.dataset.v; saveCfg(); net.autoAt = 0; checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); });
+$('segPub').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !net?.host || net.event) return; const pub = b.dataset.v === '1'; if (!pub) unlistRoom(); net.pub = pub; net.autoAt = 0; checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); });
+$('segTarget').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !net?.host || net.event) return; net.target = cfg.target = +b.dataset.v; saveCfg(); net.autoAt = 0; checkAutoStart(); renderRoom(); broadcast(lobbyInfo()); listRoom(); });
 // join screen tabs
 function joinTab(t) { document.querySelectorAll('.jtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.jt === t))); $('jtOpen').hidden = t !== 'open'; $('jtCode').hidden = t !== 'code'; if (t === 'open') loadOpenRooms(); else setTimeout(() => $('joinCode').focus(), 50); }
 document.querySelectorAll('.jtab').forEach(b => b.addEventListener('click', () => joinTab(b.dataset.jt)));
@@ -4058,12 +4059,6 @@ $('evJoin').addEventListener('click', () => { if (evCur?.status === 'open') { in
 $('evShare').addEventListener('click', () => evCur && evShareX(evCur));
 $('btnEvShare').addEventListener('click', async () => { const id = net?.event || evCur?.id; if (!id) return; try { evShareX(await evGet(id)); } catch (e) { toast(e.message); } });
 $('evCopy').addEventListener('click', () => { if (!evCur) return; navigator.clipboard?.writeText(evLink(evCur.id)); $('evCopy').textContent = 'Copied ✓'; setTimeout(() => { $('evCopy').textContent = 'Copy link'; }, 1400); });
-for (const [btn, action, ask] of [['evConfirm', 'confirm', 'Make these results official?'], ['evVoid', 'void', 'Void these results? The podium will be removed from the card.']])
-  $(btn).addEventListener('click', async () => {
-    if (!evCur || !confirm(ask)) return;
-    const { ok, j } = await evPost({ verdict: evCur.id, action }).catch(() => ({ j: {} }));
-    if (ok) { evCur = j; evRender(); } else $('evStatus').textContent = j.error || 'Could not update the results.';
-  });
 $('evCancel').addEventListener('click', async () => {
   if (!evCur || !confirm('Cancel this tournament? Anyone with the link will see it was cancelled.')) return;
   const { ok, j } = await evPost({ cancel: evCur.id }).catch(() => ({ j: {} }));
@@ -4094,9 +4089,9 @@ $('maps').addEventListener('click', e => {
   if (mapCtx === 'room') { renderRoom(); broadcast(lobbyInfo()); show('scrRoom'); }
   else startGame();
 });
-$('roomMap').addEventListener('click', () => { if (!net?.host) return; mapCtx = 'room'; renderMaps(); show('scrMaps'); });
-$('btnRoomStart').addEventListener('click', hostStart);
-$('btnRoomSettings').addEventListener('click', () => $('btnSettings').click());
+$('roomMap').addEventListener('click', () => { if (!net?.host || net.event) return; mapCtx = 'room'; renderMaps(); show('scrMaps'); });
+$('btnRoomStart').addEventListener('click', () => { if (!net?.event) hostStart(); }); // tournaments start themselves
+$('btnRoomSettings').addEventListener('click', () => { if (!net?.event) $('btnSettings').click(); });
 $('btnRoomLeave').addEventListener('click', () => { leaveNet(); show('scrTitle'); renderLobby(); });
 $('btnCopyLink').addEventListener('click', () => { const v = $('roomLink').value; navigator.clipboard?.writeText(v).then(() => toast('Invite link copied'), () => { $('roomLink').select(); toast('Select and copy the link'); }); });
 $('btnInvite').addEventListener('click', () => { if (!net) return; navigator.clipboard?.writeText(roomUrl(net.code)).then(() => toast(`Room ${net.code}: link copied`), () => toast(`Room code: ${net.code}`)); });
