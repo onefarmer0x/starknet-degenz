@@ -15,6 +15,7 @@ http.createServer((req, res) => {
   if (req.url.split('?')[0] === '/api/nft') return require('./api/nft.js')(req, res);
   { const m = req.url.match(/^\/e\/([A-Za-z0-9]+)\/[\w.-]+\.png$/); if (m) req.url = '/api/events?card=' + m[1]; }
   { const m = req.url.match(/^\/e\/([A-Za-z0-9]+)$/); if (m) req.url = '/api/events?share=' + m[1]; }
+  { const m = req.url.match(/^\/s\/([\w.]+)$/); if (m) req.url = '/api/events?ss=' + m[1]; }
   if (req.url.split('?')[0] === '/api/events') return require('./api/events.js')(req, res);
   if (req.url.split('?')[0] === '/wolves/list.json') {
     // which sticker files exist, so the page doesn't probe for missing numbers

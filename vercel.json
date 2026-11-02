@@ -15,6 +15,10 @@
   },
   "rewrites": [
     {
+      "source": "/s/:tok",
+      "destination": "/api/events?ss=:tok"
+    },
+    {
       "source": "/e/:id/:file",
       "destination": "/api/events?card=:id&f=:file"
     },

@@ -106,6 +106,10 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return send(res, 405, { error: 'method' });
     const b = await body(req);
     if (b.logout) { if (tok) await kv(['DEL', 'pf:sess:' + tok]); return send(res, 200, { ok: true }, [sessionCookie(''), sessionCookie('', '/api/pfauth')]); }
+    if (b.shareLink) {
+      if (!who) return send(res, 401, { error: 'not signed in' });
+      return send(res, 200, await RW.shareLink(kv, who));
+    }
     if (b.voucher) {
       if (!who) return send(res, 401, { error: 'not signed in' });
       const v = await RW.voucher(kv, who, String(b.voucher));

@@ -168,6 +168,15 @@ async function kart(kv, addr, k, state) {
   await save(kv, addr, rec);
   return { fresh, view: view(addr, rec, state) };
 }
+// Share links carry only streak, XP and level plus a signature: no wallet address, nothing stored, can't be faked.
+const shareSig = p => require('crypto').createHmac('sha256', (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || 'local-dev') + ':share').update(p).digest('hex').slice(0, 16);
+function shareToken(rec) { const s = liveStreak(rec), p = `${s}.${rec.xp}.${levelOf(rec.xp)}`; return `${p}.${shareSig(p)}`; }
+function readShare(tok) {
+  const m = /^(\d{1,5})\.(\d{1,9})\.(\d{1,5})\.([0-9a-f]{16})$/.exec(String(tok || ''));
+  if (!m || shareSig(`${m[1]}.${m[2]}.${m[3]}`) !== m[4]) return null;
+  const streak = +m[1]; return { streak, xp: +m[2], level: +m[3], claimXp, bonus: MILESTONE };
+}
+async function shareLink(kv, addr) { return { token: shareToken(await load(kv, addr)) }; }
 async function profile(kv, addr) { return view(addr, await load(kv, addr)); }
 // a mint voucher for a badge this wallet has earned (null if NFTs aren't set up or the badge isn't earned)
 async function voucher(kv, addr, id) {
@@ -179,4 +188,4 @@ async function voucher(kv, addr, id) {
 }
 const nftInfo = () => { const c = nftCfg(); return c ? { contract: c.contract, network: c.network, rpc: c.rpc } : null; };
 
-module.exports = { claim, me, kart, profile, voucher, nftInfo, voucherHash, shortStr, BADGES };
+module.exports = { shareLink, readShare, claim, me, kart, profile, voucher, nftInfo, voucherHash, shortStr, BADGES };

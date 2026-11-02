@@ -155,6 +155,33 @@ async function card(e) {
 // requests the new URL once so the CDN already has it when the link gets shared (X gives up on slow images).
 const cardVer = e => statusOf(e) + (e.results ? '-' + settle(e).state + '-' + Object.keys(e.reports || {}).length : '');
 const warmCard = e => process.env.VERCEL ? fetch(`${SITE}/api/events?card=${e.id}&v=${cardVer(e)}`, { signal: AbortSignal.timeout(9000) }).then(r => r.arrayBuffer()).catch(() => {}) : Promise.resolve();
+// ---------------- daily sign-in card (no wallet address anywhere; values come from a signed token) ----------------
+async function streakCard(c) {
+  const { ImageResponse } = await import('@vercel/og'), wolfSrc = await wolf();
+  const gain = d => c.claimXp(d) + (c.bonus[d] || 0), first = Math.max(1, c.streak - 4);
+  const next = [7, 30, 100].find(n => n > c.streak), badge = { 7: 'Week Wolf', 30: 'Iron Howl', 100: 'Eternal Flame' }[next];
+  const day = d => { const done = d <= c.streak, today = d === c.streak;
+    return h('div', { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 104, height: 112, borderRadius: 16, gap: 4, background: today ? '#ff7a1f' : done ? 'rgba(255,122,31,.18)' : '#1d1516', border: `3px solid ${done ? '#ff7a1f' : '#3a2c2e'}`, color: today ? '#150b05' : done ? '#ffb27a' : '#8f8079' }, [
+      h('div', { fontSize: 20, fontWeight: 700 }, `DAY ${d}`), h('div', { fontSize: 30 }, done ? '✅' : c.bonus[d] ? '🎁' : '🔒'), h('div', { fontSize: 19, fontWeight: 500 }, `+${gain(d)}`)]); };
+  const el = h('div', { width: '100%', height: '100%', flexDirection: 'column', justifyContent: 'space-between', padding: '50px 64px', background: 'radial-gradient(circle at 78% 18%, #4a2312 0%, #160c0b 45%, #070506 100%)', color: '#ece4dc', fontFamily: 'Archivo' }, [
+    ...(wolfSrc ? [{ type: 'img', props: { src: wolfSrc, width: 250, height: 250, style: { position: 'absolute', right: 60, top: 50, borderRadius: 125, border: '8px solid #ff7a1f' } } }] : []),
+    h('div', { flexDirection: 'column' }, [
+      h('div', { fontSize: 28, fontWeight: 700, color: '#ff7a1f', letterSpacing: 3 }, '🎁 DAILY SIGN-IN · STARKNET DEGENZ'),
+      h('div', { fontFamily: 'Anton', fontSize: 108, lineHeight: 1.05, marginTop: 14, color: '#fff6e3' }, `🔥 ${c.streak}-DAY STREAK`),
+      h('div', { fontSize: 34, fontWeight: 700, marginTop: 8 }, `${c.xp.toLocaleString('en')} XP · Level ${c.level}`),
+    ]),
+    h('div', { gap: 12 }, Array.from({ length: 7 }, (_, i) => day(first + i))),
+    h('div', { justifyContent: 'space-between', fontSize: 25, color: '#8f8079', fontWeight: 500 }, [h('div', {}, next ? `${next - c.streak} more day${next - c.streak > 1 ? 's' : ''} to the ${badge} badge` : 'Eternal Flame unlocked'), h('div', {}, 'starknetdegenz.fun')]),
+  ]);
+  return Buffer.from(await new ImageResponse(el, { width: 1200, height: 630, fonts: FONTS, emoji: 'twemoji' }).arrayBuffer());
+}
+function streakPage(tok, c) {
+  const title = `🔥 ${c.streak}-day streak on Starknet Degenz`, desc = `Level ${c.level} · ${c.xp} XP. Sign in daily, keep your streak, collect badges.`, img = `${SITE}/api/events?sc=${tok}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website"><meta property="og:site_name" content="$DEGENZ"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${SITE}/s/${tok}">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@StarknetDegenz"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${img}">
+<style>body{background:#070506;color:#ece4dc;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#ff7a1f}</style></head><body><p>Opening… <a href="/profile">tap here if nothing happens</a></p><script>location.replace('/profile')</script></body></html>`;
+}
 function sharePage(e) {
   const st = statusOf(e), t = when(e), [, mapName] = MAPS[e.map] || ['', e.map];
   const title = st === 'finished' ? `${e.title}: results` : `${e.title} · Degenz Kart tournament`;
@@ -175,6 +202,18 @@ module.exports = async (req, res) => {
     if (!RURL && process.env.VERCEL) return send(res, 503, { error: 'store not configured' });
     const q = new URL(req.url, 'http://x').searchParams;
     if (req.method === 'GET') {
+      if (q.get('sc') || q.get('ss')) {
+        const tok = q.get('sc') || q.get('ss'), c = require('./_rewards.js').readShare(tok);
+        if (!c) return send(res, 404, { error: 'bad link' });
+        if (q.get('ss')) {
+          if (process.env.VERCEL) await fetch(`${SITE}/api/events?sc=${tok}`, { signal: AbortSignal.timeout(9000) }).then(r => r.arrayBuffer()).catch(() => {}); // card ready before X asks
+          res.setHeader('content-type', 'text/html; charset=utf-8'); res.setHeader('cache-control', 'public, max-age=60, s-maxage=86400');
+          return res.end(streakPage(tok, c));
+        }
+        const png = await streakCard(c);
+        res.statusCode = 200; res.setHeader('content-type', 'image/png'); res.setHeader('content-length', png.length); res.setHeader('cache-control', 'public, max-age=86400, s-maxage=31536000, immutable');
+        return res.end(png);
+      }
       if (q.get('card') || q.get('share')) {
         const id = String(q.get('card') || q.get('share')).toUpperCase(), e = validId(id) ? await load(id) : null;
         if (q.get('share')) {

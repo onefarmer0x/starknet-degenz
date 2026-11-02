@@ -203,7 +203,7 @@ const asked = new URLSearchParams(location.search).get('address');
 let shown = null; // address on screen
 
 function paint(v, mine) {
-  shown = v.address; shownView = v; shownMine = !!mine;
+  shown = v.address; shownView = v; shownMine = !!mine; $('share').hidden = !mine;
   $('gate').hidden = true; $('app').hidden = false; $('mine').hidden = !mine;
   const hue = parseInt(v.address.slice(-6), 16) % 360;
   $('ava').style.background = `hsl(${hue} 80% 62%)`; $('ava').textContent = v.level;
@@ -313,18 +313,26 @@ $('bview').addEventListener('click', e => {
   else if (e.target.closest('[data-mint]')) { const b = e.target.closest('[data-mint]'); mint(b.dataset.mint, b); }
   else if (e.target.closest('[data-share]')) {
     const b = shownView.badges.find(x => '#' + x.id === location.hash);
-    if (b) window.open(`https://x.com/intent/post?text=${encodeURIComponent(`I just earned the ${b.name} badge in the Starknet Degenz pack 🐺 ${b.desc}.`)}&url=${encodeURIComponent(location.origin + '/profile?address=' + shownView.address + '#' + b.id)}`, '_blank', 'noopener');
+    if (b) shareX(`I earned the ${b.name} badge in the Starknet Degenz pack 🐺 ${b.desc}.`);
   }
 });
 $('bview').addEventListener('close', () => history.replaceState(null, '', location.pathname + location.search));
 
 $('gateSignIn').addEventListener('click', () => window.DegenzAccount?.signIn());
 $('claim').addEventListener('click', () => window.DegenzAccount?.claim());
+// share links never contain the wallet address: the server signs a link holding only streak, XP and level
+async function shareX(text) {
+  const w = window.open('', '_blank'); // opened now so pop-up blockers allow it
+  try {
+    const r = await fetch('/api/pfauth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shareLink: true }) }), j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    w.location = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.origin + '/s/' + j.token)}`;
+    window.dzTrack?.('Share profile', {});
+  } catch { w?.close(); window.DegenzAccount?.toast('Could not make the share link. Try again.'); }
+}
 $('share').addEventListener('click', () => {
-  const v = shown, got = document.querySelectorAll('.badge.got').length;
-  const text = `I'm level ${$('lv').firstChild.textContent.replace('LV ', '')} in the Starknet Degenz pack 🐺 ${$('sStreak').textContent}-day streak, ${got} badges. Claim yours daily:`;
-  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.origin + '/profile?address=' + v)}`, '_blank', 'noopener');
-  window.dzTrack?.('Share profile', {});
+  const v = shownView, got = v.badges.filter(b => b.at).length;
+  shareX(`🔥 ${v.streak}-day streak in the Starknet Degenz pack 🐺\nLevel ${v.level}, ${got} badges. Sign in daily and claim yours:`);
 });
 window.addEventListener('degenz:auth', show);
 window.addEventListener('degenz:rewards', e => { const A = window.DegenzAccount; if (e.detail && A?.address && (!asked || BigInt(asked) === BigInt(A.address))) paint(e.detail, true); else show(); });
