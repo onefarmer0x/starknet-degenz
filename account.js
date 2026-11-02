@@ -140,7 +140,10 @@
       ${rwCard()}
       <a role="menuitem" href="/profile">🏅 Badges &amp; profile</a>
       <a role="menuitem" href="/portfolio">💼 Portfolio</a>
-      <a role="menuitem" href="/portfolio#settings">⚙️ Settings</a>`;
+      <a role="menuitem" href="/portfolio#settings">⚙️ Settings</a>
+      <div class="sep"></div>
+      <button class="out" type="button" role="menuitem" data-act="logout">↪ Log out</button>`;
+    menu.querySelector('[data-act="logout"]').addEventListener('click', signOut);
     menu.querySelector('[data-act="claim"]')?.addEventListener('click', claim);
     menu.querySelector('[data-act="copy"]').addEventListener('click', e => { const b = e.currentTarget; navigator.clipboard?.writeText(me); b.innerHTML = ICON.check; setTimeout(() => { b.innerHTML = ICON.copy; }, 1200); });
   }
